@@ -44,6 +44,7 @@ async function start() {
 				'-t_srs','EPSG:4326',
 				'-nln', 'buildings',
 				'-overwrite',
+				'-progress',
 				config.getFile.data('buildings.gpkg'),
 				'GeoJSONSeq:'+filenameTemp,
 			], { stdio:'inherit' })
