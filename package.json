@@ -1,0 +1,23 @@
+{
+  "name": "windradabstand",
+  "version": "1.0.0",
+  "description": "1. Gebäude parsen \t- GebäudeIDs vergeben \t- Ist Wohngebäude? 2. Windräder parsen: \t- Welches Gebäude -> GebäudeID \t- Welches Bundesland? -> Statistik \t\t- Leistung \t\t- Höhen \t- GeoJSON für Frontend 3. Höhen+Wohngebäude \t- Buffer Mergen, intersect mit Bundesländern",
+  "main": "index.js",
+  "bin": {
+    "windradabstand": "bin/1_parse_buildings.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael Kreil",
+  "license": "ISC",
+  "dependencies": {
+    "@turf/turf": "^6.5.0",
+    "adm-zip": "^0.5.9",
+    "canvas": "^2.9.1",
+    "fast-xml-parser": "^4.0.7",
+    "gdal-next": "^2.8.0",
+    "havel": "^0.3.0",
+    "level": "^8.0.0"
+  }
+}
