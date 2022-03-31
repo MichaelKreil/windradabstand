@@ -14,7 +14,7 @@ start()
 
 async function start() {
 	let index = 0;
-	let filename = config.getFile.data('buildings.gpkg');
+	let filename = config.getFile.result('buildings.gpkg');
 	let filenameTemp = config.getFile.temp();
 
 	Havel.pipeline()
@@ -45,7 +45,7 @@ async function start() {
 				'-nln', 'buildings',
 				'-overwrite',
 				'-progress',
-				config.getFile.data('buildings.gpkg'),
+				filename,
 				'GeoJSONSeq:'+filenameTemp,
 			], { stdio:'inherit' })
 			fs.unlinkSync(filenameTemp)

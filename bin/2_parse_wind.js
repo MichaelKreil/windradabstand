@@ -5,6 +5,7 @@
 const fs = require('fs');
 const turf = require('@turf/turf');
 const AdmZip = require('adm-zip');
+const gdal = require('gdal-next');
 const { XMLParser } = require('fast-xml-parser');
 const config = require('../config.js');
 
@@ -29,6 +30,9 @@ async function start() {
 		windEntries = windEntries.concat(loadZipEntry(zipEntry));
 	}
 
+	console.log('load Gebäude')
+	let findBuildings = BuildingFinder(windEntries.map(windEntry => [windEntry.Laengengrad, windEntry.Breitengrad]));
+
 	console.log('parse xml entries');
 	let wind = [];
 	windEntries.forEach((windEntry, i) => {
@@ -40,6 +44,11 @@ async function start() {
 		if (!windEntry.Bundesland) return;
 		windEntry.MinDistanz = getMinDistance(windEntry.Bundesland.AGS, windEntry.Hoehe)
 
+		if (windEntry.MinDistanz) {
+			windEntry.Umkreis = turf.circle([windEntry.Laengengrad, windEntry.Breitengrad], windEntry.MinDistanz/1000);
+			windEntry.Gebauede = findBuildings(windEntry.Umkreis, windEntry.MinDistanz);
+		}
+
 		wind.push({
 			type: 'Feature',
 			geometry: { type:'Point', coordinates:[windEntry.Laengengrad, windEntry.Breitengrad]},
@@ -48,7 +57,7 @@ async function start() {
 	})
 	console.log();
 
-	fs.writeFileSync(config.getFile.data('wind.geojson'), JSON.stringify(wind));
+	fs.writeFileSync(config.getFile.result('wind.geojson'), JSON.stringify(wind));
 }
 
 function loadZipEntry(zipEntry) {
@@ -163,5 +172,40 @@ function BundeslandFinder() {
 		if (result.length === 1) return result[0];
 		if (result.length === 0) return false;
 		throw Error('polygons overlapping?');
+	}
+}
+
+function BuildingFinder(windPos) {
+	let dbBuildings = gdal.open(config.getFile.result('buildings.gpkg')).layers.get(0);
+	let ignoreBuildings = new Set();
+	windPos.forEach(point => {
+		forEachInBBox([point[0]-1e-3, point[1]-1e-3, point[0]+1e-3, point[1]+1e-3], building => {
+			let d = 1000*turf.distance(turf.centerOfMass(building), point);
+			if (d < 10) ignoreBuildings.add(building.fid);
+		});
+	})
+
+	function forEachInBBox(bbox, cb) {
+		dbBuildings.setSpatialFilter(bbox[0]-1e-4, bbox[1]-1e-4, bbox[2]+1e-4, bbox[3]+1e-4);
+		let feature;
+		while (feature = dbBuildings.features.next()) {
+			cb({
+				type: 'Feature',
+				fid: feature.fid,
+				properties: feature.fields.toObject(),
+				geometry: feature.getGeometry().toObject(),
+			});
+		}
+	}
+
+	return (circle,radius) => {
+		let bbox = turf.bbox(circle);
+		let buildingIds = [];
+		forEachInBBox(bbox, building => {
+			if (ignoreBuildings.has(building.fid)) return;
+			if (!building.properties.residential) return;
+			buildingIds.push(building.fid);
+		})
+		return buildingIds;
 	}
 }
