@@ -1,3 +1,6 @@
 
-/data/
+/data/0_temp/
+/data/1_src/
+/data/2_static/
+/data/3_result/
 /node_modules/
