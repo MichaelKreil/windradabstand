@@ -14,6 +14,38 @@ const config = require('../config.js');
 start()
 
 async function start() {
+	const filenameWind = config.getFile.result('wind.geojson');
+
+	let wind;
+	if (fs.existsSync(filenameWind)) {
+		wind = JSON.parse(fs.readFileSync(filenameWind))
+	} else {
+		wind = calcWindData();
+		fs.writeFileSync(config.getFile.result('wind.geojson'), JSON.stringify(wind));
+	}
+
+	// Berechne Statistiken
+
+	let statistik = new Map()
+	wind.forEach(windEntry => {
+		let p = windEntry.properties;
+		let suffix = '/' + (p.kollision ? 'kollision' : 'ok');
+		add(p.bundesland.NAME+suffix);
+		add('Deutschland'+suffix);
+
+		function add(key) {
+			if (!statistik.has(key)) statistik.set(key, { key, anzahl:0, leistung:0 })
+			let s = statistik.get(key);
+			s.anzahl++;
+			s.leistung += p.Bruttoleistung ?? 0;
+		}
+	})
+	statistik = Array.from(statistik.values());
+	console.table(statistik);
+
+}
+
+function calcWindData() {
 	let zip = new AdmZip(config.getFile.src('Gesamtdatenexport_20220330__f3b8b76f16b2426fafb59f8c747a8406.zip'));
 	let zipEntries = zip.getEntries();
 
@@ -36,17 +68,18 @@ async function start() {
 	console.log('parse xml entries');
 	let wind = [];
 	windEntries.forEach((windEntry, i) => {
-		if (i % 100 === 0) process.stdout.write('\r'+(100*i/windEntries.length).toFixed(1)+'%');
+		if (i % 20 === 0) process.stdout.write('\r'+(100*i/windEntries.length).toFixed(1)+'%');
 		translateKeys(windEntry);
 
-		windEntry.Hoehe = (windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2);
-		windEntry.Bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad).properties;
-		if (!windEntry.Bundesland) return;
-		windEntry.MinDistanz = getMinDistance(windEntry.Bundesland.AGS, windEntry.Hoehe)
+		windEntry.hoehe = (windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2);
+		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad).properties;
+		if (!windEntry.bundesland) return;
+		windEntry.mindistanz = getMinDistance(windEntry.bundesland.AGS, windEntry.hoehe)
 
-		if (windEntry.MinDistanz) {
-			windEntry.Umkreis = turf.circle([windEntry.Laengengrad, windEntry.Breitengrad], windEntry.MinDistanz/1000);
-			windEntry.Gebauede = findBuildings(windEntry.Umkreis, windEntry.MinDistanz);
+		if (windEntry.mindistanz) {
+			windEntry.umkreis = turf.circle([windEntry.Laengengrad, windEntry.Breitengrad], windEntry.mindistanz/1000);
+			windEntry.gebaeude = findBuildings(windEntry.umkreis, windEntry.mindistanz);
+			if (windEntry.gebaeude.length > 0) windEntry.kollision = true;
 		}
 
 		wind.push({
@@ -57,7 +90,7 @@ async function start() {
 	})
 	console.log();
 
-	fs.writeFileSync(config.getFile.result('wind.geojson'), JSON.stringify(wind));
+	return wind;
 }
 
 function loadZipEntry(zipEntry) {
@@ -145,6 +178,28 @@ function BundeslandFinder() {
 	let bundeslaender = fs.readFileSync(config.getFile.src('VG250_Bundeslaender.geojson'));
 	bundeslaender = JSON.parse(bundeslaender).features;
 	bundeslaender.forEach(bundesland => {
+		let name;
+		switch (bundesland.properties.AGS) {
+			case '01': name = 'Schleswig-Holstein'; break;
+			case '02': name = 'Hamburg'; break;
+			case '03': name = 'Niedersachsen'; break;
+			case '04': name = 'Bremen'; break;
+			case '05': name = 'Nordrhein-Westfalen'; break;
+			case '06': name = 'Hessen'; break;
+			case '07': name = 'Rheinland-Pfalz'; break;
+			case '08': name = 'Baden-Württemberg'; break;
+			case '09': name = 'Bayern'; break;
+			case '10': name = 'Saarland'; break;
+			case '11': name = 'Berlin'; break;
+			case '12': name = 'Brandenburg'; break;
+			case '13': name = 'Mecklenburg-Vorpommern'; break;
+			case '14': name = 'Sachsen'; break;
+			case '15': name = 'Sachsen-Anhalt'; break;
+			case '16': name = 'Thüringen'; break;
+			default: return
+		}
+		bundesland.properties.NAME = name;
+
 		turf.flatten(bundesland).features.forEach(polygon => {
 			polygon.bbox = turf.bbox(polygon);
 			let x0 = Math.floor(polygon.bbox[0]*gridScale);
