@@ -16,6 +16,8 @@ start()
 async function start() {
 	const filenameWind = config.getFile.result('wind.geojson');
 
+	// calculate wind data
+
 	let wind;
 	if (fs.existsSync(filenameWind)) {
 		wind = JSON.parse(fs.readFileSync(filenameWind))
@@ -24,9 +26,9 @@ async function start() {
 		fs.writeFileSync(config.getFile.result('wind.geojson'), JSON.stringify(wind));
 	}
 
-	// Berechne Statistiken
+	// calculate statistics
 
-	let statistik = new Map()
+	let statistics = new Map()
 	wind.forEach(windEntry => {
 		let p = windEntry.properties;
 		let suffix = '/' + (p.kollision ? 'kollision' : 'ok');
@@ -34,14 +36,14 @@ async function start() {
 		add('Deutschland'+suffix);
 
 		function add(key) {
-			if (!statistik.has(key)) statistik.set(key, { key, anzahl:0, leistung:0 })
-			let s = statistik.get(key);
+			if (!statistics.has(key)) statistics.set(key, { key, anzahl:0, leistung:0 })
+			let s = statistics.get(key);
 			s.anzahl++;
 			s.leistung += p.Bruttoleistung ?? 0;
 		}
 	})
-	statistik = Array.from(statistik.values());
-	console.table(statistik);
+	statistics = Array.from(statistics.values());
+	console.table(statistics);
 
 }
 
@@ -63,7 +65,8 @@ function calcWindData() {
 	}
 
 	console.log('load Gebäude')
-	let findBuildings = BuildingFinder(windEntries.map(windEntry => [windEntry.Laengengrad, windEntry.Breitengrad]));
+	let { findBuildings, ignoredBuildings } = BuildingFinder(windEntries.map(windEntry => [windEntry.Laengengrad, windEntry.Breitengrad]));
+	fs.writeFileSync(config.getFile.result('ignoredBuildings.json'), JSON.stringify(ignoredBuildings));
 
 	console.log('parse xml entries');
 	let wind = [];
@@ -84,7 +87,7 @@ function calcWindData() {
 
 		wind.push({
 			type: 'Feature',
-			geometry: { type:'Point', coordinates:[windEntry.Laengengrad, windEntry.Breitengrad]},
+			geometry: { type:'Point', coordinates:[windEntry.Laengengrad, windEntry.Breitengrad] },
 			properties: windEntry,
 		});
 	})
@@ -232,11 +235,11 @@ function BundeslandFinder() {
 
 function BuildingFinder(windPos) {
 	let dbBuildings = gdal.open(config.getFile.result('buildings.gpkg')).layers.get(0);
-	let ignoreBuildings = new Set();
+	let ignoredBuildings = new Set();
 	windPos.forEach(point => {
 		forEachInBBox([point[0]-1e-3, point[1]-1e-3, point[0]+1e-3, point[1]+1e-3], building => {
 			let d = 1000*turf.distance(turf.centerOfMass(building), point);
-			if (d < 10) ignoreBuildings.add(building.fid);
+			if (d < 20) ignoredBuildings.add(building.fid);
 		});
 	})
 
@@ -253,14 +256,19 @@ function BuildingFinder(windPos) {
 		}
 	}
 
-	return (circle,radius) => {
+	function findBuildings(circle,radius) {
 		let bbox = turf.bbox(circle);
 		let buildingIds = [];
 		forEachInBBox(bbox, building => {
-			if (ignoreBuildings.has(building.fid)) return;
+			if (ignoredBuildings.has(building.fid)) return;
 			if (!building.properties.residential) return;
 			buildingIds.push(building.fid);
 		})
 		return buildingIds;
+	}
+
+	return {
+		findBuildings,
+		ignoredBuildings: Array.from(ignoredBuildings.values()),
 	}
 }
