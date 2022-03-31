@@ -12,26 +12,32 @@ const config = require('../config.js');
 start()
 
 async function start() {
-	let wind = [];
 	let zip = new AdmZip(config.getFile.src('Gesamtdatenexport_20220330__f3b8b76f16b2426fafb59f8c747a8406.zip'));
 	let zipEntries = zip.getEntries();
 
+	console.log('load Katalogwerte')
 	let translateKeys = KeyTranslator(zipEntries.find(e => e.entryName === 'Katalogwerte.xml'))
 
+	console.log('load zip entries')
+	let windEntries = [];
 	for (let zipEntry of zipEntries) {
 		if (!zipEntry.entryName.startsWith('EinheitenWind')) continue;
-		let data = loadZipEntry(zipEntry);
-
-		for (let entry of data) {
-			translateKeys(entry);
-
-			wind.push({
-				type: 'Feature',
-				geometry: { type:'Point', coordinates:[entry.Laengengrad, entry.Breitengrad]},
-				properties: entry,
-			});
-		}
+		windEntries = windEntries.concat(loadZipEntry(zipEntry));
 	}
+
+	console.log('parse xml entries');
+	let wind = [];
+	windEntries.forEach((windEntry, i) => {
+		if (i % 100 === 0) process.stdout.write('\r'+(100*i/windEntries.length).toFixed(1)+'%');
+		translateKeys(windEntry);
+
+		wind.push({
+			type: 'Feature',
+			geometry: { type:'Point', coordinates:[windEntry.Laengengrad, windEntry.Breitengrad]},
+			properties: windEntry,
+		});
+	})
+	console.log();
 
 	fs.writeFileSync(config.getFile.data('wind.geojson'), JSON.stringify(wind));
 }
