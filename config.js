@@ -5,16 +5,12 @@ const { resolve } = require('path');
 
 const config = {
 	folders: {
-		temp:   resolve(__dirname, 'data/0_temp'),
 		src:    resolve(__dirname, 'data/1_src'),
 		static: resolve(__dirname, 'data/2_static'),
-		result: resolve(__dirname, 'data/3_result'),
-	},
-	getFile: {
-		temp:   f => resolve(config.folders.temp, randomString(8)+'.'+(f || 'tmp')),
-		src:    f => resolve(config.folders.src, f),
-		static: f => resolve(config.folders.static, f),
-		result: f => resolve(config.folders.result, f),
+		cache:  resolve(__dirname, 'data/3_cache'),
+		temp:   resolve(__dirname, 'data/4_temp'),
+		geo:    resolve(__dirname, 'data/5_geo'),
+		result: resolve(__dirname, 'data/6_result'),
 	}
 }
 
