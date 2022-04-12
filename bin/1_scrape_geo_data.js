@@ -9,13 +9,12 @@ const Protobuf = require('pbf');
 const zlib = require('zlib');
 const { fetchCached } = require('../lib/helper.js');
 const config = require('../config.js');
+const gunzip = require('util').promisify(zlib.gunzip);
 
 
 const LEVEL = 15
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
-const MVT_EXTENT = 4096
-//const BBOX = [5.9, 47.3, 15.1, 55.0]
-const BBOX = [13.0, 52.3, 13.8, 52.7]
+const BBOX = [5.9, 47.3, 15.1, 55.0]
 
 
 
@@ -31,7 +30,66 @@ async function start() {
 		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
 	}
 
-	const layerFiles = (function () {
+	const layerFiles = new LayerFiles()
+
+	let coordinates = [];
+	for (let x = bboxMin[0]; x <= bboxMax[0]; x++) {
+		fs.mkdirSync(resolve(config.folders.cache, `${x}`), { recursive:true });
+		for (let y = bboxMin[1]; y <= bboxMax[1]; y++) coordinates.push([x,y]);
+	}
+	coordinates.sort(bitReversal);
+	
+	let showProgress = Progress(coordinates.length);
+	await coordinates.forEachParallel(4, async ([x,y], i) => {
+		if (i % 100 === 0) showProgress(i);
+
+		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
+		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
+		
+		let buffer = await fetchCached(filename, url, headers);
+		if (buffer.length === 0) return
+
+		buffer = await gunzip(buffer);
+		let tile = new VectorTile(new Protobuf(buffer));
+
+		for (let [layerName, layer] of Object.entries(tile.layers)) {
+			let layerFile = layerFiles.get(layerName)
+			for (let i = 0; i < layer.length; i++) {
+				let feature = layer.feature(i);
+				layerFile.write(JSON.stringify(feature.toGeoJSON(x,y,LEVEL)));
+			}
+		}
+	})
+
+	layerFiles.close();
+
+
+
+	function Progress(n) {
+		let times = [];
+		return i => {
+			times.push([i,Date.now()]);
+			if (times.length > 30) times = times.slice(-30);
+			let speed = 0, timeLeft = '?';
+			if (times.length > 1) {
+				let [i0, t0] = times[0];
+				speed = (i-i0)*1000/(Date.now()-t0);
+				timeLeft = (n-i)/speed;
+				timeLeft = [
+					(Math.floor(timeLeft/3600)).toString(),
+					(Math.floor(timeLeft/60) % 60 + 100).toString().slice(1),
+					(Math.floor(timeLeft) % 60 + 100).toString().slice(1)
+				].join(':')
+			}
+			process.stdout.write([
+				(100*i/n).toFixed(2)+'%',
+				speed.toFixed(1)+'/s',
+				timeLeft
+			].map(s => s+' '.repeat(10-s.length)).join('')+'\n');
+		}
+	}
+
+	function LayerFiles() {
 		let map = new Map();
 		return { get, close }
 		function get(name) {
@@ -48,28 +106,7 @@ async function start() {
 		function close() {
 			for (let file of map.values()) file.close();
 		}
-	})();
-
-	for (let x = bboxMin[0]; x <= bboxMax[0]; x++) {
-		process.stdout.write('\r'+(100*(x-bboxMin[0])/(bboxMax[0]-bboxMin[0])).toFixed(1)+'%');
-		for (let y = bboxMin[1]; y <= bboxMax[1]; y++) {
-			let url = `${URL}${LEVEL}/${x}/${y}.pbf`
-			let filename = resolve(config.folders.cache, `${LEVEL}-${x}-${y}.pbf`)
-			let buffer = await fetchCached(filename, url, headers);
-			buffer = zlib.gunzipSync(buffer);
-			let tile = new VectorTile(new Protobuf(buffer));
-
-			for (let [layerName, layer] of Object.entries(tile.layers)) {
-				let layerFile = layerFiles.get(layerName)
-				for (let i = 0; i < layer.length; i++) {
-					let feature = layer.feature(i);
-					layerFile.write(JSON.stringify(feature.toGeoJSON(x,y,LEVEL)));
-				}
-			}
-		}
 	}
-
-	layerFiles.close();
 	
 	function deg2tile(lon_deg, lat_deg, zoom) {
 		let lat_rad = lat_deg*Math.PI/180;
@@ -78,5 +115,16 @@ async function start() {
 			(lon_deg + 180) / 360 * n,
 			(1 - Math.asinh(Math.tan(lat_rad)) / Math.PI) / 2 * n
 		]
+	}
+
+	function bitReversal(c1,c2) {
+		let d;
+		for (let i = 1; i < 2 ** 20; i *= 2) {
+			d = (c1[0] & i) - (c2[0] & i);
+			if (d) return d;
+			d = (c1[1] & i) - (c2[1] & i);
+			if (d) return d;
+		}
+		return 0;
 	}
 }
