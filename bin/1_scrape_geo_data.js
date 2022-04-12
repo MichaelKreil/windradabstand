@@ -40,16 +40,15 @@ async function start() {
 	coordinates.sort(bitReversal);
 	
 	let showProgress = Progress(coordinates.length);
-	//await coordinates.forEachParallel(1, async ([x,y], i) => {
-	for (let [i,[x,y]] of coordinates.entries()) {
+	await coordinates.forEachParallel(4, async ([x,y], i) => {
+	//for (let [i,[x,y]] of coordinates.entries()) {
 		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
 		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
 		
 		let buffer = await fetchCached(filename, url, headers);
-		if (buffer.length === 0) continue
-		continue;
+		if (buffer.length === 0) return;
 
 		buffer = await gunzip(buffer);
 		let tile = new VectorTile(new Protobuf(buffer));
@@ -61,7 +60,7 @@ async function start() {
 				layerFile.write(JSON.stringify(feature.toGeoJSON(x,y,LEVEL)));
 			}
 		}
-	}
+	})
 
 	layerFiles.close();
 
@@ -71,7 +70,7 @@ async function start() {
 		let times = [];
 		return i => {
 			times.push([i,Date.now()]);
-			if (times.length > 10) times = times.slice(-10);
+			if (times.length > 5) times = times.slice(-5);
 			let speed = 0, timeLeft = '?';
 			if (times.length > 1) {
 				let [i0, t0] = times[0];
@@ -87,7 +86,7 @@ async function start() {
 				(100*i/n).toFixed(2)+'%',
 				speed.toFixed(1)+'/s',
 				timeLeft
-			].map(s => ' '.repeat(10-s.length)+s).join('')+'\n');
+			].map(s => ' '.repeat(12-s.length)+s).join('')+'\n');
 		}
 	}
 
