@@ -89,11 +89,11 @@ async function start() {
 					(Math.floor(timeLeft) % 60 + 100).toString().slice(1)
 				].join(':')
 			}
-			process.stdout.write([
+			process.stdout.write('\n'+[
 				(100*i/n).toFixed(2)+'%',
 				speed.toFixed(1)+'/s',
 				timeLeft
-			].map(s => '\n'+s+' '.repeat(12-s.length)).join(''));
+			].map(s => s+' '.repeat(12-s.length)).join(''));
 		}
 	}
 
