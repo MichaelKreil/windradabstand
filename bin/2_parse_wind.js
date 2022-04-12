@@ -9,7 +9,7 @@ const gdal = require('gdal-next');
 const { XMLParser } = require('fast-xml-parser');
 const config = require('../config.js');
 
-
+const tiny = 1e-4; // tiny distance, e.g. 1e-4 = 10m
 
 start()
 
@@ -28,7 +28,7 @@ async function start() {
 
 	// calculate statistics
 
-	let statistics = new Map()
+	let byGeo = new Map();
 	wind.forEach(windEntry => {
 		let p = windEntry.properties;
 		let suffix = '/' + (p.kollision ? 'kollision' : 'ok');
@@ -36,14 +36,21 @@ async function start() {
 		add('Deutschland'+suffix);
 
 		function add(key) {
-			if (!statistics.has(key)) statistics.set(key, { key, anzahl:0, leistung:0 })
-			let s = statistics.get(key);
+			if (!byGeo.has(key)) byGeo.set(key, { key, anzahl:0, leistung:0 })
+			let s = byGeo.get(key);
 			s.anzahl++;
 			s.leistung += p.Bruttoleistung ?? 0;
 		}
 	})
-	statistics = Array.from(statistics.values());
-	console.table(statistics);
+	byGeo = Array.from(byGeo.values());
+	console.table(byGeo);
+
+	let hoehen = wind.map(w => w.properties.hoehe);
+	hoehen.sort((a,b) => a-b);
+	let n = 100;
+	for (let i = 0; i <= n; i++) {
+		console.log(hoehen[Math.round((hoehen.length-1)*i/n)])
+	}
 
 }
 
@@ -71,7 +78,7 @@ function calcWindData() {
 	console.log('parse xml entries');
 	let wind = [];
 	windEntries.forEach((windEntry, i) => {
-		if (i % 20 === 0) process.stdout.write('\r'+(100*i/windEntries.length).toFixed(1)+'%');
+		if (i % 20 === 0) process.stdout.write('\r   '+(100*i/windEntries.length).toFixed(1)+'%');
 		translateKeys(windEntry);
 
 		windEntry.hoehe = (windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2);
@@ -179,8 +186,8 @@ function BundeslandFinder() {
 	let grid = new Map();
 
 	let bundeslaender = fs.readFileSync(config.getFile.src('VG250_Bundeslaender.geojson'));
-	bundeslaender = JSON.parse(bundeslaender).features;
-	bundeslaender.forEach(bundesland => {
+	bundeslaender = JSON.parse(bundeslaender);
+	bundeslaender.features.forEach(bundesland => {
 		let name;
 		switch (bundesland.properties.AGS) {
 			case '01': name = 'Schleswig-Holstein'; break;
@@ -202,24 +209,39 @@ function BundeslandFinder() {
 			default: return
 		}
 		bundesland.properties.NAME = name;
-
-		turf.flatten(bundesland).features.forEach(polygon => {
-			polygon.bbox = turf.bbox(polygon);
-			let x0 = Math.floor(polygon.bbox[0]*gridScale);
-			let x1 = Math.ceil( polygon.bbox[2]*gridScale);
-			let y0 = Math.floor(polygon.bbox[1]*gridScale);
-			let y1 = Math.ceil( polygon.bbox[3]*gridScale);
-			for (let y = y0; y < y1; y++) {
-				for (let x = x0; x < x1; x++) {
-					let cellPolygon = turf.bboxPolygon([x0/gridScale, y0/gridScale, x1/gridScale, y1/gridScale])
-					if (!turf.booleanIntersects(cellPolygon, polygon)) continue;
-					let key = x+'_'+y;
-					if (!grid.has(key)) grid.set(key, []);
-					grid.get(key).push(polygon);
-				}
-			}
-		})
 	})
+
+	let features = turf.flatten(bundeslaender).features;
+	features.forEach((polygon,i) => {
+		process.stdout.write('\r   '+(100*i/features.length).toFixed(1)+'%');
+
+		let bbox = turf.bbox(polygon);
+
+		let x0 = Math.floor(bbox[0]*gridScale);
+		let y0 = Math.floor(bbox[1]*gridScale);
+		let x1 = Math.floor(bbox[2]*gridScale);
+		let y1 = Math.floor(bbox[3]*gridScale);
+
+		for (let y = y0; y <= y1; y++) {
+			let row = turf.bboxPolygon([x0/gridScale-tiny, y/gridScale-tiny, x1/gridScale+tiny, (y+1)/gridScale+tiny])
+			let rowPolygon = turf.intersect(row, polygon);
+			if (!rowPolygon) continue;
+
+			for (let x = x0; x <= x1; x++) {
+				let col = turf.bboxPolygon([x/gridScale-tiny, y/gridScale-tiny, (x+1)/gridScale+tiny, (y+1)/gridScale+tiny])
+				let cellPolygon = turf.intersect(col, rowPolygon);
+				if (!cellPolygon) continue;
+
+				cellPolygon.properties = polygon.properties;
+				let key = x+'_'+y;
+				if (!grid.has(key)) grid.set(key, []);
+				grid.get(key).push(polygon);
+			}
+		}
+	})
+
+	console.log();
+
 	return (lng,lat) => {
 		let point = [lng,lat]
 		let x = Math.floor(lng*gridScale);
@@ -236,15 +258,17 @@ function BundeslandFinder() {
 function BuildingFinder(windPos) {
 	let dbBuildings = gdal.open(config.getFile.result('buildings.gpkg')).layers.get(0);
 	let ignoredBuildings = new Set();
-	windPos.forEach(point => {
+	windPos.forEach((point,i) => {
+		if (i % 50 === 0) process.stdout.write('\r   '+(100*i/windPos.length).toFixed(1)+'%');
 		forEachInBBox([point[0]-1e-3, point[1]-1e-3, point[0]+1e-3, point[1]+1e-3], building => {
 			let d = 1000*turf.distance(turf.centerOfMass(building), point);
 			if (d < 20) ignoredBuildings.add(building.fid);
 		});
 	})
+	console.log();
 
 	function forEachInBBox(bbox, cb) {
-		dbBuildings.setSpatialFilter(bbox[0]-1e-4, bbox[1]-1e-4, bbox[2]+1e-4, bbox[3]+1e-4);
+		dbBuildings.setSpatialFilter(bbox[0]-tiny, bbox[1]-tiny, bbox[2]+tiny, bbox[3]+tiny);
 		let feature;
 		while (feature = dbBuildings.features.next()) {
 			cb({
