@@ -14,7 +14,7 @@ const gunzip = require('util').promisify(zlib.gunzip);
 
 const LEVEL = 15
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
-const BBOX = [5.9, 47.3, 15.1, 55.0]
+const BBOX = [5.8, 47.2, 15.1, 55.1]
 
 
 
@@ -40,14 +40,16 @@ async function start() {
 	coordinates.sort(bitReversal);
 	
 	let showProgress = Progress(coordinates.length);
-	await coordinates.forEachParallel(4, async ([x,y], i) => {
+	//await coordinates.forEachParallel(1, async ([x,y], i) => {
+	for (let [i,[x,y]] of coordinates.entries()) {
 		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
 		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
 		
 		let buffer = await fetchCached(filename, url, headers);
-		if (buffer.length === 0) return
+		if (buffer.length === 0) continue
+		continue;
 
 		buffer = await gunzip(buffer);
 		let tile = new VectorTile(new Protobuf(buffer));
@@ -59,7 +61,7 @@ async function start() {
 				layerFile.write(JSON.stringify(feature.toGeoJSON(x,y,LEVEL)));
 			}
 		}
-	})
+	}
 
 	layerFiles.close();
 
@@ -69,7 +71,7 @@ async function start() {
 		let times = [];
 		return i => {
 			times.push([i,Date.now()]);
-			if (times.length > 30) times = times.slice(-30);
+			if (times.length > 10) times = times.slice(-10);
 			let speed = 0, timeLeft = '?';
 			if (times.length > 1) {
 				let [i0, t0] = times[0];
@@ -85,7 +87,7 @@ async function start() {
 				(100*i/n).toFixed(2)+'%',
 				speed.toFixed(1)+'/s',
 				timeLeft
-			].map(s => s+' '.repeat(10-s.length)).join('')+'\n');
+			].map(s => ' '.repeat(10-s.length)+s).join('')+'\n');
 		}
 	}
 
@@ -109,11 +111,18 @@ async function start() {
 	}
 	
 	function deg2tile(lon_deg, lat_deg, zoom) {
-		let lat_rad = lat_deg*Math.PI/180;
 		let n = 2 ** zoom
 		return [
 			(lon_deg + 180) / 360 * n,
-			(1 - Math.asinh(Math.tan(lat_rad)) / Math.PI) / 2 * n
+			(1 - Math.asinh(Math.tan(lat_deg*Math.PI/180)) / Math.PI) / 2 * n
+		]
+	}
+	
+	function tile2deg(xtile, ytile, zoom) {
+		let n = 2 ** zoom;
+		return [
+			xtile / n * 360 - 180,
+			180/Math.PI*Math.atan(Math.sinh(Math.PI * (1 - 2 * ytile / n)))
 		]
 	}
 
