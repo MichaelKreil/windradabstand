@@ -42,13 +42,12 @@ async function start() {
 	let showProgress = Progress(coordinates.length);
 	await coordinates.forEachParallel(4, async ([x,y], i) => {
 	//for (let [i,[x,y]] of coordinates.entries()) {
+		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
 		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
 		
-		let buffer = await fetchCached(filename, url, headers);
-		
-		if (i % 100 === 0) showProgress(i);
+		let buffer = await fetchCached(filename, url, headers);	
 		
 		if (buffer.length === 0) return;
 
@@ -94,7 +93,7 @@ async function start() {
 				(100*i/n).toFixed(2)+'%',
 				speed.toFixed(1)+'/s',
 				timeLeft
-			].map(s => ' '.repeat(12-s.length)+s).join('')+'\n');
+			].map(s => '\n'+s+' '.repeat(12-s.length)).join(''));
 		}
 	}
 
