@@ -42,15 +42,23 @@ async function start() {
 	let showProgress = Progress(coordinates.length);
 	await coordinates.forEachParallel(4, async ([x,y], i) => {
 	//for (let [i,[x,y]] of coordinates.entries()) {
-		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
 		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
 		
 		let buffer = await fetchCached(filename, url, headers);
+		
+		if (i % 100 === 0) showProgress(i);
+		
 		if (buffer.length === 0) return;
 
-		buffer = await gunzip(buffer);
+		try {
+			buffer = await gunzip(buffer);
+		} catch (e) {
+			console.log('Error in Buffer. Delete file and try again:', filename);
+			throw e;
+		}
+
 		let tile = new VectorTile(new Protobuf(buffer));
 
 		for (let [layerName, layer] of Object.entries(tile.layers)) {
