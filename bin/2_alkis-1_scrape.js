@@ -1,15 +1,14 @@
+#!/usr/bin/node
 'use strict'
 
 // Based on and many thanks to: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
 
 const fs = require('fs');
-const { resolve } = require('path');
 const VectorTile = require('@mapbox/vector-tile').VectorTile;
 const Protobuf = require('pbf');
-const zlib = require('zlib');
-const { fetchCached } = require('../lib/helper.js');
+const { fetchCached, Progress } = require('../lib/helper.js');
 const config = require('../config.js');
-const gunzip = require('util').promisify(zlib.gunzip);
+const gunzip = require('util').promisify(require('zlib').gunzip);
 
 
 const LEVEL = 15
@@ -34,7 +33,7 @@ async function start() {
 
 	let coordinates = [];
 	for (let x = bboxMin[0]; x <= bboxMax[0]; x++) {
-		fs.mkdirSync(resolve(config.folders.cache, `${x}`), { recursive:true });
+		fs.mkdirSync(config.getFilename.alkisCache(''+x), { recursive:true });
 		for (let y = bboxMin[1]; y <= bboxMax[1]; y++) coordinates.push([x,y]);
 	}
 	coordinates.sort(bitReversal);
@@ -45,7 +44,7 @@ async function start() {
 		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
-		let filename = resolve(config.folders.cache, `${x}/${y}.pbf`)
+		let filename = config.getFilename.alkisCache(`${x}/${y}.pbf`)
 		
 		let buffer = await fetchCached(filename, url, headers);	
 		
@@ -73,36 +72,12 @@ async function start() {
 
 
 
-	function Progress(n) {
-		let times = [];
-		return i => {
-			times.push([i,Date.now()]);
-			if (times.length > 5) times = times.slice(-5);
-			let speed = 0, timeLeft = '?';
-			if (times.length > 1) {
-				let [i0, t0] = times[0];
-				speed = (i-i0)*1000/(Date.now()-t0);
-				timeLeft = (n-i)/speed;
-				timeLeft = [
-					(Math.floor(timeLeft/3600)).toString(),
-					(Math.floor(timeLeft/60) % 60 + 100).toString().slice(1),
-					(Math.floor(timeLeft) % 60 + 100).toString().slice(1)
-				].join(':')
-			}
-			process.stdout.write('\n'+[
-				(100*i/n).toFixed(2)+'%',
-				speed.toFixed(1)+'/s',
-				timeLeft
-			].map(s => s+' '.repeat(12-s.length)).join(''));
-		}
-	}
-
 	function LayerFiles() {
 		let map = new Map();
 		return { get, close }
 		function get(name) {
 			if (map.has(name)) return map.get(name);
-			let filename = resolve(config.folders.geo, name.toLowerCase().replace(/\s/g,'_')+'.geojsonseq');
+			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g,'_')+'.geojsonseq');
 			let file = fs.openSync(filename, 'w')
 			let obj = {
 				write: line => fs.writeSync(file, line+'\n'),

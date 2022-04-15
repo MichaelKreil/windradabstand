@@ -5,8 +5,10 @@ const { resolve } = require('path');
 
 const config = {
 	folders: {
-		wind: '1_wind',
 		static: 'static',
+		wind: '1_wind',
+		alkisCache: '2_alkis/cache',
+		alkisGeo: '2_alkis/data',
 	},
 	getFilename: {},
 }
