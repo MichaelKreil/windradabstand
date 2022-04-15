@@ -1,10 +1,6 @@
 
+*.code-workspace
 *.pdf
 *.mp4
-/data/1_src/
-/data/2_static/
-/data/3_cache/
-/data/4_temp/
-/data/5_geo/
-/data/6_result/
+/data/
 /node_modules/
