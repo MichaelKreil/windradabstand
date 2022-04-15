@@ -68,6 +68,8 @@ async function start() {
 		}
 	})
 
+	console.log('\nFinished');
+
 	layerFiles.close();
 
 
