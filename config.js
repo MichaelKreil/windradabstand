@@ -6,6 +6,7 @@ const { resolve } = require('path');
 const config = {
 	folders: {
 		wind: '1_wind',
+		static: 'static',
 	},
 	getFilename: {},
 }
