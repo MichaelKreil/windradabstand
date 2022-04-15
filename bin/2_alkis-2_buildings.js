@@ -1,3 +1,4 @@
+#!/usr/bin/node
 'use strict'
 
 
@@ -5,7 +6,6 @@ const fs = require('fs');
 const child_process = require('child_process');
 const Havel = require('havel');
 const turf = require('@turf/turf');
-const gdal = require('gdal-next');
 const config = require('../config.js');
 
 
@@ -13,13 +13,12 @@ const config = require('../config.js');
 start()
 
 async function start() {
-	let index = 0;
-	let filename = config.getFile.result('buildings.gpkg');
-	let filenameTemp = config.getFile.temp();
+	let filenameGPKG = config.getFilename.alkisGeo('gebaeudeflaeche.gpkg')
+	let filenameTemp = config.getFilename.alkisGeo('temp.geojsonseq')
 
+	let index = 0;
 	Havel.pipeline()
-		.readFile(config.getFile.src('Gebaeudeflaeche.geojsonl.xz'), { showProgress: true })
-		.decompressXZ()
+		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
 		.split()
 		.map(geoJson => {
 			if (geoJson.length === 0) return '';
@@ -45,7 +44,7 @@ async function start() {
 				'-nln', 'buildings',
 				'-overwrite',
 				'-progress',
-				filename,
+				filenameGPKG,
 				'GeoJSONSeq:'+filenameTemp,
 			], { stdio:'inherit' })
 			fs.unlinkSync(filenameTemp)
