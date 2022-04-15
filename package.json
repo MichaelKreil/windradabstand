@@ -16,6 +16,7 @@
     "@turf/turf": "^6.5.0",
     "adm-zip": "^0.5.9",
     "canvas": "^2.9.1",
+    "cheerio": "^1.0.0-rc.10",
     "fast-xml-parser": "^4.0.7",
     "gdal-next": "^2.8.0",
     "havel": "^0.3.0",
