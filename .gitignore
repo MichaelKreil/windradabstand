@@ -1,11 +1,9 @@
 
 *.code-workspace
-*.pdf
 *.mp4
+*.pdf
 /data/1_*
 /data/2_*
 /data/3_*
-/data/4_*
-/data/5_*
-/data/6_*
+/data/helper
 /node_modules/
