@@ -2,12 +2,11 @@
 'use strict'
 
 const fs = require('fs');
-const turf = require('@turf/turf');
 const AdmZip = require('adm-zip');
 const { XMLParser } = require('fast-xml-parser');
 const config = require('../config.js');
-
-const tiny = 1e-5; // tiny distance, e.g. 1e-5 = 1m
+const { Progress } = require('../lib/helper.js');
+const { BundeslandFinder } = require('../lib/geohelper.js');
 
 start()
 
@@ -19,13 +18,12 @@ async function start() {
 	let wind = parseWindData();
 	fs.writeFileSync(filenameWind, JSON.stringify(wind));
 
+	console.log('\nheight distribution:');
 	// calculate height statistics
 	let hoehen = wind.map(w => w.hoehe);
 	hoehen.sort((a,b) => a-b);
-	let n = 100;
-	for (let i = 0; i <= n; i++) {
-		console.log(hoehen[Math.round((hoehen.length-1)*i/n)])
-	}
+	let numbers = [...Array(100).keys()];
+	console.log(numbers.map(i => hoehen[Math.round((hoehen.length-1)*(i+0.5)/100)]).join(','))
 }
 
 function parseWindData() {
@@ -46,15 +44,15 @@ function parseWindData() {
 	}
 
 	console.log('parse xml entries');
-	let wind = [];
+	let progress = Progress(windEntries.length);
 	windEntries = windEntries.filter((windEntry, i) => {
-		if (i % 20 === 0) process.stdout.write('\r   '+(100*i/windEntries.length).toFixed(1)+'%');
+		if (i % 20 === 0) progress(i);
 		translateKeys(windEntry);
 
 		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad).properties;
 		if (!windEntry.bundesland) return false;
 
-		windEntry.hoehe = (windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2);
+		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
 		if (!windEntry.hoehe) return false;
 
 		return true;
@@ -116,79 +114,5 @@ function KeyTranslator(zipEntry) {
 			return;
 		})
 		return obj;
-	}
-}
-
-function BundeslandFinder() {
-	let gridScale = 10;
-	let grid = new Map();
-
-	let bundeslaender = fs.readFileSync(config.getFilename.static('bundeslaender.geojson'));
-	bundeslaender = JSON.parse(bundeslaender);
-	bundeslaender.features.forEach(bundesland => {
-		let name;
-		switch (bundesland.properties.AGS) {
-			case '01': name = 'Schleswig-Holstein'; break;
-			case '02': name = 'Hamburg'; break;
-			case '03': name = 'Niedersachsen'; break;
-			case '04': name = 'Bremen'; break;
-			case '05': name = 'Nordrhein-Westfalen'; break;
-			case '06': name = 'Hessen'; break;
-			case '07': name = 'Rheinland-Pfalz'; break;
-			case '08': name = 'Baden-Württemberg'; break;
-			case '09': name = 'Bayern'; break;
-			case '10': name = 'Saarland'; break;
-			case '11': name = 'Berlin'; break;
-			case '12': name = 'Brandenburg'; break;
-			case '13': name = 'Mecklenburg-Vorpommern'; break;
-			case '14': name = 'Sachsen'; break;
-			case '15': name = 'Sachsen-Anhalt'; break;
-			case '16': name = 'Thüringen'; break;
-			default: return
-		}
-		bundesland.properties.NAME = name;
-	})
-
-	let features = turf.flatten(bundeslaender).features;
-	features.forEach((polygon,i) => {
-		process.stdout.write('\r   '+(100*i/features.length).toFixed(1)+'%');
-
-		let bbox = turf.bbox(polygon);
-
-		let x0 = Math.floor(bbox[0]*gridScale);
-		let y0 = Math.floor(bbox[1]*gridScale);
-		let x1 = Math.floor(bbox[2]*gridScale);
-		let y1 = Math.floor(bbox[3]*gridScale);
-
-		for (let y = y0; y <= y1; y++) {
-			let row = turf.bboxPolygon([x0/gridScale-tiny, y/gridScale-tiny, x1/gridScale+tiny, (y+1)/gridScale+tiny])
-			let rowPolygon = turf.intersect(row, polygon);
-			if (!rowPolygon) continue;
-
-			for (let x = x0; x <= x1; x++) {
-				let col = turf.bboxPolygon([x/gridScale-tiny, y/gridScale-tiny, (x+1)/gridScale+tiny, (y+1)/gridScale+tiny])
-				let cellPolygon = turf.intersect(col, rowPolygon);
-				if (!cellPolygon) continue;
-
-				cellPolygon.properties = polygon.properties;
-				let key = x+'_'+y;
-				if (!grid.has(key)) grid.set(key, []);
-				grid.get(key).push(polygon);
-			}
-		}
-	})
-
-	console.log();
-
-	return (lng,lat) => {
-		let point = [lng,lat]
-		let x = Math.floor(lng*gridScale);
-		let y = Math.floor(lat*gridScale);
-		let key = x+'_'+y;
-		if (!grid.has(key)) return false;
-		let result = grid.get(key).filter(polygon => turf.booleanPointInPolygon(point, polygon));
-		if (result.length === 1) return result[0];
-		if (result.length === 0) return false;
-		throw Error('polygons overlapping?');
 	}
 }

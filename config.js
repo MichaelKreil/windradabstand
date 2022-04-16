@@ -9,6 +9,7 @@ const config = {
 		wind: '1_wind',
 		alkisCache: '2_alkis/cache',
 		alkisGeo: '2_alkis/data',
+		helper: 'helper',
 	},
 	getFilename: {},
 }
