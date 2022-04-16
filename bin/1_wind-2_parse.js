@@ -49,11 +49,17 @@ function parseWindData() {
 		if (i % 20 === 0) progress(i);
 		translateKeys(windEntry);
 
-		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad).properties;
+		if (!windEntry.Laengengrad || !windEntry.Breitengrad) return;
+
+		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad);
 		if (!windEntry.bundesland) return false;
+		
+		windEntry.bundesland = windEntry.bundesland?.properties;
 
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
 		if (!windEntry.hoehe) return false;
+
+		windEntry.maxRadius = Math.max(1000, windEntry.hoehe);
 
 		return true;
 	})
