@@ -7,6 +7,7 @@ const child_process = require('child_process');
 const Havel = require('havel');
 const turf = require('@turf/turf');
 const config = require('../config.js');
+const { WindFinder } = require('../lib/geohelper.js');
 
 
 
@@ -16,22 +17,25 @@ async function start() {
 	let filenameGPKG = config.getFilename.alkisGeo('gebaeudeflaeche.gpkg')
 	let filenameTemp = config.getFilename.alkisGeo('temp.geojsonseq')
 
+	let windFinder = WindFinder();
 	let index = 0;
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
 		.split()
-		.map(geoJson => {
-			if (geoJson.length === 0) return '';
-			geoJson = JSON.parse(geoJson);
-			if (turf.area(geoJson) > 1e6) return '';
+		.map(building => {
+			if (building.length === 0) return '';
+			building = JSON.parse(building);
+			if (turf.area(building) > 1e6) return '';
 			index++;
-			geoJson.properties = {
+			building.properties = {
 				fid: index,
-				type: geoJson.properties.gebaeudefunktion,
-				height: geoJson.properties.hoehe,
-				residential: isResidential(geoJson.properties.gebaeudefunktion),
+				type: building.properties.gebaeudefunktion,
+				height: building.properties.hoehe,
+				residential: isResidential(building.properties.gebaeudefunktion),
 			}
-			return JSON.stringify(geoJson);
+			console.log(windFinder(building));
+			process.exit();
+			return JSON.stringify(building);
 		})
 		.join()
 		.writeFile(filenameTemp)
