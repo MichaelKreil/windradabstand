@@ -49,7 +49,7 @@ async function start() {
 		if (!bundesland) return false; // only in germany
 		if (bundesland.gf !== 4) return false; // only on land
 		windEntry.bundeslandName = bundesland.gen;
-		windEntry.bundeslandAGS  = bundesland.ags;
+		windEntry.bundeslandAGS  = parseInt(bundesland.ags, 10);
 
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
 		if (!windEntry.hoehe) return false;
