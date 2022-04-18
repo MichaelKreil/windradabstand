@@ -15,7 +15,7 @@ const config = {
 	getFilename: {},
 	rules: [
 		// source: https://www.fachagentur-windenergie.de/fileadmin/files/PlanungGenehmigung/FA_Wind_Abstandsempfehlungen_Laender.pdf
-		{ ags: 8, name:'Baden-Württemberg',      naturschutz:200, nationalpark:200, vogelschutz:700, autobahn:100, bundesstr:40, landesstr:40, kreisstr:30, bahnlinie:50 },
+		{ ags: 8, name:'Baden-Württemberg',      wohngebiet: 700, wohngebaeude: 700, naturschutz:200, nationalpark:200, vogelschutz:700, autobahn:100, bundesstr:40, landesstr:40, kreisstr:30, bahnlinie:50 },
 		{ ags: 9, name:'Bayern',                 wohngebiet:(h,r)=>10*(h+r), wohngebaeude:(h,r)=>10*(h+r), schutzgebiet:1000, naturschutz:1000, nationalpark:1000, vogelschutz:(h,r)=>Math.max(1200,10*(h+r)), biosphaere:1000, autobahn:40, bundesstr:20, landesstr:20, kreisstr:15 },
 		{ ags:11, name:'Berlin',                 },
 		{ ags:12, name:'Brandenburg',            wohngebiet:1000, wohngebaeude:1000 },
@@ -26,7 +26,7 @@ const config = {
 		{ ags: 3, name:'Niedersachsen',          wohngebiet: 400, wohngebaeude: 400, camping:400, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:(h,r)=>1.5*(h+r), freileitung:(h,r)=>r },
 		{ ags: 5, name:'Nordrhein-Westfalen',    wohngebiet:1000, wohngebaeude:1000, naturschutz:300, nationalpark:300, vogelschutz:300, ffhabitat:300, autobahn:40, bundesstr:20, freileitung:(h,r)=>r },
 		{ ags: 7, name:'Rheinland-Pfalz',        wohngebiet:(h,r)=>(h+r)<200?1000:1100, wohngebaeude:500, gesundheit:800, autobahn:40, bundesstr:20, landesstr:20, kreisstr:15, freileitung:(h,r)=>3*r },
-		{ ags:10, name:'Saarland',               naturschutz:200, vogelschutz:0, ffhabitat:200, autobahn:100, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:50, bahnlinie:100, freileitung:100 },
+		{ ags:10, name:'Saarland',               wohngebiet: 650, wohngebaeude: 650, naturschutz:200, vogelschutz:0, ffhabitat:200, autobahn:100, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:50, bahnlinie:100, freileitung:100 },
 		{ ags:14, name:'Sachsen',                wohngebiet:1000, wohngebaeude:1000 },
 		{ ags:15, name:'Sachsen-Anhalt',         wohngebiet:1000, gesundheit:1200, camping:(h,r)=>Math.max(1000,10*(h+r)), gewerbe:500, erholung:1000, denkmal:1000, naturschutz:200, nationalpark:1000, landschaftsschutz:500, vogelschutz:1000, ffhabitat:1000, biosphaere:1000, autobahn:200, bundesstr:200, landesstr:200, kreisstr:200, bahnlinie:200, freileitung:200 },
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },

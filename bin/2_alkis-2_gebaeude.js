@@ -25,8 +25,8 @@ async function start() {
 
 	console.log('process gebaeudeflaeche');
 	let index = 0;
-	let filenameGeoJSONSeq = config.getFilename.alkisDB('gebaeudeflaeche.geojsonseq');
-	let filenameGPKG = config.getFilename.alkisDB('gebaeudeflaeche.gpkg');
+	let filenameGeoJSONSeq = config.getFilename.alkisDB('residential.geojsonseq');
+	let filenameGPKG = config.getFilename.alkisDB('residential.gpkg');
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
 		.split()
@@ -40,17 +40,21 @@ async function start() {
 			if (!residential) return;
 
 			let windEntries = windFinder(building);
-			if (windEntries.length === 0) return;
 
-			let center = turf.centroid(building);
-			if (windEntries.some(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) < 0.01)) {
-				// 10m from windmill? ignore that building because it belongs to the windmill
-				return;
+			try {
+				let center = turf.centroid(building);
+				if (windEntries.some(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) < 0.01)) {
+					// 10m from windmill? ignore that building because it belongs to the windmill
+					return;
+				}
+			} catch (e) {
+				console.log(e);
+				return
 			}
 
 			building.properties = {
 				type: building.properties.gebaeudefunktion,
-				//height: building.properties.hoehe,
+				height: building.properties.hoehe,
 				residential,
 				windEntries: windEntries.map(w => w.properties._index),
 			}
