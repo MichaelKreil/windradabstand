@@ -41,11 +41,15 @@ async function start() {
 
 		if (!windEntry.Laengengrad || !windEntry.Breitengrad) return;
 
-		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad);
-		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], windEntry));
-		if (!windEntry.bundesland) return false;
+		let bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad)?.properties;
 		
-		windEntry.bundesland = windEntry.bundesland?.properties;
+		// add to debug
+		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], bundesland));
+
+		if (!bundesland) return false; // only in germany
+		if (bundesland.gf !== 4) return false; // only on land
+		windEntry.bundeslandName = bundesland.gen;
+		windEntry.bundeslandAGS  = bundesland.ags;
 
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
 		if (!windEntry.hoehe) return false;
