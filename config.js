@@ -27,7 +27,7 @@ const config = {
 		{ ags: 5, name:'Nordrhein-Westfalen',    wohngebiet:1000, wohngebaeude:1000, naturschutz:300, nationalpark:300, vogelschutz:300, ffhabitat:300, autobahn:40, bundesstr:20, freileitung:(h,r)=>r },
 		{ ags: 7, name:'Rheinland-Pfalz',        wohngebiet:(h,r)=>(h+r)<200?1000:1100, wohngebaeude:500, gesundheit:800, autobahn:40, bundesstr:20, landesstr:20, kreisstr:15, freileitung:(h,r)=>3*r },
 		{ ags:10, name:'Saarland',               naturschutz:200, vogelschutz:0, ffhabitat:200, autobahn:100, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:50, bahnlinie:100, freileitung:100 },
-		{ ags:14, name:'Sachsen',                },
+		{ ags:14, name:'Sachsen',                wohngebiet:1000, wohngebaeude:1000 },
 		{ ags:15, name:'Sachsen-Anhalt',         wohngebiet:1000, gesundheit:1200, camping:(h,r)=>Math.max(1000,10*(h+r)), gewerbe:500, erholung:1000, denkmal:1000, naturschutz:200, nationalpark:1000, landschaftsschutz:500, vogelschutz:1000, ffhabitat:1000, biosphaere:1000, autobahn:200, bundesstr:200, landesstr:200, kreisstr:200, bahnlinie:200, freileitung:200 },
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },
 		{ ags:16, name:'Thüringen',              wohngebiet:(h,r)=>(h+r)<150?750:1000, wohngebaeude:600, naturschutz:300, nationalpark:600, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:40, freileitung:100 },
