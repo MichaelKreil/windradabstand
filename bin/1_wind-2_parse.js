@@ -54,7 +54,7 @@ async function start() {
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
 		if (!windEntry.hoehe) return false;
 
-		windEntry.maxRadius = Math.max(1000, windEntry.hoehe);
+		//console.log(windEntry.Nabenhoehe, windEntry.Rotordurchmesser);
 
 		return true;
 	})
