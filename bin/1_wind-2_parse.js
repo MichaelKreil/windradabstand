@@ -11,35 +11,23 @@ const { BundeslandFinder } = require('../lib/geohelper.js');
 start()
 
 async function start() {
-	const filenameWind = config.getFilename.wind('wind.json')
-
-	// calculate wind data
-
-	let wind = parseWindData();
-	fs.writeFileSync(filenameWind, JSON.stringify(wind));
-
-	console.log('\nheight distribution:');
-	// calculate height statistics
-	let hoehen = wind.map(w => w.hoehe);
-	hoehen.sort((a,b) => a-b);
-	let numbers = [...Array(100).keys()];
-	console.log(numbers.map(i => hoehen[Math.round((hoehen.length-1)*(i+0.5)/100)]).join(','))
-}
-
-function parseWindData() {
-	let zip = new AdmZip(config.getFilename.wind('marktstammdatenregister.zip'));
-	let zipEntries = zip.getEntries();
-
+	// prepare lookups
 	console.log('load Bundesländer')
 	let findBundesland = BundeslandFinder();
 
+	// read zip file
+	let zip = new AdmZip(config.getFilename.wind('marktstammdatenregister.zip'));
+	let zipEntries = zip.getEntries();
+
+	// lookup for values in the xml files
 	console.log('load Katalogwerte')
 	let translateKeys = KeyTranslator(zipEntries.find(e => e.entryName === 'Katalogwerte.xml'))
 
-	console.log('load zip entries')
+	console.log('load zip entries:')
 	let windEntries = [];
 	for (let zipEntry of zipEntries) {
 		if (!zipEntry.entryName.startsWith('EinheitenWind')) continue;
+		console.log('   - '+zipEntry.entryName)
 		windEntries = windEntries.concat(loadZipEntry(zipEntry));
 	}
 
@@ -65,7 +53,14 @@ function parseWindData() {
 	})
 	console.log();
 
-	return windEntries;
+	fs.writeFileSync(config.getFilename.wind('wind.json'), JSON.stringify(windEntries));
+
+	console.log('height distribution:');
+	// calculate height statistics
+	let hoehen = windEntries.map(w => w.hoehe);
+	hoehen.sort((a,b) => a-b);
+	let numbers = [...Array(100).keys()];
+	console.log(numbers.map(i => hoehen[Math.round((hoehen.length-1)*(i+0.5)/100)]).join(','))
 }
 
 function loadZipEntry(zipEntry) {
