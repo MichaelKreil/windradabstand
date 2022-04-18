@@ -14,33 +14,51 @@ const { WindFinder } = require('../lib/geohelper.js');
 start()
 
 async function start() {
-	let filenameGPKG = config.getFilename.alkisGeo('gebaeudeflaeche.gpkg')
-	let filenameTemp = config.getFilename.alkisGeo('temp.geojsonseq')
+	console.log('load windfinder');
+	let windFinder = WindFinder('gebaeude', (hoehe,rad,windEntry) => {
+		let wohngebaeude = 0;
+		for (let rule of config.rules.values()) {
+			if (rule.wohngebaeude) wohngebaeude = Math.max(wohngebaeude, rule.wohngebaeude(hoehe,rad));
+		}
+		return { wohngebaeude };
+	});
 
-	let windFinder = WindFinder();
+	console.log('process gebaeudeflaeche');
 	let index = 0;
+	let filenameTemp = config.getFilename.alkisDB('gebaeudeflaeche.geojsonseq');
+	let filenameGPKG = config.getFilename.alkisDB('gebaeudeflaeche.gpkg');
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
 		.split()
 		.map(building => {
-			if (building.length === 0) return '';
+			if (building.length === 0) return;
 			building = JSON.parse(building);
-			if (turf.area(building) > 1e6) return '';
-			index++;
+			
+			if (turf.area(building) > 1e6) return;
+
+			let residential = isResidential(building.properties.gebaeudefunktion)
+			if (!residential) return;
+
+			let windEntries = windFinder(building);
+			if (windEntries.length === 0) return;
+
+			let center = turf.centroid(building);
+			windEntries = windEntries.filter(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) > 0.02); // mindistance from buildings
+			if (windEntries.length === 0) return;
+
 			building.properties = {
-				fid: index,
 				type: building.properties.gebaeudefunktion,
-				height: building.properties.hoehe,
-				residential: isResidential(building.properties.gebaeudefunktion),
+				//height: building.properties.hoehe,
+				residential,
+				windEntries: windEntries.map(w => w.properties._index),
 			}
-			console.log(windFinder(building));
-			process.exit();
+			
 			return JSON.stringify(building);
 		})
 		.join()
 		.writeFile(filenameTemp)
 		.finished(() => {
-			if (fs.existsSync(filename)) fs.unlinkSync(filename);
+			if (fs.existsSync(filenameGPKG)) fs.unlinkSync(filenameGPKG);
 			child_process.spawnSync('ogr2ogr', [
 				'-f','GPKG',
 				'-s_srs','EPSG:4326',

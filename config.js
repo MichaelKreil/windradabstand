@@ -9,6 +9,7 @@ const config = {
 		wind: '1_wind',
 		alkisCache: '2_alkis/cache',
 		alkisGeo: '2_alkis/data',
+		alkisDB: '2_alkis/database',
 		helper: 'helper',
 	},
 	getFilename: {},
@@ -30,6 +31,12 @@ const config = {
 		{ ags:15, name:'Sachsen-Anhalt',         wohngebiet:1000, gesundheit:1200, camping:(h,r)=>Math.max(1000,10*(h+r)), gewerbe:500, erholung:1000, denkmal:1000, naturschutz:200, nationalpark:1000, landschaftsschutz:500, vogelschutz:1000, ffhabitat:1000, biosphaere:1000, autobahn:200, bundesstr:200, landesstr:200, kreisstr:200, bahnlinie:200, freileitung:200 },
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },
 		{ ags:16, name:'Thüringen',              wohngebiet:(h,r)=>(h+r)<150?750:1000, wohngebaeude:600, naturschutz:300, nationalpark:600, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:40, freileitung:100 },
+	],
+	extremeWindStations: [
+		{ h:116, r:180 },
+		{ h:167, r:170 },
+		{ h:169, r:162 },
+		{ h:174, r:137 },
 	]
 }
 

@@ -19,7 +19,7 @@
     "cheerio": "^1.0.0-rc.10",
     "fast-xml-parser": "^4.0.7",
     "gdal-next": "^2.8.0",
-    "havel": "^0.3.0",
+    "havel": "^0.5.1",
     "level": "^8.0.0",
     "pbf": "^3.2.1"
   }
