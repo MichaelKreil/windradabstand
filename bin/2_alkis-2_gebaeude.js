@@ -25,7 +25,7 @@ async function start() {
 
 	console.log('process gebaeudeflaeche');
 	let index = 0;
-	let filenameTemp = config.getFilename.alkisDB('gebaeudeflaeche.geojsonseq');
+	let filenameGeoJSONSeq = config.getFilename.alkisDB('gebaeudeflaeche.geojsonseq');
 	let filenameGPKG = config.getFilename.alkisDB('gebaeudeflaeche.gpkg');
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
@@ -43,8 +43,10 @@ async function start() {
 			if (windEntries.length === 0) return;
 
 			let center = turf.centroid(building);
-			windEntries = windEntries.filter(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) > 0.02); // mindistance from buildings
-			if (windEntries.length === 0) return;
+			if (windEntries.some(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) < 0.01)) {
+				// 10m from windmill? ignore that building because it belongs to the windmill
+				return;
+			}
 
 			building.properties = {
 				type: building.properties.gebaeudefunktion,
@@ -56,8 +58,9 @@ async function start() {
 			return JSON.stringify(building);
 		})
 		.join()
-		.writeFile(filenameTemp)
+		.writeFile(filenameGeoJSONSeq)
 		.finished(() => {
+			console.log('\nconvert to geopackage')
 			if (fs.existsSync(filenameGPKG)) fs.unlinkSync(filenameGPKG);
 			child_process.spawnSync('ogr2ogr', [
 				'-f','GPKG',
@@ -67,9 +70,8 @@ async function start() {
 				'-overwrite',
 				'-progress',
 				filenameGPKG,
-				'GeoJSONSeq:'+filenameTemp,
+				'GeoJSONSeq:'+filenameGeoJSONSeq,
 			], { stdio:'inherit' })
-			fs.unlinkSync(filenameTemp)
 		})
 }
 
