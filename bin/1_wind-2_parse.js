@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const AdmZip = require('adm-zip');
+const turf = require('@turf/turf');
 const { XMLParser } = require('fast-xml-parser');
 const config = require('../config.js');
 const { Progress } = require('../lib/helper.js');
@@ -33,6 +34,7 @@ async function start() {
 
 	console.log('parse xml entries');
 	let progress = Progress(windEntries.length);
+	let debugGeoJSON = [];
 	windEntries = windEntries.filter((windEntry, i) => {
 		if (i % 20 === 0) progress(i);
 		translateKeys(windEntry);
@@ -40,6 +42,7 @@ async function start() {
 		if (!windEntry.Laengengrad || !windEntry.Breitengrad) return;
 
 		windEntry.bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad);
+		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], windEntry));
 		if (!windEntry.bundesland) return false;
 		
 		windEntry.bundesland = windEntry.bundesland?.properties;
@@ -53,6 +56,7 @@ async function start() {
 	})
 	console.log();
 
+	fs.writeFileSync(config.getFilename.wind('wind.debug.geojson'), JSON.stringify(turf.featureCollection(debugGeoJSON)));
 	fs.writeFileSync(config.getFilename.wind('wind.json'), JSON.stringify(windEntries));
 
 	console.log('height distribution:');
