@@ -41,22 +41,17 @@ async function start() {
 
 			let windEntries = windFinder(building);
 
-			try {
-				let center = turf.centroid(building);
-				if (windEntries.some(w => turf.distance(center, [w.properties.Laengengrad, w.properties.Breitengrad]) < 0.01)) {
-					// 10m from windmill? ignore that building because it belongs to the windmill
-					return;
-				}
-			} catch (e) {
-				console.log(e);
-				return
-			}
+			// less than 10m from windmill? ignore that building because it belongs to the windmill
+			if (windEntries.some(([w,d]) => d < 10)) return
+
+			windEntries.sort((a,b) => a[1] - b[1]);
 
 			building.properties = {
 				type: building.properties.gebaeudefunktion,
 				height: building.properties.hoehe,
 				residential,
-				windEntries: windEntries.map(w => w.properties._index),
+				windEntr: windEntries.map(([w,d]) => w.properties._index).join(','),
+				windDist: windEntries.map(([w,d]) => Math.round(d)).join(','),
 			}
 			
 			return JSON.stringify(building);
