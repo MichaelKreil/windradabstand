@@ -21,14 +21,14 @@ const config = {
 		{ ags:12, name:'Brandenburg',            wohngebiet:1000, wohngebaeude:1000 },
 		{ ags: 4, name:'Bremen',                 wohngebiet: 450, wohngebaeude: 450, autobahn:40, bundesstr:40, landesstr:40, kreisstr:40 },
 		{ ags: 2, name:'Hamburg',                wohngebiet: 500, wohngebaeude: 300, naturschutz:300, vogelschutz:300, ffhabitat:200, autobahn:100, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:50, freileitung:100 },
-		{ ags: 6, name:'Hessen',                 wohngebiet:1000, wohngebaeude:1000, gesundheit:1000, gewerbe:1000, denkmal:0, naturschutz:0, nationalpark:0, autobahn:150, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:100, freileitung:100 },
-		{ ags:13, name:'Mecklenburg-Vorpommern', wohngebiet:1000, wohngebaeude: 800, gesundheit:1000, erholung:1000, denkmal:1000, schutzgebiet:500, naturschutz:500, nationalpark:1000, naturpark:500, vogelschutz:500, ffhabitat:500, biosphaere:500 },
+		{ ags: 6, name:'Hessen',                 wohngebiet:1000, wohngebaeude:1000, gesundheit:1000, gewerbe:1000, denkmal:0, naturdenkmal:0, naturschutz:0, nationalpark:0, autobahn:150, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:100, freileitung:100 },
+		{ ags:13, name:'Mecklenburg-Vorpommern', wohngebiet:1000, wohngebaeude: 800, gesundheit:1000, erholung:1000, denkmal:1000, naturdenkmal:1000, schutzgebiet:500, naturschutz:500, nationalpark:1000, naturpark:500, vogelschutz:500, ffhabitat:500, biosphaere:500 },
 		{ ags: 3, name:'Niedersachsen',          wohngebiet: 400, wohngebaeude: 400, camping:400, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:(h,r)=>1.5*(h+r), freileitung:(h,r)=>r },
 		{ ags: 5, name:'Nordrhein-Westfalen',    wohngebiet:1000, wohngebaeude:1000, naturschutz:300, nationalpark:300, vogelschutz:300, ffhabitat:300, autobahn:40, bundesstr:20, freileitung:(h,r)=>r },
 		{ ags: 7, name:'Rheinland-Pfalz',        wohngebiet:(h,r)=>(h+r)<200?1000:1100, wohngebaeude:500, gesundheit:800, autobahn:40, bundesstr:20, landesstr:20, kreisstr:15, freileitung:(h,r)=>3*r },
 		{ ags:10, name:'Saarland',               wohngebiet: 650, wohngebaeude: 650, naturschutz:200, vogelschutz:0, ffhabitat:200, autobahn:100, bundesstr:100, landesstr:100, kreisstr:100, bahnlinie:50, bahnlinie:100, freileitung:100 },
 		{ ags:14, name:'Sachsen',                wohngebiet:1000, wohngebaeude:1000 },
-		{ ags:15, name:'Sachsen-Anhalt',         wohngebiet:1000, gesundheit:1200, camping:(h,r)=>Math.max(1000,10*(h+r)), gewerbe:500, erholung:1000, denkmal:1000, naturschutz:200, nationalpark:1000, landschaftsschutz:500, vogelschutz:1000, ffhabitat:1000, biosphaere:1000, autobahn:200, bundesstr:200, landesstr:200, kreisstr:200, bahnlinie:200, freileitung:200 },
+		{ ags:15, name:'Sachsen-Anhalt',         wohngebiet:1000, gesundheit:1200, camping:(h,r)=>Math.max(1000,10*(h+r)), gewerbe:500, erholung:1000, denkmal:1000, naturdenkmal:1000, naturschutz:200, nationalpark:1000, landschaftsschutz:500, vogelschutz:1000, ffhabitat:1000, biosphaere:1000, autobahn:200, bundesstr:200, landesstr:200, kreisstr:200, bahnlinie:200, freileitung:200 },
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },
 		{ ags:16, name:'Thüringen',              wohngebiet:(h,r)=>(h+r)<150?750:1000, wohngebaeude:600, naturschutz:300, nationalpark:600, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:40, freileitung:100 },
 	],
@@ -52,27 +52,39 @@ for (let name in config.folders) {
 let ruleLookup = new Map();
 config.rules.forEach(rule => {
 	const keys = [
-		'wohngebiet', // Allgemeine und reine Wohngebiete
+		// gebaeudeflaeche
 		'wohngebaeude', // Einzelwohngebäude und Splittersiedlungen
-		'gesundheit', // Kur und Klinikgebiete
+
+		// siedlungsflaeche
+		'wohngebiet', // Allgemeine und reine Wohngebiete
 		'camping', // Campingplätze
+		'erholung', // Schwerpunkträume für Tourismus, Freizeit/Erholung
 		'gewerbe', // Gewerbe und Industriegebiete
-		'erholung', // Schwerpunkträume für Tourismus, Freizeit/ Erholung
-		'denkmal', // Kultur, Naturdenk- male und geschützte Ensembles
-		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/ Freiraumverbund/ Vor- rang Natur und Land- schaft
+		'gesundheit', // Kur und Klinikgebiete
+		
+		// grenze_flaeche
+		'biosphaere', // Biosphärenreservate (§ 25 BNatSchG)
+		'ffhabitat', // FFH-Gebiete (Richtlinie 92/43 EWG)
+		'landschaftsschutz', // Landschaftsschutzgebiete (§ 26 BNatSchG)
 		'naturschutz', // Naturschutzgebiete (§ 23 BNatSchG)
 		'nationalpark', // Nationalparke (§ 24 BNatSchG)
 		'naturpark', // Naturpark
-		'landschaftsschutz', // Landschaftsschutzgebiete (§ 26 BNatSchG)
 		'vogelschutz', // SPA-Gebiete (Richtlinie 79/409 EWG)
-		'ffhabitat', // FFH-Gebiete (Richtlinie 92/43 EWG)
-		'biosphaere', // Biosphärenreservate (§ 25 BNatSchG)
+		'naturdenkmal', // Naturdenkmale
+
+		// verkehrslinie
 		'autobahn', // Bundesautobahnen
 		'bundesstr', // Bundesstraßen
 		'landesstr', // Landesstraßen
 		'kreisstr', // Kreisstraßen
 		'bahnlinie', // Bahnlinien
+
+		// versorgungslinie
 		'freileitung', // Freileitungen
+
+		// todos
+		'denkmal', // Kulturdenkmale und geschützte Ensembles
+		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft
 	]
 	Object.keys(rule).forEach(key => {
 		if (key === 'ags') return // bundesland id
