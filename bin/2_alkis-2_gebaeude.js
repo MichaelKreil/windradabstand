@@ -24,9 +24,9 @@ async function start() {
 	});
 
 	console.log('process gebaeudeflaeche');
-	let index = 0;
-	let filenameGeoJSONSeq = config.getFilename.alkisDB('residential.geojsonseq');
-	let filenameGPKG = config.getFilename.alkisDB('residential.gpkg');
+	let filenameGeoJSONSeq = config.getFilename.alkisResult('residential.geojsonseq');
+	let filenameGPKG = config.getFilename.alkisResult('residential.gpkg');
+
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
 		.split()
