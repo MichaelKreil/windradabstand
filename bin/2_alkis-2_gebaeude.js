@@ -24,11 +24,11 @@ async function start() {
 	});
 
 	console.log('process gebaeudeflaeche');
-	let filenameGeoJSONSeq = config.getFilename.alkisResult('residential.geojsonseq');
+	let filenameGeoJSONSeq = config.getFilename.alkisResult('residential.geojsonl');
 	let filenameGPKG = config.getFilename.alkisResult('residential.gpkg');
 
 	Havel.pipeline()
-		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonseq'), { showProgress: true })
+		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonl'), { showProgress: true })
 		.split()
 		.map(building => {
 			if (building.length === 0) return;

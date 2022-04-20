@@ -79,7 +79,7 @@ async function start() {
 		return { get, close }
 		function get(name) {
 			if (map.has(name)) return map.get(name);
-			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g,'_')+'.geojsonseq');
+			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g,'_')+'.geojsonl');
 			let file = fs.openSync(filename, 'w')
 			let obj = {
 				write: line => fs.writeSync(file, line+'\n'),
