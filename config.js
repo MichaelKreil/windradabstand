@@ -60,7 +60,6 @@ config.rules.forEach(rule => {
 		'camping', // Campingplätze
 		'erholung', // Schwerpunkträume für Tourismus, Freizeit/Erholung
 		'gewerbe', // Gewerbe und Industriegebiete
-		'gesundheit', // Kur und Klinikgebiete
 		
 		// grenze_flaeche
 		'biosphaere', // Biosphärenreservate (§ 25 BNatSchG)
@@ -84,6 +83,7 @@ config.rules.forEach(rule => {
 
 		// todos
 		'denkmal', // Kulturdenkmale und geschützte Ensembles
+		'gesundheit', // Kur und Klinikgebiete
 		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft
 	]
 	Object.keys(rule).forEach(key => {
