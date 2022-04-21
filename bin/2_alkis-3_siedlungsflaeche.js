@@ -16,7 +16,7 @@ start()
 async function start() {
 	console.log('load windfinder');
 	let keys = 'wohngebiet,camping,erholung,gewerbe'.split(',');
-	let windFinder = WindFinder('flaechen', (hoehe,rad,windEntry) => {
+	let windFinder = WindFinder('siedlungsflaeche', (hoehe,rad,windEntry) => {
 		let result = {};
 		for (let key of keys) result[key] = 0;
 		for (let rule of config.rules.values()) {
@@ -28,8 +28,8 @@ async function start() {
 	});
 
 	console.log('process siedlungsflaeche');
-	let filenameGeoJSONSeq = config.getFilename.alkisResult('flaechen.geojsonl');
-	let filenameGPKG = config.getFilename.alkisResult('flaechen.gpkg');
+	let filenameGeoJSONSeq = config.getFilename.alkisResult('siedlungsflaeche.geojsonl');
+	let filenameGPKG = config.getFilename.alkisResult('siedlungsflaeche.gpkg');
 
 	Havel.pipeline()
 		.readFile(config.getFilename.alkisGeo('siedlungsflaeche.geojsonl'), { showProgress: true })
