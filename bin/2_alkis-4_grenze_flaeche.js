@@ -27,12 +27,12 @@ async function start() {
 		return result;
 	});
 
-	console.log('process siedlungsflaeche');
+	console.log('process grenze_flaeche');
 	let filenameGeoJSONSeq = config.getFilename.alkisResult('grenze_flaeche.geojsonl');
 	let filenameGPKG = config.getFilename.alkisResult('grenze_flaeche.gpkg');
 
 	Havel.pipeline()
-		.readFile(config.getFilename.alkisGeo('siedlungsflaeche.geojsonl'), { showProgress: true })
+		.readFile(config.getFilename.alkisGeo('grenze_flaeche.geojsonl'), { showProgress: true })
 		.split()
 		.map(feature => {
 			if (feature.length === 0) return;
