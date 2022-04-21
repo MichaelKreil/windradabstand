@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 node 1_wind-1_download.js
 node 1_wind-2_parse.js
