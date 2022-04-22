@@ -2,324 +2,274 @@
 'use strict'
 
 
-const fs = require('fs');
-const child_process = require('child_process');
-const Havel = require('havel');
+
 const turf = require('@turf/turf');
-const config = require('../config.js');
-const { WindFinder } = require('../lib/geohelper.js');
+const { processAlkis } = require('../lib/geohelper.js');
 
 
 
-start()
+let isResidential = initLookup()
 
-async function start() {
-	console.log('load windfinder');
-	let windFinder = WindFinder('gebaeude', (hoehe,rad,windEntry) => {
-		let wohngebaeude = 0;
-		for (let rule of config.rules.values()) {
-			if (rule.wohngebaeude) wohngebaeude = Math.max(wohngebaeude, rule.wohngebaeude(hoehe,rad));
-		}
-		return { wohngebaeude };
-	});
+processAlkis(
+	'gebaeudeflaeche',
+	'wohngebaeude'.split(','),
+	feature => {
+		let residential = isResidential.get(feature.properties.gebaeudefunktion)
+		if (residential === undefined) throw Error();
+		if (!residential) return;
+		
+		if (turf.area(feature) > 1e6) return;
 
-	console.log('process gebaeudeflaeche');
-	let filenameGeoJSONSeq = config.getFilename.alkisResult('residential.geojsonl');
-	let filenameGPKG = config.getFilename.alkisResult('residential.gpkg');
+		feature.properties.type = 'wohngebaeude';
 
-	Havel.pipeline()
-		.readFile(config.getFilename.alkisGeo('gebaeudeflaeche.geojsonl'), { showProgress: true })
-		.split()
-		.map(building => {
-			if (building.length === 0) return;
-			building = JSON.parse(building);
-			
-			if (turf.area(building) > 1e6) return;
+		return true;
+	},
+	windEntries => windEntries.every(([w,d]) => d > 10)
+)
 
-			let residential = isResidential(building.properties.gebaeudefunktion)
-			if (!residential) return;
 
-			let windEntries = windFinder(building);
 
-			// less than 10m from windmill? ignore that building because it belongs to the windmill
-			if (windEntries.some(([w,d]) => d < 10)) return
+function initLookup() {
+	let isResidential = new Map();
+	[
+		'Allgemein bildende Schule',
+		'Almhütte',
+		'Apotheke',
+		'Aquarium, Terrarium, Voliere',
+		'Asylbewerberheim',
+		'Badegebäude für medizinische Zwecke',
+		'Badegebäude',
+		'Bahnhofsgebäude',
+		'Bahnwärterhaus',
+		'Bergwerk',
+		'Berufsbildende Schule',
+		'Betriebsgebäude des Güterbahnhofs',
+		'Betriebsgebäude für Flugverkehr',
+		'Betriebsgebäude für Schienenverkehr',
+		'Betriebsgebäude für Schiffsverkehr',
+		'Betriebsgebäude für Straßenverkehr',
+		'Betriebsgebäude zu Verkehrsanlagen (allgemein)',
+		'Betriebsgebäude zur Schleuse',
+		'Betriebsgebäude zur Seilbahn',
+		'Betriebsgebäude',
+		'Bezirksregierung',
+		'Bibliothek, Bücherei',
+		'Bootshaus',
+		'Botschaft, Konsulat',
+		'Brauerei',
+		'Brennerei',
+		'Burg, Festung',
+		'Bürogebäude',
+		'Campingplatzgebäude',
+		'Dock (Halle)',
+		'Einkaufszentrum',
+		'Elektrizitätswerk',
+		'Empfangsgebäude des botanischen Gartens',
+		'Empfangsgebäude des Zoos',
+		'Empfangsgebäude Schifffahrt',
+		'Empfangsgebäude',
+		'Fabrik',
+		'Fahrzeughalle',
+		'Festsaal',
+		'Feuerwehr',
+		'Finanzamt',
+		'Flughafengebäude',
+		'Flugzeughalle',
+		'Forschungsinstitut',
+		'Freizeit- und Vergnügungsstätte',
+		'Freizeit-, Vereinsheim, Dorfgemeinschafts-, Bürgerhaus',
+		'Friedhofsgebäude',
+		'Garage',
+		'Gaststätte, Restaurant',
+		'Gaswerk',
+		'Gebäude an unterirdischen Leitungen',
+		'Gebäude der Abfalldeponie',
+		'Gebäude der Kläranlage',
+		'Gebäude für andere Erholungseinrichtung',
+		'Gebäude für Beherbergung',
+		'Gebäude für betriebliche Sozialeinrichtung',
+		'Gebäude für Bewirtung',
+		'Gebäude für Bildung und Forschung',
+		'Gebäude für Erholungszwecke',
+		'Gebäude für Fernmeldewesen',
+		'Gebäude für Forschungszwecke',
+		'Gebäude für Gesundheitswesen',
+		'Gebäude für Gewerbe und Industrie',
+		'Gebäude für Grundstoffgewinnung',
+		'Gebäude für Handel und Dienstleistungen',
+		'Gebäude für kulturelle Zwecke',
+		'Gebäude für Kurbetrieb',
+		'Gebäude für Land- und Forstwirtschaft',
+		'Gebäude für religiöse Zwecke',
+		'Gebäude für Sicherheit und Ordnung',
+		'Gebäude für soziale Zwecke',
+		'Gebäude für Sportzwecke',
+		'Gebäude für Vorratshaltung',
+		'Gebäude für Wirtschaft oder Gewerbe',
+		'Gebäude für öffentliche Zwecke',
+		'Gebäude im botanischen Garten',
+		'Gebäude im Freibad',
+		'Gebäude im Stadion',
+		'Gebäude im Zoo',
+		'Gebäude zum Busbahnhof',
+		'Gebäude zum Parken',
+		'Gebäude zum S-Bahnhof',
+		'Gebäude zum Sportplatz',
+		'Gebäude zum U-Bahnhof',
+		'Gebäude zur Abfallbehandlung',
+		'Gebäude zur Abwasserbeseitigung',
+		'Gebäude zur Elektrizitätsversorgung',
+		'Gebäude zur Energieversorgung',
+		'Gebäude zur Entsorgung',
+		'Gebäude zur Freizeitgestaltung',
+		'Gebäude zur Gasversorgung',
+		'Gebäude zur Müllverbrennung',
+		'Gebäude zur Versorgung',
+		'Gebäude zur Versorgungsanlage',
+		'Gebäude zur Wasserversorgung',
+		'Gemeindehaus',
+		'Gericht',
+		'Geschäftsgebäude',
+		'Gewächshaus (Botanik)',
+		'Gewächshaus, verschiebbar',
+		'Gotteshaus',
+		'Hallenbad',
+		'Heilanstalt, Pflegeanstalt, Pflegestation',
+		'Heizwerk',
+		'Hochschulgebäude (Fachhochschule, Universität)',
+		'Hotel, Motel, Pension',
+		'Hütte (mit Übernachtungsmöglichkeit)',
+		'Hütte (ohne Übernachtungsmöglichkeit)',
+		'Jagdhaus, Jagdhütte',
+		'Jugendfreizeitheim',
+		'Jugendherberge',
+		'Justizvollzugsanstalt',
+		'Kantine',
+		'Kapelle',
+		'Kaserne',
+		'Kaufhaus',
+		'Kegel-, Bowlinghalle',
+		'Kesselhaus',
+		'Kinderkrippe, Kindergarten, Kindertagesstätte',
+		'Kino',
+		'Kiosk',
+		'Kirche',
+		'Kloster',
+		'Konzertgebäude',
+		'Krankenhaus',
+		'Kreditinstitut',
+		'Kreisverwaltung',
+		'Krematorium',
+		'Kühlhaus',
+		'Laden',
+		'Lagerhalle, Lagerschuppen, Lagerhaus',
+		'Land- und forstwirtschaftliches Betriebsgebäude',
+		'Lokschuppen, Wagenhalle',
+		'Markthalle',
+		'Messehalle',
+		'Moschee',
+		'Museum',
+		'Mühle',
+		'Müllbunker',
+		'Nach Quellenlage nicht zu spezifizieren',
+		'Obdachlosenheim',
+		'Parkdeck',
+		'Parkhaus',
+		'Parlament',
+		'Pflanzenschauhaus',
+		'Polizei',
+		'Post',
+		'Produktionsgebäude',
+		'Pumpstation',
+		'Pumpwerk (nicht für Wasserversorgung)',
+		'Rathaus',
+		'Reaktorgebäude',
+		'Reithalle',
+		'Rundfunk, Fernsehen',
+		'Saline',
+		'Sanatorium',
+		'Scheune und Stall',
+		'Scheune',
+		'Schloss',
+		'Schuppen',
+		'Schutzbunker',
+		'Schutzhütte',
+		'Schöpfwerk',
+		'Seniorenfreizeitstätte',
+		'Sonstiges Gebäude für Gewerbe und Industrie',
+		'Spannwerk zur Drahtseilbahn',
+		'Speditionsgebäude',
+		'Speichergebäude',
+		'Spielkasino',
+		'Sport-, Turnhalle',
+		'Stall für Tiergroßhaltung',
+		'Stall im Zoo',
+		'Stall',
+		'Stellwerk, Blockstelle',
+		'Straßenmeisterei',
+		'Synagoge',
+		'Sägewerk',
+		'Tankstelle',
+		'Tempel',
+		'Theater, Oper',
+		'Tiefgarage',
+		'Tierschauhaus',
+		'Toilette',
+		'Touristisches Informationszentrum',
+		'Trauerhalle',
+		'Treibhaus',
+		'Treibhaus, Gewächshaus',
+		'Turbinenhaus',
+		'Umformer',
+		'Umspannwerk',
+		'Veranstaltungsgebäude',
+		'Versicherung',
+		'Verwaltungsgebäude',
+		'Wartehalle',
+		'Waschstraße, Waschanlage, Waschhalle',
+		'Wasserbehälter',
+		'Wassermühle',
+		'Wasserwerk',
+		'Werft (Halle)',
+		'Werkstatt',
+		'Wetterstation',
+		'Windmühle',
+		'Wirtschaftsgebäude',
+		'Zollamt',
+		'Ärztehaus, Poliklinik',
+		'',
+		undefined
+	].forEach(label => isResidential.set(label, false));
 
-			windEntries.sort((a,b) => a[1] - b[1]);
+	[
+		'Bauernhaus',
+		'Ferienhaus',
+		'Forsthaus',
+		'Gartenhaus',
+		'Gebäude für Gewerbe und Industrie mit Wohnen',
+		'Gebäude für Handel und Dienstleistung mit Wohnen',
+		'Gebäude für öffentliche Zwecke mit Wohnen',
+		'Gemischt genutztes Gebäude mit Wohnen',
+		'Kinderheim',
+		'Land- und forstwirtschaftliches Wohn- und Betriebsgebäude',
+		'Land- und forstwirtschaftliches Wohngebäude',
+		'Schullandheim',
+		'Schwesternwohnheim',
+		'Seniorenheim',
+		'Studenten-, Schülerwohnheim',
+		'Wochenendhaus',
+		'Wohn- und Betriebsgebäude',
+		'Wohn- und Bürogebäude',
+		'Wohn- und Geschäftsgebäude',
+		'Wohn- und Verwaltungsgebäude',
+		'Wohn- und Wirtschaftsgebäude',
+		'Wohngebäude mit Gemeinbedarf',
+		'Wohngebäude mit Gewerbe und Industrie',
+		'Wohngebäude mit Handel und Dienstleistungen',
+		'Wohngebäude',
+		'Wohnhaus',
+		'Wohnheim',
+	].forEach(label => isResidential.set(label, true));
 
-			building.properties = {
-				type: building.properties.gebaeudefunktion,
-				height: building.properties.hoehe,
-				residential,
-				windEntr: windEntries.map(([w,d]) => w.properties._index).join(','),
-				windDist: windEntries.map(([w,d]) => Math.round(d)).join(','),
-			}
-			
-			return JSON.stringify(building);
-		})
-		.join()
-		.writeFile(filenameGeoJSONSeq)
-		.finished(() => {
-			console.log('\nconvert to geopackage')
-			if (fs.existsSync(filenameGPKG)) fs.unlinkSync(filenameGPKG);
-			child_process.spawnSync('ogr2ogr', [
-				'-f','GPKG',
-				'-s_srs','EPSG:4326',
-				'-t_srs','EPSG:4326',
-				'-nln', 'buildings',
-				'-overwrite',
-				'-progress',
-				filenameGPKG,
-				'GeoJSONSeq:'+filenameGeoJSONSeq,
-			], { stdio:'inherit' })
-		})
-}
-
-function isResidential(type) {
-	switch (type) {
-		case 'Allgemein bildende Schule':
-		case 'Almhütte':
-		case 'Apotheke':
-		case 'Aquarium, Terrarium, Voliere':
-		case 'Asylbewerberheim':
-		case 'Badegebäude für medizinische Zwecke':
-		case 'Badegebäude':
-		case 'Bahnhofsgebäude':
-		case 'Bahnwärterhaus':
-		case 'Bergwerk':
-		case 'Berufsbildende Schule':
-		case 'Betriebsgebäude des Güterbahnhofs':
-		case 'Betriebsgebäude für Flugverkehr':
-		case 'Betriebsgebäude für Schienenverkehr':
-		case 'Betriebsgebäude für Schiffsverkehr':
-		case 'Betriebsgebäude für Straßenverkehr':
-		case 'Betriebsgebäude zu Verkehrsanlagen (allgemein)':
-		case 'Betriebsgebäude zur Schleuse':
-		case 'Betriebsgebäude zur Seilbahn':
-		case 'Betriebsgebäude':
-		case 'Bezirksregierung':
-		case 'Bibliothek, Bücherei':
-		case 'Bootshaus':
-		case 'Botschaft, Konsulat':
-		case 'Brauerei':
-		case 'Brennerei':
-		case 'Burg, Festung':
-		case 'Bürogebäude':
-		case 'Campingplatzgebäude':
-		case 'Dock (Halle)':
-		case 'Einkaufszentrum':
-		case 'Elektrizitätswerk':
-		case 'Empfangsgebäude des botanischen Gartens':
-		case 'Empfangsgebäude des Zoos':
-		case 'Empfangsgebäude Schifffahrt':
-		case 'Empfangsgebäude':
-		case 'Fabrik':
-		case 'Fahrzeughalle':
-		case 'Festsaal':
-		case 'Feuerwehr':
-		case 'Finanzamt':
-		case 'Flughafengebäude':
-		case 'Flugzeughalle':
-		case 'Forschungsinstitut':
-		case 'Freizeit- und Vergnügungsstätte':
-		case 'Freizeit-, Vereinsheim, Dorfgemeinschafts-, Bürgerhaus':
-		case 'Friedhofsgebäude':
-		case 'Garage':
-		case 'Gaststätte, Restaurant':
-		case 'Gaswerk':
-		case 'Gebäude an unterirdischen Leitungen':
-		case 'Gebäude der Abfalldeponie':
-		case 'Gebäude der Kläranlage':
-		case 'Gebäude für andere Erholungseinrichtung':
-		case 'Gebäude für Beherbergung':
-		case 'Gebäude für betriebliche Sozialeinrichtung':
-		case 'Gebäude für Bewirtung':
-		case 'Gebäude für Bildung und Forschung':
-		case 'Gebäude für Erholungszwecke':
-		case 'Gebäude für Fernmeldewesen':
-		case 'Gebäude für Forschungszwecke':
-		case 'Gebäude für Gesundheitswesen':
-		case 'Gebäude für Gewerbe und Industrie':
-		case 'Gebäude für Grundstoffgewinnung':
-		case 'Gebäude für Handel und Dienstleistungen':
-		case 'Gebäude für kulturelle Zwecke':
-		case 'Gebäude für Kurbetrieb':
-		case 'Gebäude für Land- und Forstwirtschaft':
-		case 'Gebäude für religiöse Zwecke':
-		case 'Gebäude für Sicherheit und Ordnung':
-		case 'Gebäude für soziale Zwecke':
-		case 'Gebäude für Sportzwecke':
-		case 'Gebäude für Vorratshaltung':
-		case 'Gebäude für Wirtschaft oder Gewerbe':
-		case 'Gebäude für öffentliche Zwecke':
-		case 'Gebäude im botanischen Garten':
-		case 'Gebäude im Freibad':
-		case 'Gebäude im Stadion':
-		case 'Gebäude im Zoo':
-		case 'Gebäude zum Busbahnhof':
-		case 'Gebäude zum Parken':
-		case 'Gebäude zum S-Bahnhof':
-		case 'Gebäude zum Sportplatz':
-		case 'Gebäude zum U-Bahnhof':
-		case 'Gebäude zur Abfallbehandlung':
-		case 'Gebäude zur Abwasserbeseitigung':
-		case 'Gebäude zur Elektrizitätsversorgung':
-		case 'Gebäude zur Energieversorgung':
-		case 'Gebäude zur Entsorgung':
-		case 'Gebäude zur Freizeitgestaltung':
-		case 'Gebäude zur Gasversorgung':
-		case 'Gebäude zur Müllverbrennung':
-		case 'Gebäude zur Versorgung':
-		case 'Gebäude zur Versorgungsanlage':
-		case 'Gebäude zur Wasserversorgung':
-		case 'Gemeindehaus':
-		case 'Gericht':
-		case 'Geschäftsgebäude':
-		case 'Gewächshaus (Botanik)':
-		case 'Gewächshaus, verschiebbar':
-		case 'Gotteshaus':
-		case 'Hallenbad':
-		case 'Heilanstalt, Pflegeanstalt, Pflegestation':
-		case 'Heizwerk':
-		case 'Hochschulgebäude (Fachhochschule, Universität)':
-		case 'Hotel, Motel, Pension':
-		case 'Hütte (mit Übernachtungsmöglichkeit)':
-		case 'Hütte (ohne Übernachtungsmöglichkeit)':
-		case 'Jagdhaus, Jagdhütte':
-		case 'Jugendfreizeitheim':
-		case 'Jugendherberge':
-		case 'Justizvollzugsanstalt':
-		case 'Kantine':
-		case 'Kapelle':
-		case 'Kaserne':
-		case 'Kaufhaus':
-		case 'Kegel-, Bowlinghalle':
-		case 'Kesselhaus':
-		case 'Kinderkrippe, Kindergarten, Kindertagesstätte':
-		case 'Kino':
-		case 'Kiosk':
-		case 'Kirche':
-		case 'Kloster':
-		case 'Konzertgebäude':
-		case 'Krankenhaus':
-		case 'Kreditinstitut':
-		case 'Kreisverwaltung':
-		case 'Krematorium':
-		case 'Kühlhaus':
-		case 'Laden':
-		case 'Lagerhalle, Lagerschuppen, Lagerhaus':
-		case 'Land- und forstwirtschaftliches Betriebsgebäude':
-		case 'Lokschuppen, Wagenhalle':
-		case 'Markthalle':
-		case 'Messehalle':
-		case 'Moschee':
-		case 'Museum':
-		case 'Mühle':
-		case 'Müllbunker':
-		case 'Nach Quellenlage nicht zu spezifizieren':
-		case 'Obdachlosenheim':
-		case 'Parkdeck':
-		case 'Parkhaus':
-		case 'Parlament':
-		case 'Pflanzenschauhaus':
-		case 'Polizei':
-		case 'Post':
-		case 'Produktionsgebäude':
-		case 'Pumpstation':
-		case 'Pumpwerk (nicht für Wasserversorgung)':
-		case 'Rathaus':
-		case 'Reaktorgebäude':
-		case 'Reithalle':
-		case 'Rundfunk, Fernsehen':
-		case 'Saline':
-		case 'Sanatorium':
-		case 'Scheune und Stall':
-		case 'Scheune':
-		case 'Schloss':
-		case 'Schuppen':
-		case 'Schutzbunker':
-		case 'Schutzhütte':
-		case 'Schöpfwerk':
-		case 'Seniorenfreizeitstätte':
-		case 'Sonstiges Gebäude für Gewerbe und Industrie':
-		case 'Spannwerk zur Drahtseilbahn':
-		case 'Speditionsgebäude':
-		case 'Speichergebäude':
-		case 'Spielkasino':
-		case 'Sport-, Turnhalle':
-		case 'Stall für Tiergroßhaltung':
-		case 'Stall im Zoo':
-		case 'Stall':
-		case 'Stellwerk, Blockstelle':
-		case 'Straßenmeisterei':
-		case 'Synagoge':
-		case 'Sägewerk':
-		case 'Tankstelle':
-		case 'Tempel':
-		case 'Theater, Oper':
-		case 'Tiefgarage':
-		case 'Tierschauhaus':
-		case 'Toilette':
-		case 'Touristisches Informationszentrum':
-		case 'Trauerhalle':
-		case 'Treibhaus':
-		case 'Treibhaus, Gewächshaus':
-		case 'Turbinenhaus':
-		case 'Umformer':
-		case 'Umspannwerk':
-		case 'Veranstaltungsgebäude':
-		case 'Versicherung':
-		case 'Verwaltungsgebäude':
-		case 'Wartehalle':
-		case 'Waschstraße, Waschanlage, Waschhalle':
-		case 'Wasserbehälter':
-		case 'Wassermühle':
-		case 'Wasserwerk':
-		case 'Werft (Halle)':
-		case 'Werkstatt':
-		case 'Wetterstation':
-		case 'Windmühle':
-		case 'Wirtschaftsgebäude':
-		case 'Zollamt':
-		case 'Ärztehaus, Poliklinik':
-		case '':
-		case undefined:
-			// kein Wohngebäude
-			return false;
-		break;
-
-		case 'Bauernhaus':
-		case 'Ferienhaus':
-		case 'Forsthaus':
-		case 'Gartenhaus':
-		case 'Gebäude für Gewerbe und Industrie mit Wohnen':
-		case 'Gebäude für Handel und Dienstleistung mit Wohnen':
-		case 'Gebäude für öffentliche Zwecke mit Wohnen':
-		case 'Gemischt genutztes Gebäude mit Wohnen':
-		case 'Kinderheim':
-		case 'Land- und forstwirtschaftliches Wohn- und Betriebsgebäude':
-		case 'Land- und forstwirtschaftliches Wohngebäude':
-		case 'Schullandheim':
-		case 'Schwesternwohnheim':
-		case 'Seniorenheim':
-		case 'Studenten-, Schülerwohnheim':
-		case 'Wochenendhaus':
-		case 'Wohn- und Betriebsgebäude':
-		case 'Wohn- und Bürogebäude':
-		case 'Wohn- und Geschäftsgebäude':
-		case 'Wohn- und Verwaltungsgebäude':
-		case 'Wohn- und Wirtschaftsgebäude':
-		case 'Wohngebäude mit Gemeinbedarf':
-		case 'Wohngebäude mit Gewerbe und Industrie':
-		case 'Wohngebäude mit Handel und Dienstleistungen':
-		case 'Wohngebäude':
-		case 'Wohnhaus':
-		case 'Wohnheim':
-			// Wohngebäude
-			return true;
-		break;
-
-		default:
-			console.log('unbekannte gebaeudefunktion "'+type+'"');
-			throw Error();
-	}
+	return isResidential;
 }
