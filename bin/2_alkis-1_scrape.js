@@ -40,7 +40,6 @@ async function start() {
 	
 	let showProgress = Progress(coordinates.length);
 	await coordinates.forEachParallel(4, async ([x,y], i) => {
-	//for (let [i,[x,y]] of coordinates.entries()) {
 		if (i % 100 === 0) showProgress(i);
 
 		let url = `${URL}${LEVEL}/${x}/${y}.pbf`
@@ -98,14 +97,6 @@ async function start() {
 		return [
 			(lon_deg + 180) / 360 * n,
 			(1 - Math.asinh(Math.tan(lat_deg*Math.PI/180)) / Math.PI) / 2 * n
-		]
-	}
-	
-	function tile2deg(xtile, ytile, zoom) {
-		let n = 2 ** zoom;
-		return [
-			xtile / n * 360 - 180,
-			180/Math.PI*Math.atan(Math.sinh(Math.PI * (1 - 2 * ytile / n)))
 		]
 	}
 
