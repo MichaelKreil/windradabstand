@@ -14,7 +14,6 @@ processAlkis(
 	'wohngebiet,camping,erholung,gewerbe'.split(','),
 	feature => {
 		feature.properties.type = getType.get(feature.properties.klasse);
-
 		if (feature.properties.type === undefined) throw Error();
 		return feature.properties.type;
 	}
