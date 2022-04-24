@@ -35,30 +35,34 @@ async function start() {
 	console.log('parse xml entries');
 	let progress = Progress(windEntries.length);
 	let debugGeoJSON = [];
-	windEntries = windEntries.filter((windEntry, i) => {
+	let map = new Map();
+	windEntries.forEach((windEntry, i) => {
 		if (i % 20 === 0) progress(i);
 		translateKeys(windEntry);
 
 		if (!windEntry.Laengengrad || !windEntry.Breitengrad) return;
+		if (floatyEnough(windEntry.Laengengrad) && floatyEnough(windEntry.Breitengrad)) return;
 
 		let bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad)?.properties;
 		
 		// add to debug
 		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], bundesland));
 
-		if (!bundesland) return false; // only in germany
-		if (bundesland.gf !== 4) return false; // only on land
+		if (!bundesland) return; // only in germany
+		if (bundesland.gf !== 4) return; // only on land
 		windEntry.bundeslandName = bundesland.gen;
 		windEntry.bundeslandAGS  = parseInt(bundesland.ags, 10);
 
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
-		if (!windEntry.hoehe) return false;
+		if (!windEntry.hoehe) return;
 
-		//console.log(windEntry.Nabenhoehe, windEntry.Rotordurchmesser);
-
-		return true;
+		let geoHash = windEntry.Laengengrad+','+windEntry.Breitengrad;
+		if (map.has(geoHash) && (map.get(geoHash).Inbetriebnahmedatum > windEntry.Inbetriebnahmedatum)) return
+		
+		map.set(geoHash, windEntry);
 	})
 	console.log();
+	windEntries = Array.from(map.values());
 
 	fs.writeFileSync(config.getFilename.wind('wind.debug.geojson'), JSON.stringify(turf.featureCollection(debugGeoJSON)));
 	fs.writeFileSync(config.getFilename.wind('wind.json'), JSON.stringify(windEntries));
@@ -124,4 +128,10 @@ function KeyTranslator(zipEntry) {
 		})
 		return obj;
 	}
+}
+
+function floatyEnough(value) {
+	value = value*100;
+	value = Math.abs(Math.round(value) - value);
+	return value < 1e-8
 }
