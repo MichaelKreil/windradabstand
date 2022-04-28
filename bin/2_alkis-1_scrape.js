@@ -532,7 +532,8 @@ function tryMergingFeatures(features) {
 
 	function mergePolygonFeatures(f1, f2) {
 		try {
-			if (!turf.intersect(f1, f2)) return;
+			if (!turf.booleanIntersects(f1, f2)) return;
+			//if (!turf.intersect(f1, f2)) return;
 		} catch (e) {
 			console.dir({f1,f2}, {depth:8})
 			throw e;
