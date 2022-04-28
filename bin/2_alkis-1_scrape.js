@@ -136,14 +136,6 @@ async function start() {
 						feature._meta = meta;
 					}
 					
-					try {
-						checkFeature(feature);
-					} catch (e) {
-						console.log(feature);
-						checkFeature(feature, true);
-						console.log(feature);
-						throw e;
-					}
 					if (!checkFeature(feature, true)) continue;
 
 					feature._meta.bbox = turf.bbox(feature);
