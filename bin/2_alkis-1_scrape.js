@@ -76,7 +76,6 @@ async function start() {
 			if (features.length > 0) {
 				const lookup = new Map();
 				features.forEach(f => {
-					checkFeature(f);
 					const hash = (f._meta.hash ??= getHash(f));
 					if (!lookup.has(hash)) lookup.set(hash, []);
 					return lookup.get(hash).push(f);
@@ -85,7 +84,6 @@ async function start() {
 				features = [];
 				for (let group of lookup.values()) {
 					if (group.length <= 1) continue;
-					group.forEach(f => checkFeature(f));
 					tryMergingFeatures(group).forEach(f => addResult(f));
 				}
 			}
@@ -138,6 +136,14 @@ async function start() {
 						feature._meta = meta;
 					}
 					
+					try {
+						checkFeature(feature);
+					} catch (e) {
+						console.log(feature);
+						checkFeature(feature, true);
+						console.log(feature);
+						throw e;
+					}
 					if (!checkFeature(feature, true)) continue;
 
 					feature._meta.bbox = turf.bbox(feature);
@@ -319,9 +325,8 @@ function tryMergingFeatures(features) {
 			
 			let mergedFeature;
 			switch (features[i]._meta.type) {
-				case 1: throw Error(); break;
 				case 2: mergedFeature = mergeLineStringFeatures(features[i], features[j]); break;
-				case 3: mergedFeature = mergePolygonFeatures(features[i], features[j]); break;
+				case 3: mergedFeature = mergePolygonFeatures(   features[i], features[j]); break;
 				default: throw Error();
 			}
 
@@ -642,7 +647,7 @@ function checkFeature(feature, repair) {
 				if (cbCheck(data[i])) continue;
 				data.splice(i,1);
 				i--;
-			};
+			}
 			if (data.length < 1) return false;
 			if (data.length === 1) {
 				feature.geometry.type = feature.geometry.type.slice(5);
