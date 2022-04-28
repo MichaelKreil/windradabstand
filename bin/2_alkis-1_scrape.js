@@ -150,7 +150,7 @@ async function start() {
 		return propagateResults;
 
 		function addResult(feature) {
-			checkFeature(feature);
+			if (z0 === 0) return writeResult();
 			//console.log(feature.geometry.type, countPoints(feature));
 
 			if (feature.geometry.type === 'Point') return writeResult();
@@ -316,8 +316,6 @@ function tryMergingFeatures(features) {
 	for (let i = 0; i < features.length; i++) {
 		if (!features[i]) continue;
 		for (let j = i+1; j < features.length; j++) {
-			checkFeature(features[i]);
-			checkFeature(features[j]);
 			
 			let mergedFeature;
 			switch (features[i]._meta.type) {
@@ -341,8 +339,6 @@ function tryMergingFeatures(features) {
 	return features;
 
 	function mergeLineStringFeatures(f1, f2) {
-		checkFeature(f1);
-		checkFeature(f2);
 
 		let lineStrings = [];
 		getLineStrings(f1.geometry);
