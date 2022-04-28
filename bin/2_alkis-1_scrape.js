@@ -312,8 +312,13 @@ async function start() {
 function tryMergingFeatures(features) {
 	
 	for (let i = 0; i < features.length; i++) {
-		if (!features[i]) continue;
 		for (let j = i+1; j < features.length; j++) {
+			let f1 = features[i];
+			let f2 = features[j];
+			if (f1._meta.bbox[0] > f2._meta.bbox[2]) continue;
+			if (f1._meta.bbox[1] > f2._meta.bbox[3]) continue;
+			if (f1._meta.bbox[2] < f2._meta.bbox[0]) continue;
+			if (f1._meta.bbox[3] < f2._meta.bbox[1]) continue;
 			
 			let mergedFeature;
 			switch (features[i]._meta.type) {
