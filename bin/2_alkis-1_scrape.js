@@ -329,6 +329,14 @@ function tryMergingFeatures(features) {
 
 			if (!mergedFeature) continue;
 
+
+			mergedFeature.properties = f1.properties;
+			mergedFeature._meta = {
+				type: f1._meta.type,
+				layerName: f1._meta.layerName,
+				bbox: turf.bbox(mergedFeature),
+			}
+
 			//console.log('mergedFeature', mergedFeature);
 			checkFeature(mergedFeature);
 
