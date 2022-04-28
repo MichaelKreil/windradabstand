@@ -626,6 +626,7 @@ function checkFeature(feature, repair) {
 				data.splice(i,1);
 				i--;
 			}
+			return true;
 		} else {
 			checkArray(data, 1)
 			for (let i = 0; i < data.length; i++) checkRing(data[i]);
