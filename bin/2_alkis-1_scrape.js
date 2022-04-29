@@ -93,7 +93,6 @@ async function start() {
 				entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
 				entries = entries.map(e => e.join(':'));
 				entries.push(f._meta.layerName);
-				entries.push(f._meta.type);
 
 				const hash = createHash('sha256');
 				hash.update(entries.join(','));
@@ -130,16 +129,17 @@ async function start() {
 						if (p[0] > bboxPixelMargin[2]) continue;
 						if (p[1] > bboxPixelMargin[3]) continue;
 					} else {
-						let meta = feature._meta;
 						feature = turf.bboxClip(feature, bboxPixelMargin);
 						if (isEmptyFeature(feature)) continue;
-						feature._meta = meta;
 					}
 					
 					if (!checkFeature(feature, true)) continue;
 
-					feature._meta.bbox = turf.bbox(feature);
-					feature._meta.layerName = layerName;
+					feature._meta = {
+						bbox: turf.bbox(feature),
+						layerName: layerName,
+					}
+
 					addResult(feature);
 				}
 			}
@@ -157,13 +157,13 @@ async function start() {
 			if (feature._meta.bbox[2] >= bboxPixel[2]) return propagateResults.push(feature);
 			if (feature._meta.bbox[3] >= bboxPixel[3]) return propagateResults.push(feature);
 			if (countPoints(feature) > 1e4) return writeResult();
-			if (feature.geometry.type.startsWith('Multi') && feature.geometry.coordinates.length > 4) return writeResult();
+			if (feature.geometry.type.startsWith('Multi') && feature.geometry.coordinates.length > 10) return writeResult();
 			
 			return writeResult();
 
 			function writeResult() {
 				let layerFile = layerFiles.get(feature._meta.layerName);
-				demercatorRec(feature.geometry.coordinates, feature._meta.geometryDepth);
+				demercator(feature.geometry);
 				delete feature._meta;
 				layerFile.write(JSON.stringify(feature));
 			}
@@ -185,10 +185,22 @@ async function start() {
 			}
 		}
 
-		function demercatorRec(coordinates, depth) {
-			if (depth > 1) return coordinates.forEach(l => demercatorRec(l, depth - 1));
-			coordinates[0] = coordinates[0] * 360 / size - 180;
-			coordinates[1] = 360 / Math.PI * Math.atan(Math.exp((1 - coordinates[1] * 2 / size) * Math.PI)) - 90;
+
+		function demercator(geometry) {
+			switch (geometry.type) {
+				case 'Point':           return demercatorRec(geometry.coordinates, 1);
+				case 'LineString':      return demercatorRec(geometry.coordinates, 2);
+				case 'MultiLineString': return demercatorRec(geometry.coordinates, 3);
+				case 'Polygon':         return demercatorRec(geometry.coordinates, 3);
+				case 'MultiPolygon':    return demercatorRec(geometry.coordinates, 4);
+				default: throw Error(geometry.type);
+			}
+
+			function demercatorRec(coordinates, depth) {
+				if (depth > 1) return coordinates.forEach(l => demercatorRec(l, depth - 1));
+				coordinates[0] = coordinates[0] * 360 / size - 180;
+				coordinates[1] = 360 / Math.PI * Math.atan(Math.exp((1 - coordinates[1] * 2 / size) * Math.PI)) - 90;
+			}
 		}
 
 		function featureToObject(feature) {
@@ -230,12 +242,12 @@ async function start() {
 			} else {
 				type = 'Multi' + type;
 			}
+			feature.properties.featureType = feature.type;
 
 			return {
 				type: 'Feature',
 				geometry: { type, coordinates },
 				properties: feature.properties,
-				_meta: { type: feature.type },
 			}
 
 			// classifies an array of rings into polygons with outer rings and holes
@@ -310,6 +322,7 @@ async function start() {
 }
 
 function tryMergingFeatures(features) {
+	console.log('tryMergingFeatures ', features.length);
 	
 	for (let i = 0; i < features.length; i++) {
 		for (let j = i+1; j < features.length; j++) {
@@ -319,9 +332,9 @@ function tryMergingFeatures(features) {
 			if (f1._meta.bbox[1] > f2._meta.bbox[3]) continue;
 			if (f1._meta.bbox[2] < f2._meta.bbox[0]) continue;
 			if (f1._meta.bbox[3] < f2._meta.bbox[1]) continue;
-			
+
 			let mergedFeature;
-			switch (features[i]._meta.type) {
+			switch (features[i].properties.featureType) {
 				case 2: mergedFeature = mergeLineStringFeatures(features[i], features[j]); break;
 				case 3: mergedFeature = mergePolygonFeatures(   features[i], features[j]); break;
 				default: throw Error();
@@ -332,7 +345,6 @@ function tryMergingFeatures(features) {
 
 			mergedFeature.properties = f1.properties;
 			mergedFeature._meta = {
-				type: f1._meta.type,
 				layerName: f1._meta.layerName,
 				bbox: turf.bbox(mergedFeature),
 			}
@@ -356,6 +368,8 @@ function tryMergingFeatures(features) {
 
 		//console.dir({f1,f2}, {depth:4});
 		//console.dir({lineStrings}, {depth:4});
+
+		console.log('mergeLineStringFeatures ', lineStrings.length);
 
 		for (let i = 0; i < lineStrings.length; i++) {
 			for (let j = i+1; j < lineStrings.length; j++) {
@@ -547,13 +561,13 @@ function tryMergingFeatures(features) {
 			throw e;
 		}
 		let f = turf.union(f1, f2);
-
-		f.properties = f1.properties;
-		f._meta = {
-			type: f1._meta.type,
-			layerName: f1._meta.layerName,
-			bbox: turf.bbox(f),
+		if (!f) {
+			console.log('can not merge');
+			console.log(JSON.stringify(f1));
+			console.log(JSON.stringify(f2));
+			return;
 		}
+
 		checkFeature(f);
 
 		turf.simplify(f, { tolerance:0.5, mutate:true });
