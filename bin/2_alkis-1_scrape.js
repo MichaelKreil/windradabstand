@@ -185,19 +185,19 @@ async function start() {
 
 			if (z0 === 0) return writeResult(feature);
 			if (feature.geometry.type === 'Point') return writeResult(feature);
-
+			
 			turf.flatten(feature).features.forEach(part => {
 				if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
 				part.bbox ??= turf.bbox(part);
 				part.properties = Object.assign({}, feature.properties);
 
 				if (countPoints(part) > 1e4) return writeResult(part);
-			
+
 				if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
 				if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
 				if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
 				if (part.bbox[3] >= bboxPixel[3]) return propagateResults.push(part);
-
+				
 				writeResult(part);
 			})
 
@@ -594,48 +594,71 @@ function tryMergingFeatures(features) {
 
 function checkFeature(feature, repair) {
 	let coord = feature.geometry.coordinates;
+	let result;
 
 	try {
 		switch (feature.geometry.type) {
 			case 'Point':
 				return checkPoint(coord);
-			case 'LineString':
-				checkKink();
-				return checkPath(coord);
-			case 'MultiLineString':
-				checkKink();
-				return checkMultiOf(coord, checkPath);
-			case 'Polygon':
-				checkKink();
-				return checkPolygon(coord);
-			case 'MultiPolygon':
-				checkKink();
-				return checkMultiOf(coord, checkPolygon);
+			case 'LineString':      result = checkPath(coord); break;
+			case 'MultiLineString': result = checkMultiOf(coord, checkPath); break;
+			case 'Polygon':         result = checkPolygon(coord); break;
+			case 'MultiPolygon':    result = checkMultiOf(coord, checkPolygon); break;
 			default:
 				throw Error(feature.geometry.type);
 		}
+		checkKink();
+		return result;
 	} catch (e) {
 		console.dir(feature, {depth:10});
-		demercator(feature);
+		feature = demercator(feature, true);
 		console.log(JSON.stringify(feature));
 		throw e;
 	}
 
 	function checkKink() {
-		if (turf.kinks(feature).features.length === 0) return true;
+		let kinks = turf.kinks(feature).features;
+		if (kinks.length === 0) return true;
+
 		if (!repair) throw Error('contains kinks');
 		if (!feature.geometry.type.endsWith('Polygon')) throw Error('i can only handle polygons');
+
+		removeSmallHoles(feature.geometry);
 		
 		let features = turf.unkinkPolygon(feature).features;
 		let newFeature;
 		if (features.length === 1) {
 			newFeature = features[0];
 		} else {
-			newFeature = features.map(f => f.geometry.coordinates);
+			newFeature = turf.multiPolygon(features.map(f => {
+				if (f.geometry.type !== 'Polygon') throw Error();
+				return f.geometry.coordinates
+			}));
 		}
 
 		Object.assign(feature, newFeature);
-		return true;
+
+		return feature;
+	}
+
+	function removeSmallHoles(geometry) {
+		switch (geometry.type) {
+			case 'Polygon': removeSmallHolesPolygon(geometry.coordinates); return;
+			case 'MultiPolygon': geometry.coordinates.forEach(c => removeSmallHolesPolygon(c)); return;
+			default: throw Error(geometry.type);
+		}
+		function removeSmallHolesPolygon(coordinates) {
+			for (let i = 1; i < coordinates.length; i++) {
+				let polygon = turf.polygon([coordinates[i]]);
+				demercator(polygon);
+				let area = turf.area(polygon);
+				let circ = turf.length(turf.polygonToLine(polygon))*1000;
+				let prop = Math.sqrt(area)/circ;
+				if (prop > 0.03) continue;
+				coordinates.splice(i,1);
+				i--;
+			}
+		}
 	}
 
 	function checkPoint(data) {
@@ -679,7 +702,38 @@ function checkFeature(feature, repair) {
 	function checkRing(data) {
 		checkArray(data, 4);
 		if (!checkPath(data)) return false;
+
+		if (repair) {
+			if (isSamePoint(data[0], data[data.length-1])) data.pop();
+			console.log(data);
+			for (let i0 = 0; i0 < data.length; i0++) {
+				let i1 = (i0+1) % data.length;
+				let i2 = (i1+1) % data.length;
+
+				let p0 = data[i0];
+				let p1 = data[i1];
+				let p2 = data[i2];
+				let d01 = Math.sqrt(Math.pow(p0[0]-p1[0],2) + Math.pow(p0[1]-p1[1],2));
+				let d12 = Math.sqrt(Math.pow(p1[0]-p2[0],2) + Math.pow(p1[1]-p2[1],2));
+				//let d20 = Math.sqrt(Math.pow(p2[0]-p0[0],2) + Math.pow(p2[1]-p0[1],2));
+				//let dAvg = (d01+d12+d20)/2;
+
+				let area = Math.abs(p0[0]*(p1[1]-p2[1]) + p1[0]*(p2[1]-p0[1]) + p2[0]*(p0[1]-p1[1]));
+				let angle = (
+					(p0[0]-p1[0]) * (p1[0]-p2[0]) +
+					(p0[1]-p1[1]) * (p1[1]-p2[1])
+				) / (d01 * d12);
+				let v = area*(angle+1);
+				//console.log(Math.sqrt(area)/dAvg);
+				//console.log(['area', area, angle, v].join('\t'));
+				if (v > 1e-2) continue;
+				data.splice(i1,1);
+				i0 = Math.max(0, i0-2);
+			}
+			data.push(data[0]);
+		}
 		if (!isSamePoint(data[0], data[data.length-1])) throw Error('first and last point of a ring must be identical');
+		
 		return data.length >= 4;
 	}
 
