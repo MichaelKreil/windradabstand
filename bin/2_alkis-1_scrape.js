@@ -65,13 +65,10 @@ async function start() {
 
 		const propagateResults = [];
 		if (z0 < LEVEL) {
-			x0 *= 2;
-			y0 *= 2;
-			z0 += 1;
 			let features = [];
-			for (let x = x0; x <= x0 + 1; x++) {
-				for (let y = y0; y <= y0 + 1; y++) {
-					(await downloadTileRec(x, y, z0))?.forEach(f => features.push(f));
+			for (let dy = 0; dy <= 1; dy++) {
+				for (let dx = 0; dx <= 1; dx++) {
+					(await downloadTileRec(x0*2+dx, y0*2+dy, z0+1))?.forEach(f => features.push(f));
 				}
 			}
 			if (features.length > 0) {
