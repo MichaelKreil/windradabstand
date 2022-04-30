@@ -48,11 +48,12 @@ async function start() {
 		if (bboxGermany[2] * scale < x0    ) return;
 		if (bboxGermany[3] * scale < y0    ) return;
 
+		const tilePixelSize = 4096 * (2 ** (LEVEL - z0));
 		const bboxPixel = [
-			 x0      * 4096,
-			 y0      * 4096,
-			(x0 + 1) * 4096,
-			(y0 + 1) * 4096,
+			 x0      * tilePixelSize,
+			 y0      * tilePixelSize,
+			(x0 + 1) * tilePixelSize,
+			(y0 + 1) * tilePixelSize,
 		]
 		
 		const bboxPixelMargin = [
