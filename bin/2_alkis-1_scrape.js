@@ -170,7 +170,7 @@ async function start() {
 
 			function writeResult() {
 				let layerFile = layerFiles.get(feature.properties.layerName);
-				demercator(feature.geometry);
+				demercator(feature);
 				delete feature.bbox;
 				layerFile.write(JSON.stringify(feature));
 			}
@@ -194,6 +194,7 @@ async function start() {
 
 		function featureToObject(feature) {
 			if (feature.extent !== 4096) throw Error();
+			if (z0 !== LEVEL) throw Error();
 			let i, j, coordinates = feature.loadGeometry();
 
 			function handleLine(line) {
@@ -309,15 +310,22 @@ async function start() {
 	}
 }
 
-function demercator(geometry) {
-	switch (geometry.type) {
-		case 'Point':           geometry.coordinates = demercatorRec(geometry.coordinates, 1); return;
-		case 'LineString':      geometry.coordinates = demercatorRec(geometry.coordinates, 2); return;
-		case 'MultiLineString': geometry.coordinates = demercatorRec(geometry.coordinates, 3); return;
-		case 'Polygon':         geometry.coordinates = demercatorRec(geometry.coordinates, 3); return;
-		case 'MultiPolygon':    geometry.coordinates = demercatorRec(geometry.coordinates, 4); return;
-		default: throw Error(geometry.type);
+function demercator(feature, copy) {
+	if (copy) {
+		feature = Object.assign({}, feature);
+		feature.geometry = Object.assign({}, feature.geometry);
+		feature.properties = Object.assign({}, feature.properties);
 	}
+	let geo = feature.geometry;
+	switch (geo.type) {
+		case 'Point':           geo.coordinates = demercatorRec(geo.coordinates, 1); break;
+		case 'LineString':      geo.coordinates = demercatorRec(geo.coordinates, 2); break;
+		case 'MultiLineString': geo.coordinates = demercatorRec(geo.coordinates, 3); break;
+		case 'Polygon':         geo.coordinates = demercatorRec(geo.coordinates, 3); break;
+		case 'MultiPolygon':    geo.coordinates = demercatorRec(geo.coordinates, 4); break;
+		default: throw Error(geo.type);
+	}
+	return feature;
 
 	function demercatorRec(coordinates, depth) {
 		if (depth > 1) return coordinates.map(l => demercatorRec(l, depth - 1));
@@ -339,22 +347,22 @@ function tryMergingFeatures(features) {
 			if (f1.bbox[2] < f2.bbox[0]) continue;
 			if (f1.bbox[3] < f2.bbox[1]) continue;
 
-			let mergedFeature;
+			let feature;
 			switch (f1.properties.featureType) {
-				case 2: mergedFeature = mergeLineStringFeatures(f1, f2); break;
-				case 3: mergedFeature = mergePolygonFeatures(   f1, f2); break;
+				case 2: feature = mergeLineStringFeatures(f1, f2); break;
+				case 3: feature = mergePolygonFeatures(   f1, f2); break;
 				default: throw Error();
 			}
 
-			if (!mergedFeature) continue;
+			if (!feature) continue;
 
-			mergedFeature.properties = f1.properties;
-			mergedFeature.bbox = turf.bbox(mergedFeature);
+			feature.properties = f1.properties;
+			feature.bbox = turf.bbox(feature);
 
 			//console.log('mergedFeature', mergedFeature);
-			checkFeature(mergedFeature);
+			checkFeature(feature);
 
-			features[i] = mergedFeature;
+			features[i] = feature;
 			features.splice(j,1);
 			j--;
 		}
@@ -497,14 +505,6 @@ function tryMergingFeatures(features) {
 				let dx = p1[0] - p2[0];
 				let dy = p1[1] - p2[1];
 				return { d: Math.sqrt( dx*dx + dy*dy ), p1, p2, s1Scale, s2Scale };
-			}
-		}
-
-		function getLineStrings(geometry) {
-			switch (geometry.type) {
-				case 'LineString': lineStrings.push(geometry.coordinates); break;
-				case 'MultiLineString': throw Error('MultiLineString is not supported')
-				default: throw Error();
 			}
 		}
 	}
@@ -661,4 +661,17 @@ function isEmptyFeature(feature) {
 			throw Error(feature.geometry.type);
 	}
 	return false;
+}
+
+function logFeatures(obj) {
+	for (let key in obj) {
+		console.log('###', key);
+		let f = obj[key];
+		console.dir(f, {depth:10});
+		demercator(f);
+		console.log({
+			area: turf.area(f),
+		})
+		console.log(JSON.stringify(f));
+	}
 }
