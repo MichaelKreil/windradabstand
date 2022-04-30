@@ -154,14 +154,10 @@ async function start() {
 					if (isEmptyFeature(feature)) continue;
 					if (!checkFeature(feature, true)) continue;
 
-					properties.layerName = layerName;
+					feature.properties = properties;
+					feature.properties.layerName = layerName;
 
-					turf.flatten(feature).features.forEach(f => {
-						if (isPolygon && (turf.area(demercator(f, true)) < 0.1)) return;
-						f.bbox = turf.bbox(f); 
-						f.properties = Object.assign({}, properties);
-						addResult(f);
-					})
+					addResult(feature);
 				}
 			}
 		}
@@ -187,21 +183,25 @@ async function start() {
 
 		function addResult(feature) {
 
-			if (z0 === 0) return writeResult();
-			if (feature.geometry.type.startsWith('Multi')) throw Error();
-			//console.log(feature.geometry.type, countPoints(feature));
+			if (z0 === 0) return writeResult(feature);
+			if (feature.geometry.type === 'Point') return writeResult(feature);
 
-			if (feature.geometry.type === 'Point') return writeResult();
-			if (countPoints(feature) > 1e4) return writeResult();
+			turf.flatten(feature).features.forEach(part => {
+				if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
+				part.bbox ??= turf.bbox(part);
+				part.properties = Object.assign({}, feature.properties);
 
-			if (feature.bbox[0] <= bboxPixel[0]) return propagateResults.push(feature);
-			if (feature.bbox[1] <= bboxPixel[1]) return propagateResults.push(feature);
-			if (feature.bbox[2] >= bboxPixel[2]) return propagateResults.push(feature);
-			if (feature.bbox[3] >= bboxPixel[3]) return propagateResults.push(feature);
+				if (countPoints(part) > 1e4) return writeResult(part);
 			
-			return writeResult();
+				if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
+				if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
+				if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
+				if (part.bbox[3] >= bboxPixel[3]) return propagateResults.push(part);
 
-			function writeResult() {
+				writeResult(part);
+			})
+
+			function writeResult(feature) {
 				let layerFile = layerFiles.get(feature.properties.layerName);
 				demercator(feature);
 				delete feature.bbox;
