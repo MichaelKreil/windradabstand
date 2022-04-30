@@ -118,6 +118,8 @@ async function start() {
 					let feature = featureToObject(layer.feature(i));
 					if (!feature) continue;
 
+					if (feature.geometry.coordinates.length === 0) continue;
+
 					if (!checkFeature(feature)) throw Error();
 
 					if (feature.geometry.type === 'Point') {
@@ -135,8 +137,14 @@ async function start() {
 
 					feature.properties.layerName = layerName;
 
+					let properties = feature.properties;
+					let isPolygon = feature.geometry.type.endsWith('Polygon');
+					if (isPolygon) feature = turf.unkinkPolygon(feature);
+
 					turf.flatten(feature).features.forEach(f => {
+						if (isPolygon && (turf.area(demercator(f, true)) < 0.1)) return;
 						f.bbox = turf.bbox(f);
+						f.properties = Object.assign({}, properties);
 						addResult(f);
 					})
 				}
