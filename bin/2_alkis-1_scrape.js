@@ -87,6 +87,7 @@ async function start() {
 
 			function getHash(f) {
 				let entries = Object.entries(f.properties);
+				entries = entries.filter(e => !e[0].startsWith('_'))
 				entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
 				entries = entries.map(e => e.join(':'));
 				entries.push(f.properties.layerName);
