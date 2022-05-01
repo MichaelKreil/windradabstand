@@ -1,7 +1,7 @@
 #!/usr/bin/node
 'use strict'
 
-// Based on and many thanks to: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
+// Based on the idea of: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
 
 const fs = require('fs');
 const turf = require('@turf/turf');
@@ -67,7 +67,6 @@ async function start() {
 			const url = `${URL}${z0}/${x0}/${y0}.pbf`
 			const filename = config.getFilename.alkisCache(`${x0}/${y0}.pbf`)
 			let buffer = await fetchCached(filename, url, headers);
-			//if ((x0 === 17145) && (y0 === 10366)) console.log(buffer.length);
 			if (buffer.length === 0) return;
 
 			try {
@@ -77,7 +76,7 @@ async function start() {
 			}
 
 			const tile = new VectorTile(new Protobuf(buffer));
-			//if ((x0 === 17145) && (y0 === 10366)) console.log(tile.layers);
+			
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
 				if (layerName === 'Hintergrund') continue;
@@ -206,11 +205,13 @@ async function start() {
 			}
 		}
 
+		/*
 		if (z0 <= 8) {
 			console.log(`\nleftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
 			let features = propagateResults.map(f => demercator(f));
 			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
 		}
+		*/
 
 		return propagateResults;
 
@@ -652,19 +653,6 @@ function checkFeature(feature, repair) {
 		if (Math.abs(p1[1] - p2[1]) > 1e-10) return false;
 		return true;
 	}
-}
-
-function isEmptyFeature(feature) {
-	switch (feature.geometry.type) {
-		case 'Point':
-			return (feature.geometry.coordinates.length < 2);
-		case 'LineString':
-		case 'MultiLineString':
-		case 'Polygon':
-		case 'MultiPolygon':
-			return (feature.geometry.coordinates.length === 0);
-	}
-	throw Error(feature.geometry.type);
 }
 
 function logFeatures(obj) {
