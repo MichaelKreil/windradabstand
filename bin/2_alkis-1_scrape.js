@@ -20,9 +20,9 @@ const SIZE = 4096*MAXSCALE;
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
 const BBOX = [5.8, 47.2, 15.1, 55.1]
 
-let debuggerCounter = 0;
-let debuggerBreaker = false;
-let debuggerTraceIds = new Set([]);
+//let debuggerCounter = 0;
+//let debuggerBreaker = false;
+//let debuggerTraceIds = new Set([]);
 
 
 
@@ -48,7 +48,7 @@ async function start() {
 	await downloadTileRec(0, 0, 0);
 
 	async function downloadTileRec(x0, y0, z0) {
-		if (debuggerBreaker) return;
+		//if (debuggerBreaker) return;
 
 		const scale = 2 ** z0;
 		if (bboxGermany[0] * scale > x0 + 1) return;
@@ -167,7 +167,7 @@ async function start() {
 			}
 		}
 
-		if (debuggerBreaker) return;
+		//if (debuggerBreaker) return;
 
 		//if (z0 === 9) {
 		//	console.log(x0,y0);
@@ -175,16 +175,18 @@ async function start() {
 		//}
 
 
-		if (propagateResults.length > 1000) debuggerBreaker = true;
+		//if (propagateResults.length > 1000) debuggerBreaker = true;
 
 		//if (z0 < 10) console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
 
+		/*
 		if (debuggerBreaker) {
 			propagateResults.forEach(f => demercator(f));
 			fs.writeFileSync('../data/2_alkis/leftovers.geojson', JSON.stringify(turf.featureCollection(propagateResults)));
 			console.log('WRITE');
 			return
 		}
+		*/
 
 
 		return propagateResults;
@@ -385,8 +387,8 @@ function tryMergingFeatures(features) {
 			let f1 = features[i];
 			let f2 = features[j];
 
-			if (debuggerTraceIds.has(f1.properties._counter)) throw Error();
-			if (debuggerTraceIds.has(f2.properties._counter)) throw Error();
+			//if (debuggerTraceIds.has(f1.properties._counter)) throw Error();
+			//if (debuggerTraceIds.has(f2.properties._counter)) throw Error();
 
 			if (f1.bbox[0] > f2.bbox[2]) continue;
 			if (f1.bbox[1] > f2.bbox[3]) continue;
@@ -408,7 +410,7 @@ function tryMergingFeatures(features) {
 
 			feature.properties = f1.properties;
 			feature.bbox = turf.bbox(feature);
-			feature.properties._counter = ++debuggerCounter;
+			//feature.properties._counter = ++debuggerCounter;
 			
 			checkFeature(feature, true);
 			/*
@@ -570,6 +572,7 @@ function tryMergingFeatures(features) {
 	}
 
 	function mergePolygonFeatures(f1, f2) {
+		/*
 		if (debuggerTraceIds.has(f1.properties._counter) || debuggerTraceIds.has(f2.properties._counter)) {
 			console.dir({f1,f2}, {depth:8})
 			console.dir({
@@ -578,15 +581,18 @@ function tryMergingFeatures(features) {
 			})
 			throw Error();
 		}
+		*/
 		try {
-			if (!turf.booleanIntersects(f1, f2)) return;
-			if (!turf.intersect(f1, f2)) return;
+			if (!turf.booleanIntersects(f1, f2)) return false;
+			//if (!turf.intersect(f1, f2)) return false;
 		} catch (e) {
 			console.dir({f1,f2}, {depth:8})
 			throw e;
 		}
 		//let f = turf.union(f1, f2);
 		let f = union(f1, f2);
+
+		if (f.geometry.type === 'MultiPolygon') return false;
 		
 
 		//turf.simplify(f, { tolerance:0.5, mutate:true });
