@@ -88,6 +88,7 @@ async function start() {
 
 				if (layerName === 'Hintergrund') continue;
 				if (layerName === 'Vegetationsflaeche') continue;
+				if (layerName === 'Gewaesserflaeche') continue;
 
 				for (let i = 0; i < layer.length; i++) {
 					let feature = featureToObject(layer.feature(i));
@@ -514,7 +515,6 @@ function checkFeature(feature, repair) {
 	let result;
 
 	if (!feature.properties) throw Error('no properties');
-	if (Object.keys(feature.properties).length === 0) throw Error('empty properties');
 
 	try {
 		switch (feature.geometry.type) {
