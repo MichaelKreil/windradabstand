@@ -54,14 +54,8 @@ async function start() {
 			(x0 + 1) * tilePixelSize,
 			(y0 + 1) * tilePixelSize,
 		]
-		
-		const bboxPixelMargin = [
-			bboxPixel[0] - 0.1,
-			bboxPixel[1] - 0.1,
-			bboxPixel[2] + 0.1,
-			bboxPixel[3] + 0.1,
-		]
-		const bboxPixelMarginPolygon = turf.bboxPolygon(bboxPixelMargin);
+
+		const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
 
 		if (z0 > MAXLEVEL) throw Error();
 
@@ -106,10 +100,10 @@ async function start() {
 					switch (feature.geometry.type) {
 						case 'Point':
 							let p = feature.geometry.coordinates;
-							if (p[0] < bboxPixelMargin[0]) continue;
-							if (p[1] < bboxPixelMargin[1]) continue;
-							if (p[0] > bboxPixelMargin[2]) continue;
-							if (p[1] > bboxPixelMargin[3]) continue;
+							if (p[0] < bboxPixel[0]) continue;
+							if (p[1] < bboxPixel[1]) continue;
+							if (p[0] > bboxPixel[2]) continue;
+							if (p[1] > bboxPixel[3]) continue;
 							feature.properties = Object.assign({}, properties)
 							writeResult(feature);
 							continue;
@@ -120,10 +114,12 @@ async function start() {
 						break;
 						case 'Polygon':
 						case 'MultiPolygon':
-							feature = intersect(feature, bboxPixelMarginPolygon);
+							feature = intersect(feature, bboxPixelPolygon);
 						break;
 						default: throw Error(feature.geometry.type);
 					}
+
+					feature = turf.truncate(feature, {precision:0, coordinates:2, mutate:true});
 
 					turf.flatten(feature).features.forEach(f => {
 						f.properties = Object.assign({}, properties)
@@ -174,7 +170,7 @@ async function start() {
 					if (feature.geometry.type === 'Point') return writeResult(feature);
 					
 					turf.flatten(feature).features.forEach(part => {
-						if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
+						if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part)) < 0.1)) return;
 						if (!checkFeature(part, true)) return;
 
 						part.bbox ??= turf.bbox(part);
@@ -212,7 +208,7 @@ async function start() {
 
 		if (z0 <= 8) {
 			console.log(`\nleftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
-			let features = propagateResults.map(f => demercator(f, true));
+			let features = propagateResults.map(f => demercator(f));
 			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
 		}
 
@@ -220,7 +216,7 @@ async function start() {
 
 		function writeResult(feature) {
 			let layerFile = layerFiles.get(feature.properties.layerName);
-			demercator(feature);
+			feature = demercator(feature);
 			delete feature.bbox;
 			layerFile.write(JSON.stringify(feature));
 		}
@@ -342,12 +338,10 @@ async function start() {
 	}
 }
 
-function demercator(feature, copy) {
-	if (copy) {
-		feature = Object.assign({}, feature);
-		feature.geometry = Object.assign({}, feature.geometry);
-		feature.properties = Object.assign({}, feature.properties);
-	}
+function demercator(feature) {
+	feature = Object.assign({}, feature);
+	feature.geometry = Object.assign({}, feature.geometry);
+	feature.properties = Object.assign({}, feature.properties);
 	let geo = feature.geometry;
 	switch (geo.type) {
 		case 'Point':           geo.coordinates = demercatorRec(geo.coordinates, 1); break;
@@ -357,6 +351,7 @@ function demercator(feature, copy) {
 		case 'MultiPolygon':    geo.coordinates = demercatorRec(geo.coordinates, 4); break;
 		default: throw Error(geo.type);
 	}
+	feature = turf.rewind(feature, {mutate:true});
 	return feature;
 
 	function demercatorRec(coordinates, depth) {
@@ -531,7 +526,7 @@ function checkFeature(feature, repair) {
 		return result;
 	} catch (e) {
 		console.dir(feature, {depth:10});
-		feature = demercator(feature, true);
+		feature = demercator(feature);
 		console.log(JSON.stringify(feature));
 		throw e;
 	}
@@ -679,7 +674,7 @@ function logFeatures(obj) {
 		if (!f) continue;
 
 		console.dir(f, {depth:10});
-		f = demercator(f, true);
+		f = demercator(f);
 		console.log({
 			area: turf.area(f),
 		})
@@ -698,6 +693,7 @@ function intersect(f1, f2) {
 function features2Coords(features) {
 	let coords = [];
 	for (let feature of features) {
+		feature = turf.rewind(feature, {mutate:true})
 		switch (feature.geometry.type) {
 			case 'Polygon': coords.push(feature.geometry.coordinates); continue
 			case 'MultiPolygon': coords = coords.concat(feature.geometry.coordinates); continue
