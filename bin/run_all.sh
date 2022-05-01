@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd "$(dirname "$0")"
 set -ex
 
 #node 1_wind-1_download.js
