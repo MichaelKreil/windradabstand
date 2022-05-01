@@ -14,8 +14,8 @@ const { createHash } = require('crypto');
 const gunzip = require('util').promisify(require('zlib').gunzip);
 
 
-const LEVEL = 15
-const MAXSCALE = 2 ** LEVEL;
+const MAXLEVEL = 15
+const MAXSCALE = 2 ** MAXLEVEL;
 const SIZE = 4096*MAXSCALE;
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
 const BBOX = [5.8, 47.2, 15.1, 55.1]
@@ -56,7 +56,7 @@ async function start() {
 		if (bboxGermany[2] * scale < x0    ) return;
 		if (bboxGermany[3] * scale < y0    ) return;
 
-		const tilePixelSize = 4096 * (2 ** (LEVEL - z0));
+		const tilePixelSize = 4096 * (2 ** (MAXLEVEL - z0));
 		const bboxPixel = [
 			 x0      * tilePixelSize,
 			 y0      * tilePixelSize,
@@ -73,7 +73,7 @@ async function start() {
 		const bboxPixelMarginPolygon = turf.bboxPolygon(bboxPixelMargin);
 
 		const propagateResults = [];
-		if (z0 < LEVEL) {
+		if (z0 < MAXLEVEL) {
 			let features = [];
 			for (let dy = 0; dy <= 1; dy++) {
 				for (let dx = 0; dx <= 1; dx++) {
@@ -124,6 +124,7 @@ async function start() {
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
 				if (layerName === 'Hintergrund') continue;
+				if (layerName === 'Vegetationsflaeche') continue;
 
 				for (let i = 0; i < layer.length; i++) {
 					let feature = featureToObject(layer.feature(i));
@@ -133,7 +134,6 @@ async function start() {
 
 					turf.flatten(feature).features.forEach(f => {
 						let properties = f.properties;
-						let isPolygon = false;
 						switch (f.geometry.type) {
 							case 'Point':
 								let p = f.geometry.coordinates;
@@ -148,7 +148,6 @@ async function start() {
 							break;
 							case 'Polygon':
 							case 'MultiPolygon':
-								isPolygon = true;
 								f = turf.intersect(f, bboxPixelMarginPolygon);
 							break;
 							default: throw Error(f.geometry.type);
@@ -177,7 +176,11 @@ async function start() {
 
 		//if (propagateResults.length > 1000) debuggerBreaker = true;
 
-		//if (z0 < 10) console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
+		if (z0 === 8) {
+			console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
+			let features = propagateResults.map(f => demercator(f, true));
+			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
+		}
 
 		/*
 		if (debuggerBreaker) {
@@ -205,6 +208,7 @@ async function start() {
 
 				if (countPoints(part) > 1e4) return writeResult(part);
 
+				if (z0 === MAXLEVEL) return propagateResults.push(part);
 				if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
 				if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
 				if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
@@ -239,7 +243,7 @@ async function start() {
 
 		function featureToObject(feature) {
 			if (feature.extent !== 4096) throw Error();
-			if (z0 !== LEVEL) throw Error();
+			if (z0 !== MAXLEVEL) throw Error();
 			let i, j, coordinates = feature.loadGeometry();
 
 			function handleLine(line) {
