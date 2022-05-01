@@ -411,7 +411,7 @@ function tryMergingFeatures(features) {
 			feature.properties._counter = ++debuggerCounter;
 			
 			checkFeature(feature, true);
-
+			/*
 			if (debuggerTraceIds.has(feature.properties._counter)) throw Error(logFeatures({f1,f2,feature}));
 
 			//console.log('mergedFeature', mergedFeature);
@@ -420,7 +420,7 @@ function tryMergingFeatures(features) {
 			} catch (e) {
 				logFeatures({f1,f2,feature});
 				throw Error(e);
-			}
+			}*/
 
 			features[i] = feature;
 			features.splice(j,1);
@@ -458,7 +458,7 @@ function tryMergingFeatures(features) {
 			throw e;
 		}
 
-		checkFeature(f1);
+		//checkFeature(f1);
 
 		//console.dir({result:f1}, {depth:6})
 		
@@ -627,8 +627,8 @@ function checkFeature(feature, repair) {
 	function checkKink() {
 		if (turf.kinks(feature).features.length === 0) return true;
 
-		if (!repair) throw Error('contains kinks');
 		if (feature.geometry.type.endsWith('Polygon')) {
+			if (!repair) throw Error('contains kinks');
 
 			let newFeature = union(feature);
 			removeSmallHoles(newFeature.geometry);
@@ -653,7 +653,12 @@ function checkFeature(feature, repair) {
 					data[1] += (Math.random()-0.5)*r;
 				}
 			}
-		} else if (feature.geometry.type === 'LineString') {
+		}
+		return true;
+		/*
+		else if (feature.geometry.type === 'LineString') {
+			return true;
+
 			let kinks = turf.kinks(feature).features;
 			let i = 0;
 			while (kinks.length > 0) {
@@ -685,6 +690,7 @@ function checkFeature(feature, repair) {
 		return false;
 
 		throw Error('i can not handle this');
+		*/
 	}
 
 	function removeSmallHoles(geometry) {
