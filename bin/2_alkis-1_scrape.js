@@ -20,10 +20,6 @@ const SIZE = 4096*MAXSCALE;
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
 const BBOX = [5.8, 47.2, 15.1, 55.1]
 
-//let debuggerCounter = 0;
-//let debuggerBreaker = false;
-//let debuggerTraceIds = new Set([]);
-
 start()
 
 async function start() {
@@ -45,8 +41,6 @@ async function start() {
 	await downloadTileRec(0, 0, 0);
 
 	async function downloadTileRec(x0, y0, z0) {
-		//if (debuggerBreaker) return;
-
 		const scale = 2 ** z0;
 		if (bboxGermany[0] * scale > x0 + 1) return;
 		if (bboxGermany[1] * scale > y0 + 1) return;
@@ -155,39 +149,17 @@ async function start() {
 						f.properties = properties;
 						f.properties.layerName = layerName;
 
-						//if (!checkFeature(f, true)) return;
-
 						addResult(f);
 					})
 				}
 			}
 		}
 
-		//if (debuggerBreaker) return;
-
-		//if (z0 === 9) {
-		//	console.log(x0,y0);
-		//	if ((x0 === 267) && (y0 === 162)) debuggerBreaker = true;
-		//}
-
-
-		//if (propagateResults.length > 1000) debuggerBreaker = true;
-
 		if (z0 <= 8) {
 			console.log(`\nleftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
 			let features = propagateResults.map(f => demercator(f, true));
 			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
 		}
-
-		/*
-		if (debuggerBreaker) {
-			propagateResults.forEach(f => demercator(f));
-			fs.writeFileSync('../data/2_alkis/leftovers.geojson', JSON.stringify(turf.featureCollection(propagateResults)));
-			console.log('WRITE');
-			return
-		}
-		*/
-
 
 		return propagateResults;
 
@@ -508,173 +480,6 @@ function tryMergingFeatures(features) {
 
 			return turf.lineString(points);
 		}
-		/*
-
-		let intersections = turf.lineIntersect(f1,f2).features;
-		if (intersections.length > 0) {
-			intersections.forEach(point => {
-				let parts1 = turf.lineSplit(f1, point).features;
-				let parts2 = turf.lineSplit(f2, point).features;
-				console.dir({parts1,parts2}, {depth:8})
-			})
-			logFeatures({f1, f2});
-			throw Error();
-		}
-
-		
-		let newLineString
-		try {
-			newLineString = mergeLineStrings(f1.geometry.coordinates, f2.geometry.coordinates)
-		} catch (e) {
-			console.dir({'f1.geometry.coordinates':f1.geometry.coordinates});
-			console.dir({'f2.geometry.coordinates':f2.geometry.coordinates});
-			throw e;
-		}
-
-		if (!newLineString) return
-
-		if (newLineString.length < 2) throw Error();
-
-		let newFeature = turf.lineString(newLineString, f1.properties);
-
-		if (!checkFeature(newFeature, true)) {
-			logFeatures({f1, f2, newFeature});
-			throw Error();
-		}
-
-		try {
-			newFeature = turf.simplify(newFeature, { tolerance:0.5, mutate:false })
-		} catch (e) {
-			logFeatures({newFeature});
-			throw e;
-		}
-		
-		return newFeature;
-
-		function mergeLineStrings(pathA, pathB) {
-			let ea = pathA.length-1;
-			let eb = pathB.length-1;
-
-			
-			let v00 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[ 0], pathB[   1]);
-			let v01 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[eb], pathB[eb-1]);
-			let v10 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[ 0], pathB[   1]);
-			let v11 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[eb], pathB[eb-1]);
-
-			v00.getPath = () => concatPaths(pathA.slice().reverse(), pathB, v00);
-			v01.getPath = () => concatPaths(pathB, pathA, v01);
-			v10.getPath = () => concatPaths(pathA, pathB, v10);
-			v11.getPath = () => concatPaths(pathA, pathB.slice().reverse(), v11);
-
-			let variations = [v00,v01,v10,v11];
-
-			let minDistance = Math.min(...variations.map(v => v.d));
-			if (Number.isNaN(minDistance)) throw Error();
-			if (minDistance > 1) return;
-			variations = variations.filter(v => v.d === minDistance);
-
-			if (variations.length > 1) {
-				let maxDot = Math.max(...variations.map(v => v.dot));
-				variations = variations.filter(v => v.dot === maxDot);
-			}
-			
-			if (variations.length === 1) return variations[0].getPath();
-
-			variations.forEach(v => {
-				v.path = v.getPath();
-				v.len = v.dot*pathLength(v.path);
-			})
-			variations.sort((a,b) => b.len - a.len);
-			return variations[0].path;
-
-			function concatPaths(path1, path2, d) {
-				let path = path1.slice(0,-1);
-				path.push([
-					(d.p1[0]+d.p2[0])/2,
-					(d.p1[1]+d.p2[1])/2,
-				])
-				return path.concat(path2.slice(1));
-			}
-
-			function pathLength(path) {
-				let sum = 0;
-				for (let i = 1; i < path.length; i++) {
-					let p0 = path[i-1];
-					let p1 = path[i];
-					let dx = p0[0]-p1[0];
-					let dy = p0[1]-p1[1];
-					sum += Math.sqrt(dx*dx + dy*dy);
-				}
-				return sum;
-			}
-
-			function distanceSeg2Seg(seg1a, seg1b, seg2a, seg2b) {
-				let seg1Dir = [ seg1b[0]-seg1a[0], seg1b[1]-seg1a[1] ];
-				let seg2Dir = [ seg2b[0]-seg2a[0], seg2b[1]-seg2a[1] ];
-				let w = [ seg1a[0]-seg2a[0], seg1a[1]-seg2a[1] ];
-				let seg1Len2 = seg1Dir[0]*seg1Dir[0] + seg1Dir[1]*seg1Dir[1];
-				let dot = seg1Dir[0]*seg2Dir[0] + seg1Dir[1]*seg2Dir[1];
-				let seg2Len2 = seg2Dir[0]*seg2Dir[0] + seg2Dir[1]*seg2Dir[1];
-				let d = seg1Dir[0]*w[0] + seg1Dir[1]*w[1];
-				let e = seg2Dir[0]*w[0] + seg2Dir[1]*w[1];
-				let D = seg1Len2 * seg2Len2 - dot * dot;
-				let sN;
-				let sD = D;
-				let tN;
-				let tD = D;
-				if (D < 1e-6) {
-					sN = 0;
-					sD = 1;
-					tN = e;
-					tD = seg2Len2;
-				} else {
-					sN = (dot * e - seg2Len2 * d);
-					tN = (seg1Len2 * e - dot * d);
-					if (sN < 0) {
-						sN = 0;
-						tN = e;
-						tD = seg2Len2;
-					} else if (sN > sD) {
-						sN = sD;
-						tN = e + dot;
-						tD = seg2Len2;
-					}
-				}
-				if (tN < 0) {
-					tN = 0;
-					if (-d < 0) {
-						sN = 0;
-					} else if (-d > seg1Len2) {
-						sN = sD;
-					} else {
-						sN = -d;
-						sD = seg1Len2;
-					}
-				} else if (tN > tD) {
-					tN = tD;
-					if (dot-d < 0) {
-						sN = 0;
-					} else if (dot-d > seg1Len2) {
-						sN = sD;
-					} else {
-						sN = dot-d;
-						sD = seg1Len2;
-					}
-				}
-				let s1Scale = (Math.abs(sN) < 1e-6 ? 0 : sN / sD);
-				let s2Scale = (Math.abs(tN) < 1e-6 ? 0 : tN / tD);
-				let p1 = [ seg1a[0] + seg1Dir[0]*s1Scale, seg1a[1] + seg1Dir[1]*s1Scale ];
-				let p2 = [ seg2a[0] + seg2Dir[0]*s2Scale, seg2a[1] + seg2Dir[1]*s2Scale ];
-				let dx = p1[0] - p2[0];
-				let dy = p1[1] - p2[1];
-				return {
-					d: Math.sqrt( dx*dx + dy*dy ),
-					p1, p2,
-					dot
-				};
-			}
-		}
-		*/
 	}
 
 	function mergePolygonFeatures(f1, f2) {
@@ -762,7 +567,6 @@ function checkFeature(feature, repair) {
 
 		if (repair) {
 			if (isSamePoint(data[0], data[data.length-1])) data.pop();
-			//console.log(data);
 			for (let i0 = 0; i0 < data.length; i0++) {
 				let i1 = (i0+1) % data.length;
 				let i2 = (i1+1) % data.length;
@@ -772,8 +576,6 @@ function checkFeature(feature, repair) {
 				let p2 = data[i2];
 				let d01 = Math.sqrt(Math.pow(p0[0]-p1[0],2) + Math.pow(p0[1]-p1[1],2));
 				let d12 = Math.sqrt(Math.pow(p1[0]-p2[0],2) + Math.pow(p1[1]-p2[1],2));
-				//let d20 = Math.sqrt(Math.pow(p2[0]-p0[0],2) + Math.pow(p2[1]-p0[1],2));
-				//let dAvg = (d01+d12+d20)/2;
 
 				let area = Math.abs(p0[0]*(p1[1]-p2[1]) + p1[0]*(p2[1]-p0[1]) + p2[0]*(p0[1]-p1[1]));
 				let angle = (
@@ -781,8 +583,6 @@ function checkFeature(feature, repair) {
 					(p0[1]-p1[1]) * (p1[1]-p2[1])
 				) / (d01 * d12 + 1e-20);
 				let v = area*(angle+1);
-				//if (!v);
-				//console.log(v);
 				if (v > 0.2) continue;
 				data.splice(i1,1);
 				i0 = Math.max(0, i0-2);
@@ -849,17 +649,13 @@ function isEmptyFeature(feature) {
 	switch (feature.geometry.type) {
 		case 'Point':
 			return (feature.geometry.coordinates.length < 2);
-		break;
 		case 'LineString':
 		case 'MultiLineString':
 		case 'Polygon':
 		case 'MultiPolygon':
 			return (feature.geometry.coordinates.length === 0);
-		break;
-		default:
-			throw Error(feature.geometry.type);
 	}
-	return false;
+	throw Error(feature.geometry.type);
 }
 
 function logFeatures(obj) {
