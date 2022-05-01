@@ -615,7 +615,7 @@ function checkFeature(feature, repair) {
 			default:
 				throw Error(feature.geometry.type);
 		}
-		checkKink();
+		//checkKink();
 		return result;
 	} catch (e) {
 		console.dir(feature, {depth:10});
