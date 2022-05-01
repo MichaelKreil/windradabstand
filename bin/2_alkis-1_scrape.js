@@ -123,6 +123,8 @@ async function start() {
 			const tile = new VectorTile(new Protobuf(buffer));
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
+				if (layerName === 'Hintergrund') continue;
+
 				for (let i = 0; i < layer.length; i++) {
 					let feature = featureToObject(layer.feature(i));
 
@@ -130,8 +132,6 @@ async function start() {
 					if (feature.geometry.coordinates.length === 0) continue;
 
 					turf.flatten(feature).features.forEach(f => {
-						if (!checkFeature(f, true)) return;
-
 						let properties = f.properties;
 						let isPolygon = false;
 						switch (f.geometry.type) {
@@ -155,10 +155,11 @@ async function start() {
 						}
 						if (!f) return;
 						if (isEmptyFeature(f)) return;
-						if (!checkFeature(f, true)) return;
 
 						f.properties = properties;
 						f.properties.layerName = layerName;
+
+						if (!checkFeature(f, true)) return;
 
 						addResult(f);
 					})
@@ -168,12 +169,15 @@ async function start() {
 
 		if (debuggerBreaker) return;
 
-		if (z0 === 9) {
-			console.log(x0,y0);
-			if ((x0 === 267) && (y0 === 162)) debuggerBreaker = true;
-		}
+		//if (z0 === 9) {
+		//	console.log(x0,y0);
+		//	if ((x0 === 267) && (y0 === 162)) debuggerBreaker = true;
+		//}
 
-		if (z0 < 10) console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
+
+		if (propagateResults.length > 1000) debuggerBreaker = true;
+
+		//if (z0 < 10) console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
 
 		if (debuggerBreaker) {
 			propagateResults.forEach(f => demercator(f));
@@ -404,13 +408,15 @@ function tryMergingFeatures(features) {
 
 			feature.properties = f1.properties;
 			feature.bbox = turf.bbox(feature);
-			feature.properties._counter = ++debuggerCounter; 
+			feature.properties._counter = ++debuggerCounter;
+			
+			checkFeature(feature, true);
 
 			if (debuggerTraceIds.has(feature.properties._counter)) throw Error(logFeatures({f1,f2,feature}));
 
 			//console.log('mergedFeature', mergedFeature);
 			try {
-				checkFeature(feature);
+				checkFeature(feature, true);
 			} catch (e) {
 				logFeatures({f1,f2,feature});
 				throw Error(e);
@@ -580,31 +586,12 @@ function tryMergingFeatures(features) {
 			throw e;
 		}
 		//let f = turf.union(f1, f2);
-		let coord = polygonClipping.union(f1.geometry.coordinates,f2.geometry.coordinates);
-
-		let outside = [];
-		let inside = [];
-
-		coord.forEach(p => {
-			p.forEach(r => {
-				if (turf.booleanClockwise(r)) {
-					inside.push(r);
-				} else {
-					outside.push(r);
-				}
-			})
-		})
-
-		let f;
-		if (outside.length === 1) {
-			f = turf.polygon(outside.concat(inside));
-		} else throw Error();
+		let f = union(f1, f2);
 		
-		checkFeature(f, true);
 
 		//turf.simplify(f, { tolerance:0.5, mutate:true });
 		
-		checkFeature(f);
+		//checkFeature(f);
 
 		return f;
 	}
@@ -613,6 +600,9 @@ function tryMergingFeatures(features) {
 function checkFeature(feature, repair) {
 	let coord = feature.geometry.coordinates;
 	let result;
+
+	if (!feature.properties) throw Error('no properties');
+	if (Object.keys(feature.properties).length === 0) throw Error('empty properties');
 
 	try {
 		switch (feature.geometry.type) {
@@ -640,24 +630,12 @@ function checkFeature(feature, repair) {
 		if (!repair) throw Error('contains kinks');
 		if (feature.geometry.type.endsWith('Polygon')) {
 
-			removeSmallHoles(feature.geometry);
+			let newFeature = union(feature);
+			removeSmallHoles(newFeature.geometry);
 
 			if (ok()) return;
-
-			//addNoise(feature.geometry, 1e-4);
-			
-			let features = turf.unkinkPolygon(feature).features;
-			let newFeature;
-			if (features.length === 1) {
-				newFeature = features[0];
-			} else {
-				newFeature = turf.multiPolygon(features.map(f => {
-					if (f.geometry.type !== 'Polygon') throw Error();
-					return f.geometry.coordinates
-				}));
-			}
-			Object.assign(feature, newFeature);
-
+			newFeature = union(newFeature);
+			feature.geometry = newFeature.geometry;
 			turf.truncate(feature, { precision:3, coordinates:2, mutate:true })
 			return;
 
@@ -897,5 +875,38 @@ function logFeatures(obj) {
 			area: turf.area(f),
 		})
 		console.log(JSON.stringify(f));
+	}
+}
+
+function union() {
+	let coordsIn = [];
+	for (let feature of arguments) {
+		switch (feature.geometry.type) {
+			case 'Polygon': coordsIn.push(feature.geometry.coordinates); continue
+			case 'MultiPolygon': coordsIn = coordsIn.concat(feature.geometry.coordinates); continue
+		}
+		throw Error(feature.geometry.type);
+	}
+
+	let coordsOut = polygonClipping.union(coordsIn);
+
+	let outside = [];
+	let inside = [];
+
+	coordsOut.forEach(polygon =>
+		polygon.forEach(ring =>
+			(turf.booleanClockwise(ring) ? inside : outside).push(ring)
+		)
+	)
+
+	if (outside.length === 1) {
+		return turf.polygon(outside.concat(inside));
+	} else if (inside.length === 0) {
+		return turf.multiPolygon(outside.map(p => [p]));
+	} else {
+		coordsOut.forEach(polygon => polygon.forEach((ring, index) => {
+			if (turf.booleanClockwise(ring) === (index === 0)) throw Error();
+		}))
+		return turf.multiPolygon(coordsOut);
 	}
 }
