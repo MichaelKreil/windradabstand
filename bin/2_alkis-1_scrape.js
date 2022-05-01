@@ -8,6 +8,7 @@ const turf = require('@turf/turf');
 const VectorTile = require('@mapbox/vector-tile').VectorTile;
 const Protobuf = require('pbf');
 const { fetchCached, Progress } = require('../lib/helper.js');
+const polygonClipping = require('polygon-clipping');
 const config = require('../config.js');
 const { createHash } = require('crypto');
 const gunzip = require('util').promisify(require('zlib').gunzip);
@@ -21,7 +22,7 @@ const BBOX = [5.8, 47.2, 15.1, 55.1]
 
 let debuggerCounter = 0;
 let debuggerBreaker = false;
-let debuggerTraceIds = new Set([57472]);
+let debuggerTraceIds = new Set([]);
 
 
 
@@ -132,26 +133,26 @@ async function start() {
 						if (!checkFeature(f, true)) return;
 
 						let properties = f.properties;
-					let isPolygon = false;
+						let isPolygon = false;
 						switch (f.geometry.type) {
-						case 'Point':
+							case 'Point':
 								let p = f.geometry.coordinates;
 								if (p[0] < bboxPixelMargin[0]) return;
 								if (p[1] < bboxPixelMargin[1]) return;
 								if (p[0] > bboxPixelMargin[2]) return;
 								if (p[1] > bboxPixelMargin[3]) return;
-						break;
-						case 'LineString':
-						case 'MultiLineString':
+							break;
+							case 'LineString':
+							case 'MultiLineString':
 								f = turf.bboxClip(f, bboxPixelMargin)
-						break;
-						case 'Polygon':
-						case 'MultiPolygon':
-							isPolygon = true;
+							break;
+							case 'Polygon':
+							case 'MultiPolygon':
+								isPolygon = true;
 								f = turf.intersect(f, bboxPixelMarginPolygon);
-						break;
+							break;
 							default: throw Error(f.geometry.type);
-					}
+						}
 						if (!f) return;
 						if (isEmptyFeature(f)) return;
 						if (!checkFeature(f, true)) return;
@@ -186,6 +187,8 @@ async function start() {
 
 		function addResult(feature) {
 
+			if (!feature.properties.layerName) throw Error();
+		
 			if (z0 === 0) return writeResult(feature);
 			if (feature.geometry.type === 'Point') return writeResult(feature);
 			
@@ -268,7 +271,6 @@ async function start() {
 			} else {
 				type = 'Multi' + type;
 			}
-			feature.properties.featureType = feature.type;
 
 			return {
 				type: 'Feature',
@@ -378,16 +380,24 @@ function tryMergingFeatures(features) {
 		for (let j = i+1; j < features.length; j++) {
 			let f1 = features[i];
 			let f2 = features[j];
+
+			if (debuggerTraceIds.has(f1.properties._counter)) throw Error();
+			if (debuggerTraceIds.has(f2.properties._counter)) throw Error();
+
 			if (f1.bbox[0] > f2.bbox[2]) continue;
 			if (f1.bbox[1] > f2.bbox[3]) continue;
 			if (f1.bbox[2] < f2.bbox[0]) continue;
 			if (f1.bbox[3] < f2.bbox[1]) continue;
 
 			let feature;
-			switch (f1.properties.featureType) {
-				case 2: feature = mergeLineStringFeatures(f1, f2); break;
-				case 3: feature = mergePolygonFeatures(   f1, f2); break;
-				default: throw Error();
+			switch (f1.geometry.type) {
+				case 'LineString':
+					feature = mergeLineStringFeatures(f1, f2);
+				break;
+				case 'Polygon':
+					feature = mergePolygonFeatures(f1, f2);
+				break;
+				default: throw Error(f1.geometry.type);
 			}
 
 			if (!feature) continue;
@@ -396,13 +406,15 @@ function tryMergingFeatures(features) {
 			feature.bbox = turf.bbox(feature);
 			feature.properties._counter = ++debuggerCounter; 
 
-			if (debuggerTraceIds.has(feature.properties._counter)) {
-				logFeatures({f1,f2,feature});
-				throw Error();
-			}
+			if (debuggerTraceIds.has(feature.properties._counter)) throw Error(logFeatures({f1,f2,feature}));
 
 			//console.log('mergedFeature', mergedFeature);
-			checkFeature(feature);
+			try {
+				checkFeature(feature);
+			} catch (e) {
+				logFeatures({f1,f2,feature});
+				throw Error(e);
+			}
 
 			features[i] = feature;
 			features.splice(j,1);
@@ -562,32 +574,35 @@ function tryMergingFeatures(features) {
 		}
 		try {
 			if (!turf.booleanIntersects(f1, f2)) return;
-			//if (!turf.intersect(f1, f2)) return;
+			if (!turf.intersect(f1, f2)) return;
 		} catch (e) {
 			console.dir({f1,f2}, {depth:8})
 			throw e;
 		}
-		let f = turf.union(f1, f2);
+		//let f = turf.union(f1, f2);
+		let coord = polygonClipping.union(f1.geometry.coordinates,f2.geometry.coordinates);
 
-		if (!f) {
-			console.log('can not merge');
-			console.log(JSON.stringify(f1));
-			console.log(JSON.stringify(f2));
-			return;
-		}
+		let outside = [];
+		let inside = [];
 
-		if (f.geometry.type === 'MultiPolygon') {
-			console.log('booleanIntersects', turf.booleanIntersects(f1, f2));
-			console.log('intersect', turf.intersect(f1, f2));
-			logFeatures({f1,f2,f});
-			throw Error(f.geometry.type);
-		}
+		coord.forEach(p => {
+			p.forEach(r => {
+				if (turf.booleanClockwise(r)) {
+					inside.push(r);
+				} else {
+					outside.push(r);
+				}
+			})
+		})
+
+		let f;
+		if (outside.length === 1) {
+			f = turf.polygon(outside.concat(inside));
+		} else throw Error();
 		
-		if (f.geometry.type !== 'Polygon') throw Error(f.geometry.type);
-
 		checkFeature(f, true);
 
-		turf.simplify(f, { tolerance:0.5, mutate:true });
+		//turf.simplify(f, { tolerance:0.5, mutate:true });
 		
 		checkFeature(f);
 
@@ -620,28 +635,78 @@ function checkFeature(feature, repair) {
 	}
 
 	function checkKink() {
-		let kinks = turf.kinks(feature).features;
-		if (kinks.length === 0) return true;
+		if (turf.kinks(feature).features.length === 0) return true;
 
 		if (!repair) throw Error('contains kinks');
-		if (!feature.geometry.type.endsWith('Polygon')) throw Error('i can only handle polygons');
+		if (feature.geometry.type.endsWith('Polygon')) {
 
-		removeSmallHoles(feature.geometry);
-		
-		let features = turf.unkinkPolygon(feature).features;
-		let newFeature;
-		if (features.length === 1) {
-			newFeature = features[0];
-		} else {
-			newFeature = turf.multiPolygon(features.map(f => {
-				if (f.geometry.type !== 'Polygon') throw Error();
-				return f.geometry.coordinates
-			}));
+			removeSmallHoles(feature.geometry);
+
+			if (ok()) return;
+
+			//addNoise(feature.geometry, 1e-4);
+			
+			let features = turf.unkinkPolygon(feature).features;
+			let newFeature;
+			if (features.length === 1) {
+				newFeature = features[0];
+			} else {
+				newFeature = turf.multiPolygon(features.map(f => {
+					if (f.geometry.type !== 'Polygon') throw Error();
+					return f.geometry.coordinates
+				}));
+			}
+			Object.assign(feature, newFeature);
+
+			turf.truncate(feature, { precision:3, coordinates:2, mutate:true })
+			return;
+
+			function ok() { return turf.kinks(feature).features.length === 0 }
+
+			function addNoise(geometry, r) {
+				switch (geometry.type) {
+					case 'Polygon': addNoiseRec(geometry.coordinates, 2); return;
+					case 'MultiPolygon': addNoiseRec(geometry.coordinates, 3); return;
+					default: throw Error(geometry.type);
+				}
+				function addNoiseRec(data, depth) {
+					if (depth > 0) return data.forEach(e => addNoiseRec(e,depth-1));
+					data[0] += (Math.random()-0.5)*r;
+					data[1] += (Math.random()-0.5)*r;
+				}
+			}
+		} else if (feature.geometry.type === 'LineString') {
+			let kinks = turf.kinks(feature).features;
+			let i = 0;
+			while (kinks.length > 0) {
+				if (i++ > 10) {
+					console.log('kinks', kinks.map(p => p.geometry.coordinates));
+					throw Error();
+				}
+
+				let p = kinks[0];
+				let parts = turf.lineSplit(feature, p).features;
+				
+				let parts0 = turf.clone(parts[0]);
+				let parts1 = turf.clone(parts[1]);
+
+				parts0.geometry.coordinates.pop();
+				parts1.geometry.coordinates.shift();
+
+				parts0 = turf.lineSplit(parts0, p).features.shift().geometry.coordinates;
+				parts1 = turf.lineSplit(parts1, p).features.pop().geometry.coordinates;
+
+				feature.geometry.coordinates = parts0.concat(parts1);
+				clearPath(feature.geometry.coordinates);
+				checkPath(feature.geometry.coordinates);
+
+				kinks = turf.kinks(feature).features;
+			}
+			return;
 		}
+		return false;
 
-		Object.assign(feature, newFeature);
-
-		return feature;
+		throw Error('i can not handle this');
 	}
 
 	function removeSmallHoles(geometry) {
@@ -696,19 +761,33 @@ function checkFeature(feature, repair) {
 			for (let i = 0; i < data.length; i++) checkPoint(data[i])
 			for (let i = 1; i < data.length; i++) {
 				if (isSamePoint(data[i-1], data[i])) {
-					throw Error('Path must not include duplicated points')
+					throw Error('Path must not include duplicated points: '+JSON.stringify(data[i]));
 				}
 			}
 			return true;
 		}
 	}
+	
+	function clearPath(data) {
+		for (let i = 0; i < data.length-2; i++) {
+			let p0 = data[i];
+			let p1 = data[i+1];
+			let p2 = data[i+2];
+			
+			let area = Math.abs(p0[0]*(p1[1]-p2[1]) + p1[0]*(p2[1]-p0[1]) + p2[0]*(p0[1]-p1[1]));
+			if (area > 0) continue;
+			data.splice(i+1,1);
+			i--;
+		}
+	}
+
 	function checkRing(data) {
 		checkArray(data, 4);
 		if (!checkPath(data)) return false;
 
 		if (repair) {
 			if (isSamePoint(data[0], data[data.length-1])) data.pop();
-			console.log(data);
+			//console.log(data);
 			for (let i0 = 0; i0 < data.length; i0++) {
 				let i1 = (i0+1) % data.length;
 				let i2 = (i1+1) % data.length;
@@ -725,11 +804,11 @@ function checkFeature(feature, repair) {
 				let angle = (
 					(p0[0]-p1[0]) * (p1[0]-p2[0]) +
 					(p0[1]-p1[1]) * (p1[1]-p2[1])
-				) / (d01 * d12);
+				) / (d01 * d12 + 1e-20);
 				let v = area*(angle+1);
-				//console.log(Math.sqrt(area)/dAvg);
-				//console.log(['area', area, angle, v].join('\t'));
-				if (v > 1e-2) continue;
+				//if (!v);
+				//console.log(v);
+				if (v > 0.2) continue;
 				data.splice(i1,1);
 				i0 = Math.max(0, i0-2);
 			}
@@ -753,7 +832,10 @@ function checkFeature(feature, repair) {
 			return true;
 		} else {
 			checkArray(data, 1)
-			for (let i = 0; i < data.length; i++) checkRing(data[i]);
+			for (let i = 0; i < data.length; i++) {
+				checkRing(data[i]);
+				if (turf.booleanClockwise(data[i]) === (i === 0)) throw Error();
+			}
 			return true;
 		}
 	}
