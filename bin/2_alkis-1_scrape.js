@@ -63,46 +63,17 @@ async function start() {
 		]
 		const bboxPixelMarginPolygon = turf.bboxPolygon(bboxPixelMargin);
 
-		const propagateResults = [];
-		if (z0 < MAXLEVEL) {
-			let features = [];
-			for (let dy = 0; dy <= 1; dy++) {
-				for (let dx = 0; dx <= 1; dx++) {
-					(await downloadTileRec(x0*2+dx, y0*2+dy, z0+1))?.forEach(f => features.push(f));
-				}
-			}
-			if (features.length > 0) {
-				const lookup = new Map();
-				features.forEach(f => {
-					const hash = (f.hash ??= getHash(f));
-					if (!lookup.has(hash)) lookup.set(hash, []);
-					return lookup.get(hash).push(f);
-				})
-				features = [];
-				for (let group of lookup.values()) {
-					if (group.length <= 1) continue;
-					tryMergingFeatures(group).forEach(f => addResult(f));
-				}
-			}
+		if (z0 > MAXLEVEL) throw Error();
 
-			function getHash(f) {
-				let entries = Object.entries(f.properties);
-				entries = entries.filter(e => !e[0].startsWith('_'))
-				entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
-				entries = entries.map(e => e.join(':'));
-				entries.push(f.properties.layerName);
-
-				const hash = createHash('sha256');
-				hash.update(entries.join(','));
-				return hash.digest('base64');
-			}
-		} else {
+		let features = [];
+		if (z0 === MAXLEVEL) {
 			if (tileIndex % 100 === 0) showProgress(tileIndex);
 			tileIndex++;
 
 			const url = `${URL}${z0}/${x0}/${y0}.pbf`
 			const filename = config.getFilename.alkisCache(`${x0}/${y0}.pbf`)
 			let buffer = await fetchCached(filename, url, headers);
+			//if ((x0 === 17145) && (y0 === 10366)) console.log(buffer.length);
 			if (buffer.length === 0) return;
 
 			try {
@@ -112,6 +83,7 @@ async function start() {
 			}
 
 			const tile = new VectorTile(new Protobuf(buffer));
+			//if ((x0 === 17145) && (y0 === 10366)) console.log(tile.layers);
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
 				if (layerName === 'Hintergrund') continue;
@@ -120,38 +92,120 @@ async function start() {
 				for (let i = 0; i < layer.length; i++) {
 					let feature = featureToObject(layer.feature(i));
 
+					//if ((x0 === 17145) && (y0 === 10366)) console.log(feature);
+
 					if (!feature) continue;
+					checkFeature(feature, true);
 					if (feature.geometry.coordinates.length === 0) continue;
 
+					let properties = feature.properties;
+					properties.layerName = layerName;
+
+
+					switch (feature.geometry.type) {
+						case 'Point':
+							let p = feature.geometry.coordinates;
+							if (p[0] < bboxPixelMargin[0]) continue;
+							if (p[1] < bboxPixelMargin[1]) continue;
+							if (p[0] > bboxPixelMargin[2]) continue;
+							if (p[1] > bboxPixelMargin[3]) continue;
+							feature.properties = Object.assign({}, properties)
+							writeResult(feature);
+							continue;
+						break;
+						case 'LineString':
+						case 'MultiLineString':
+							feature = turf.bboxClip(feature, bboxPixel)
+						break;
+						case 'Polygon':
+						case 'MultiPolygon':
+							feature = intersect(feature, bboxPixelMarginPolygon);
+						break;
+						default: throw Error(feature.geometry.type);
+					}
+
 					turf.flatten(feature).features.forEach(f => {
-						let properties = f.properties;
-						switch (f.geometry.type) {
-							case 'Point':
-								let p = f.geometry.coordinates;
-								if (p[0] < bboxPixelMargin[0]) return;
-								if (p[1] < bboxPixelMargin[1]) return;
-								if (p[0] > bboxPixelMargin[2]) return;
-								if (p[1] > bboxPixelMargin[3]) return;
-							break;
-							case 'LineString':
-							case 'MultiLineString':
-								f = turf.bboxClip(f, bboxPixel)
-							break;
-							case 'Polygon':
-							case 'MultiPolygon':
-								f = intersect(f, bboxPixelMarginPolygon);
-							break;
-							default: throw Error(f.geometry.type);
-						}
-						if (!f) return;
-						if (isEmptyFeature(f)) return;
-
-						f.properties = properties;
-						f.properties.layerName = layerName;
-
-						addResult(f);
+						f.properties = Object.assign({}, properties)
+						if (!checkFeature(f, true)) return;
+						features.push(f);
 					})
 				}
+			}
+		} else {
+			for (let dy = 0; dy <= 1; dy++) {
+				for (let dx = 0; dx <= 1; dx++) {
+					(await downloadTileRec(x0*2+dx, y0*2+dy, z0+1))?.forEach(f => features.push(f));
+				}
+			}
+		}
+
+		const propagateResults = [];
+
+		if (features.length > 0) {
+			const lookup = new Map();
+			features.forEach(f => {
+				f.bbox ??= turf.bbox(f);
+				const hash = (f.hash ??= getHash(f));
+				if (!lookup.has(hash)) lookup.set(hash, []);
+				return lookup.get(hash).push(f);
+
+				function getHash(f) {
+					let entries = Object.entries(f.properties);
+					entries = entries.filter(e => !e[0].startsWith('_'))
+					entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
+					entries = entries.map(e => e.join(':'));
+					entries.push(f.properties.layerName);
+
+					const hash = createHash('sha256');
+					hash.update(entries.join(','));
+					return hash.digest('base64');
+				}
+			})
+			features = [];
+			for (let group of lookup.values()) {
+				if (group.length > 1) group = tryMergingFeatures(group);
+
+				group.forEach(feature => {
+
+					if (!feature.properties.layerName) throw Error();
+				
+					if (z0 === 0) return writeResult(feature);
+					if (feature.geometry.type === 'Point') return writeResult(feature);
+					
+					turf.flatten(feature).features.forEach(part => {
+						if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
+						if (!checkFeature(part, true)) return;
+
+						part.bbox ??= turf.bbox(part);
+						part.properties = Object.assign({}, feature.properties);
+
+						if (countPoints(part) > 1e4) return writeResult(part);
+
+						if (z0 === MAXLEVEL) return propagateResults.push(part);
+						if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
+						if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
+						if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
+						if (part.bbox[3] >= bboxPixel[3]) return propagateResults.push(part);
+						
+						writeResult(part);
+					})
+
+					function countPoints(feature) {
+						switch (feature.geometry.type) {
+							case 'Point':           return count(feature.geometry.coordinates, 0);
+							case 'LineString':      return count(feature.geometry.coordinates, 1);
+							case 'MultiLineString': return count(feature.geometry.coordinates, 2);
+							case 'Polygon':         return count(feature.geometry.coordinates, 2);
+							case 'MultiPolygon':    return count(feature.geometry.coordinates, 3);
+							default: throw Error(feature.geometry.type);
+						}
+
+						function count(coordinates, depth) {
+							if (depth === 0) return coordinates.length;
+							return coordinates.reduce((s,c) => s+count(c,depth-1), 0);
+						}
+					}
+				})
 			}
 		}
 
@@ -163,53 +217,11 @@ async function start() {
 
 		return propagateResults;
 
-		function addResult(feature) {
-
-			if (!feature.properties.layerName) throw Error();
-		
-			if (z0 === 0) return writeResult(feature);
-			if (feature.geometry.type === 'Point') return writeResult(feature);
-			
-			turf.flatten(feature).features.forEach(part => {
-				if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
-				if (!checkFeature(part, true)) return;
-
-				part.bbox ??= turf.bbox(part);
-				part.properties = Object.assign({}, feature.properties);
-
-				if (countPoints(part) > 1e4) return writeResult(part);
-
-				if (z0 === MAXLEVEL) return propagateResults.push(part);
-				if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
-				if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
-				if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
-				if (part.bbox[3] >= bboxPixel[3]) return propagateResults.push(part);
-				
-				writeResult(part);
-			})
-
-			function writeResult(feature) {
-				let layerFile = layerFiles.get(feature.properties.layerName);
-				demercator(feature);
-				delete feature.bbox;
-				layerFile.write(JSON.stringify(feature));
-			}
-
-			function countPoints(feature) {
-				switch (feature.geometry.type) {
-					case 'Point':           return count(feature.geometry.coordinates, 0);
-					case 'LineString':      return count(feature.geometry.coordinates, 1);
-					case 'MultiLineString': return count(feature.geometry.coordinates, 2);
-					case 'Polygon':         return count(feature.geometry.coordinates, 2);
-					case 'MultiPolygon':    return count(feature.geometry.coordinates, 3);
-					default: throw Error(feature.geometry.type);
-				}
-
-				function count(coordinates, depth) {
-					if (depth === 0) return coordinates.length;
-					return coordinates.reduce((s,c) => s+count(c,depth-1), 0);
-				}
-			}
+		function writeResult(feature) {
+			let layerFile = layerFiles.get(feature.properties.layerName);
+			demercator(feature);
+			delete feature.bbox;
+			layerFile.write(JSON.stringify(feature));
 		}
 
 		function featureToObject(feature) {
@@ -361,6 +373,8 @@ function tryMergingFeatures(features) {
 		for (let j = i+1; j < features.length; j++) {
 			let f1 = features[i];
 			let f2 = features[j];
+
+			if (f1.geometry.type !== f2.geometry.type) throw Error(`${f1.geometry.type} !== ${f2.geometry.type}`);
 
 			if (f1.bbox[0] > f2.bbox[2]) continue;
 			if (f1.bbox[1] > f2.bbox[3]) continue;
