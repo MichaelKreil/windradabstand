@@ -24,9 +24,6 @@ const BBOX = [5.8, 47.2, 15.1, 55.1]
 //let debuggerBreaker = false;
 //let debuggerTraceIds = new Set([]);
 
-
-
-
 start()
 
 async function start() {
@@ -144,7 +141,7 @@ async function start() {
 							break;
 							case 'LineString':
 							case 'MultiLineString':
-								f = turf.bboxClip(f, bboxPixelMargin)
+								f = turf.bboxClip(f, bboxPixel)
 							break;
 							case 'Polygon':
 							case 'MultiPolygon':
@@ -158,7 +155,7 @@ async function start() {
 						f.properties = properties;
 						f.properties.layerName = layerName;
 
-						if (!checkFeature(f, true)) throw logFeatures({f});
+						//if (!checkFeature(f, true)) return;
 
 						addResult(f);
 					})
@@ -176,8 +173,8 @@ async function start() {
 
 		//if (propagateResults.length > 1000) debuggerBreaker = true;
 
-		if (z0 === 8) {
-			console.log(`leftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
+		if (z0 <= 8) {
+			console.log(`\nleftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
 			let features = propagateResults.map(f => demercator(f, true));
 			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
 		}
@@ -203,6 +200,8 @@ async function start() {
 			
 			turf.flatten(feature).features.forEach(part => {
 				if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part, true)) < 0.1)) return;
+				if (!checkFeature(part, true)) return;
+
 				part.bbox ??= turf.bbox(part);
 				part.properties = Object.assign({}, feature.properties);
 
@@ -397,22 +396,28 @@ function tryMergingFeatures(features) {
 			if (f1.bbox[3] < f2.bbox[1]) continue;
 
 			let feature;
-			switch (f1.geometry.type) {
-				case 'LineString':
-					feature = mergeLineStringFeatures(f1, f2);
-				break;
-				case 'Polygon':
-					feature = mergePolygonFeatures(f1, f2);
-				break;
-				default: throw Error(f1.geometry.type);
+			try {
+				switch (f1.geometry.type) {
+					case 'LineString':
+						feature = mergeLineStringFeatures([f1, f2]);
+					break;
+					case 'Polygon':
+						feature = mergePolygonFeatures(f1, f2);
+					break;
+					default: throw Error(f1.geometry.type);
+				}
+
+				if (!feature) continue;
+
+				feature.properties = f1.properties;
+				feature.bbox = turf.bbox(feature);
+				
+				if (!checkFeature(feature, true)) throw Error();
+
+			} catch (e) {
+				logFeatures({f1, f2, feature});
+				throw e;
 			}
-
-			if (!feature) continue;
-
-			feature.properties = f1.properties;
-			feature.bbox = turf.bbox(feature);
-			
-			if (!checkFeature(feature, true)) throw logFeatures({f1, f2, feature});
 
 			features[i] = feature;
 			features.splice(j,1);
@@ -422,9 +427,100 @@ function tryMergingFeatures(features) {
 
 	return features;
 
-	function mergeLineStringFeatures(f1, f2) {
-		if (f1.geometry.type !== 'LineString') throw Error(f1.geometry.type+' is not supported');
-		if (f2.geometry.type !== 'LineString') throw Error(f2.geometry.type+' is not supported');
+	function mergeLineStringFeatures(features) {
+		let pointLookup = new Map();
+
+		features.forEach(feature => {
+			if (feature.geometry.type !== 'LineString') throw Error(feature.geometry.type+' is not supported');
+			let points = feature.geometry.coordinates.map(coord => {
+				let key = coord.join(',');
+				if (!pointLookup.has(key)) pointLookup.set(key, {coord, neighbours:new Set()})
+				return pointLookup.get(key)
+			})
+			for (let i = 1; i < points.length; i++) {
+				let p1 = points[i-1];
+				let p2 = points[i];
+				p1.neighbours.add(p2);
+				p2.neighbours.add(p1);
+			}
+		})
+
+		let pointList = Array.from(pointLookup.values());
+		let impPoints = pointList.filter(p => p.neighbours.size !== 2);
+		let endPoints;
+		while (true) {
+			endPoints = impPoints.filter(p => p.neighbours.size === 1);
+			if (endPoints.length <= 2) break;
+
+			pointList.forEach((p, i) => p.group = i);
+			while (true) {
+				let stable = true;
+				pointList.forEach(p => {
+					p.neighbours.forEach(p2 => {
+						if (p2.group >= p.group) return;
+						p.group = p2.group;
+						stable = false;
+					})
+				})
+				if (stable) break;
+			}
+
+			let minDistance = 1e10, minPair;
+			for (let i1 = 0; i1 < endPoints.length; i1++) {
+				for (let i2 = i1+1; i2 < endPoints.length; i2++) {
+					let p1 = endPoints[i1];
+					let p2 = endPoints[i2];
+					if (p1.group === p2.group) continue;
+					let distance = calcDistance(p1.coord, p2.coord);
+					if (distance >= minDistance) continue;
+					minDistance = distance;
+					minPair = [p1,p2]
+				}
+			}
+			if (minDistance > 3) break;
+
+			minPair[0].neighbours.add(minPair[1]);
+			minPair[1].neighbours.add(minPair[0]);
+
+			function calcDistance(c1, c2) {
+				let dx = c1[0] - c2[0];
+				let dy = c1[1] - c2[1];
+				return Math.sqrt(dx*dx + dy*dy);
+			}
+		}
+		if (endPoints.length > 2) return false;
+		if (endPoints.length === 0) return zip(pointList[0]);
+		return zip(endPoints[0]);
+
+		function zip(p1) {
+			let points = [];
+			while (true) {
+				points.push(p1.coord);
+				if (p1.neighbours.size === 0) break;
+				let p2 = p1.neighbours.values().next().value;
+				p1.neighbours.delete(p2);
+				p2.neighbours.delete(p1);
+				p1 = p2;
+			}
+
+			let leftOvers = Array.from(pointLookup.values()).filter(p => p.neighbours.size > 0 );
+			if (leftOvers.length > 0) return false;
+
+			return turf.lineString(points);
+		}
+		/*
+
+		let intersections = turf.lineIntersect(f1,f2).features;
+		if (intersections.length > 0) {
+			intersections.forEach(point => {
+				let parts1 = turf.lineSplit(f1, point).features;
+				let parts2 = turf.lineSplit(f2, point).features;
+				console.dir({parts1,parts2}, {depth:8})
+			})
+			logFeatures({f1, f2});
+			throw Error();
+		}
+
 		
 		let newLineString
 		try {
@@ -438,49 +534,58 @@ function tryMergingFeatures(features) {
 		if (!newLineString) return
 
 		if (newLineString.length < 2) throw Error();
-		
-		f1.geometry.coordinates = newLineString;
 
-		if (!checkFeature(f1, true)) throw logFeatures({f1, f2});
+		let newFeature = turf.lineString(newLineString, f1.properties);
+
+		if (!checkFeature(newFeature, true)) {
+			logFeatures({f1, f2, newFeature});
+			throw Error();
+		}
 
 		try {
-			f1 = turf.simplify(f1, { tolerance:0.5, mutate:false })
+			newFeature = turf.simplify(newFeature, { tolerance:0.5, mutate:false })
 		} catch (e) {
-			console.dir({f1}, {depth:6});
+			logFeatures({newFeature});
 			throw e;
 		}
 		
-		return f1;
+		return newFeature;
 
 		function mergeLineStrings(pathA, pathB) {
 			let ea = pathA.length-1;
 			let eb = pathB.length-1;
-			let d00 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[ 0], pathB[   1]);
-			let d01 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[eb], pathB[eb-1]);
-			let d10 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[ 0], pathB[   1]);
-			let d11 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[eb], pathB[eb-1]);
 
-			let minDistance = Math.min(d00.d, d01.d, d10.d, d11.d);
-			if (Number.isNaN(minDistance)) {
-				console.dir({pathA,pathB})
-				console.dir({d00,d01,d10,d11})
-				throw Error();
-			}
-			if (minDistance > 1) {
-				//console.log('minDistance', minDistance);
-				return;
-			}
+			
+			let v00 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[ 0], pathB[   1]);
+			let v01 = distanceSeg2Seg(pathA[   1], pathA[ 0], pathB[eb], pathB[eb-1]);
+			let v10 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[ 0], pathB[   1]);
+			let v11 = distanceSeg2Seg(pathA[ea-1], pathA[ea], pathB[eb], pathB[eb-1]);
 
-			switch (minDistance) {
-				case d00.d: return concatPaths(pathA.slice().reverse(), pathB, d00);
-				case d01.d: return concatPaths(pathB, pathA, d01);
-				case d10.d: return concatPaths(pathA, pathB, d10);
-				case d11.d: return concatPaths(pathA, pathB.slice().reverse(), d11);
+			v00.getPath = () => concatPaths(pathA.slice().reverse(), pathB, v00);
+			v01.getPath = () => concatPaths(pathB, pathA, v01);
+			v10.getPath = () => concatPaths(pathA, pathB, v10);
+			v11.getPath = () => concatPaths(pathA, pathB.slice().reverse(), v11);
+
+			let variations = [v00,v01,v10,v11];
+
+			let minDistance = Math.min(...variations.map(v => v.d));
+			if (Number.isNaN(minDistance)) throw Error();
+			if (minDistance > 1) return;
+			variations = variations.filter(v => v.d === minDistance);
+
+			if (variations.length > 1) {
+				let maxDot = Math.max(...variations.map(v => v.dot));
+				variations = variations.filter(v => v.dot === maxDot);
 			}
 			
-			console.log({minDistance});
-			console.log({d00,d01,d10,d11})
-			throw Error();
+			if (variations.length === 1) return variations[0].getPath();
+
+			variations.forEach(v => {
+				v.path = v.getPath();
+				v.len = v.dot*pathLength(v.path);
+			})
+			variations.sort((a,b) => b.len - a.len);
+			return variations[0].path;
 
 			function concatPaths(path1, path2, d) {
 				let path = path1.slice(0,-1);
@@ -491,16 +596,28 @@ function tryMergingFeatures(features) {
 				return path.concat(path2.slice(1));
 			}
 
+			function pathLength(path) {
+				let sum = 0;
+				for (let i = 1; i < path.length; i++) {
+					let p0 = path[i-1];
+					let p1 = path[i];
+					let dx = p0[0]-p1[0];
+					let dy = p0[1]-p1[1];
+					sum += Math.sqrt(dx*dx + dy*dy);
+				}
+				return sum;
+			}
+
 			function distanceSeg2Seg(seg1a, seg1b, seg2a, seg2b) {
-				let seg1Len = [ seg1b[0]-seg1a[0], seg1b[1]-seg1a[1] ];
-				let seg2Len = [ seg2b[0]-seg2a[0], seg2b[1]-seg2a[1] ];
+				let seg1Dir = [ seg1b[0]-seg1a[0], seg1b[1]-seg1a[1] ];
+				let seg2Dir = [ seg2b[0]-seg2a[0], seg2b[1]-seg2a[1] ];
 				let w = [ seg1a[0]-seg2a[0], seg1a[1]-seg2a[1] ];
-				let a = seg1Len[0]*seg1Len[0] + seg1Len[1]*seg1Len[1];
-				let b = seg1Len[0]*seg2Len[0] + seg1Len[1]*seg2Len[1];
-				let c = seg2Len[0]*seg2Len[0] + seg2Len[1]*seg2Len[1];
-				let d = seg1Len[0]*w[0] + seg1Len[1]*w[1];
-				let e = seg2Len[0]*w[0] + seg2Len[1]*w[1];
-				let D = a * c - b * b;
+				let seg1Len2 = seg1Dir[0]*seg1Dir[0] + seg1Dir[1]*seg1Dir[1];
+				let dot = seg1Dir[0]*seg2Dir[0] + seg1Dir[1]*seg2Dir[1];
+				let seg2Len2 = seg2Dir[0]*seg2Dir[0] + seg2Dir[1]*seg2Dir[1];
+				let d = seg1Dir[0]*w[0] + seg1Dir[1]*w[1];
+				let e = seg2Dir[0]*w[0] + seg2Dir[1]*w[1];
+				let D = seg1Len2 * seg2Len2 - dot * dot;
 				let sN;
 				let sD = D;
 				let tN;
@@ -509,52 +626,55 @@ function tryMergingFeatures(features) {
 					sN = 0;
 					sD = 1;
 					tN = e;
-					tD = c;
+					tD = seg2Len2;
 				} else {
-					sN = (b * e - c * d);
-					tN = (a * e - b * d);
+					sN = (dot * e - seg2Len2 * d);
+					tN = (seg1Len2 * e - dot * d);
 					if (sN < 0) {
 						sN = 0;
 						tN = e;
-						tD = c;
+						tD = seg2Len2;
 					} else if (sN > sD) {
 						sN = sD;
-						tN = e + b;
-						tD = c;
+						tN = e + dot;
+						tD = seg2Len2;
 					}
 				}
 				if (tN < 0) {
 					tN = 0;
 					if (-d < 0) {
 						sN = 0;
-					} else if (-d > a) {
+					} else if (-d > seg1Len2) {
 						sN = sD;
 					} else {
 						sN = -d;
-						sD = a;
+						sD = seg1Len2;
 					}
 				} else if (tN > tD) {
 					tN = tD;
-					if (b-d < 0) {
+					if (dot-d < 0) {
 						sN = 0;
-					} else if (b-d > a) {
+					} else if (dot-d > seg1Len2) {
 						sN = sD;
 					} else {
-						sN = b-d;
-						sD = a;
+						sN = dot-d;
+						sD = seg1Len2;
 					}
 				}
 				let s1Scale = (Math.abs(sN) < 1e-6 ? 0 : sN / sD);
 				let s2Scale = (Math.abs(tN) < 1e-6 ? 0 : tN / tD);
-				if (s1Scale < 0.5) s1Scale = 0.5;
-				if (s2Scale > 0.5) s2Scale = 0.5;
-				let p1 = [ seg1a[0] + seg1Len[0]*s1Scale, seg1a[1] + seg1Len[1]*s1Scale ];
-				let p2 = [ seg2a[0] + seg2Len[0]*s2Scale, seg2a[1] + seg2Len[1]*s2Scale ];
+				let p1 = [ seg1a[0] + seg1Dir[0]*s1Scale, seg1a[1] + seg1Dir[1]*s1Scale ];
+				let p2 = [ seg2a[0] + seg2Dir[0]*s2Scale, seg2a[1] + seg2Dir[1]*s2Scale ];
 				let dx = p1[0] - p2[0];
 				let dy = p1[1] - p2[1];
-				return { d: Math.sqrt( dx*dx + dy*dy ), p1, p2, s1Scale, s2Scale };
+				return {
+					d: Math.sqrt( dx*dx + dy*dy ),
+					p1, p2,
+					dot
+				};
 			}
 		}
+		*/
 	}
 
 	function mergePolygonFeatures(f1, f2) {
@@ -588,102 +708,13 @@ function checkFeature(feature, repair) {
 			default:
 				throw Error(feature.geometry.type);
 		}
-		//checkKink();
+		turf.rewind(feature, {mutate:true})
 		return result;
 	} catch (e) {
 		console.dir(feature, {depth:10});
 		feature = demercator(feature, true);
 		console.log(JSON.stringify(feature));
 		throw e;
-	}
-
-	function checkKink() {
-		if (turf.kinks(feature).features.length === 0) return true;
-
-		if (feature.geometry.type.endsWith('Polygon')) {
-			if (!repair) throw Error('contains kinks');
-
-			let newFeature = union(feature);
-			removeSmallHoles(newFeature.geometry);
-
-			if (ok()) return;
-			newFeature = union(newFeature);
-			feature.geometry = newFeature.geometry;
-			turf.truncate(feature, { precision:3, coordinates:2, mutate:true })
-			return;
-
-			function ok() { return turf.kinks(feature).features.length === 0 }
-
-			function addNoise(geometry, r) {
-				switch (geometry.type) {
-					case 'Polygon': addNoiseRec(geometry.coordinates, 2); return;
-					case 'MultiPolygon': addNoiseRec(geometry.coordinates, 3); return;
-					default: throw Error(geometry.type);
-				}
-				function addNoiseRec(data, depth) {
-					if (depth > 0) return data.forEach(e => addNoiseRec(e,depth-1));
-					data[0] += (Math.random()-0.5)*r;
-					data[1] += (Math.random()-0.5)*r;
-				}
-			}
-		}
-		return true;
-		/*
-		else if (feature.geometry.type === 'LineString') {
-			return true;
-
-			let kinks = turf.kinks(feature).features;
-			let i = 0;
-			while (kinks.length > 0) {
-				if (i++ > 10) {
-					console.log('kinks', kinks.map(p => p.geometry.coordinates));
-					throw Error();
-				}
-
-				let p = kinks[0];
-				let parts = turf.lineSplit(feature, p).features;
-				
-				let parts0 = turf.clone(parts[0]);
-				let parts1 = turf.clone(parts[1]);
-
-				parts0.geometry.coordinates.pop();
-				parts1.geometry.coordinates.shift();
-
-				parts0 = turf.lineSplit(parts0, p).features.shift().geometry.coordinates;
-				parts1 = turf.lineSplit(parts1, p).features.pop().geometry.coordinates;
-
-				feature.geometry.coordinates = parts0.concat(parts1);
-				clearPath(feature.geometry.coordinates);
-				checkPath(feature.geometry.coordinates);
-
-				kinks = turf.kinks(feature).features;
-			}
-			return;
-		}
-		return false;
-
-		throw Error('i can not handle this');
-		*/
-	}
-
-	function removeSmallHoles(geometry) {
-		switch (geometry.type) {
-			case 'Polygon': removeSmallHolesPolygon(geometry.coordinates); return;
-			case 'MultiPolygon': geometry.coordinates.forEach(c => removeSmallHolesPolygon(c)); return;
-			default: throw Error(geometry.type);
-		}
-		function removeSmallHolesPolygon(coordinates) {
-			for (let i = 1; i < coordinates.length; i++) {
-				let polygon = turf.polygon([coordinates[i]]);
-				demercator(polygon);
-				let area = turf.area(polygon);
-				let circ = turf.length(turf.polygonToLine(polygon))*1000;
-				let prop = Math.sqrt(area)/circ;
-				if (prop > 0.03) continue;
-				coordinates.splice(i,1);
-				i--;
-			}
-		}
 	}
 
 	function checkPoint(data) {
@@ -722,19 +753,6 @@ function checkFeature(feature, repair) {
 				}
 			}
 			return true;
-		}
-	}
-	
-	function clearPath(data) {
-		for (let i = 0; i < data.length-2; i++) {
-			let p0 = data[i];
-			let p1 = data[i+1];
-			let p2 = data[i+2];
-			
-			let area = Math.abs(p0[0]*(p1[1]-p2[1]) + p1[0]*(p2[1]-p0[1]) + p2[0]*(p0[1]-p1[1]));
-			if (area > 0) continue;
-			data.splice(i+1,1);
-			i--;
 		}
 	}
 
@@ -785,9 +803,6 @@ function checkFeature(feature, repair) {
 				if (checkRing(data[i])) continue;
 				data.splice(i,1);
 				i--;
-			}
-			for (let i = 0; i < data.length; i++) {
-				if (turf.booleanClockwise(data[i]) === (i === 0)) throw Error();
 			}
 			return true;
 		} else {
@@ -851,8 +866,10 @@ function logFeatures(obj) {
 	for (let key in obj) {
 		console.log('###', key);
 		let f = obj[key];
+		if (!f) continue;
+
 		console.dir(f, {depth:10});
-		demercator(f);
+		f = demercator(f, true);
 		console.log({
 			area: turf.area(f),
 		})
@@ -864,8 +881,8 @@ function union(...features) {
 	return coords2GeoJSON(polygonClipping.union(features2Coords(features)));
 }
 
-function intersect(...features) {
-	return coords2GeoJSON(polygonClipping.intersection(features2Coords(features)));
+function intersect(f1, f2) {
+	return coords2GeoJSON(polygonClipping.intersection(features2Coords([f1]), features2Coords([f2])));
 }
 
 function features2Coords(features) {
