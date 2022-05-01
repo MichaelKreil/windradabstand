@@ -148,7 +148,7 @@ async function start() {
 							break;
 							case 'Polygon':
 							case 'MultiPolygon':
-								f = turf.intersect(f, bboxPixelMarginPolygon);
+								f = intersect(f, bboxPixelMarginPolygon);
 							break;
 							default: throw Error(f.geometry.type);
 						}
@@ -158,7 +158,7 @@ async function start() {
 						f.properties = properties;
 						f.properties.layerName = layerName;
 
-						if (!checkFeature(f, true)) return;
+						if (!checkFeature(f, true)) throw logFeatures({f});
 
 						addResult(f);
 					})
@@ -391,9 +391,6 @@ function tryMergingFeatures(features) {
 			let f1 = features[i];
 			let f2 = features[j];
 
-			//if (debuggerTraceIds.has(f1.properties._counter)) throw Error();
-			//if (debuggerTraceIds.has(f2.properties._counter)) throw Error();
-
 			if (f1.bbox[0] > f2.bbox[2]) continue;
 			if (f1.bbox[1] > f2.bbox[3]) continue;
 			if (f1.bbox[2] < f2.bbox[0]) continue;
@@ -414,19 +411,8 @@ function tryMergingFeatures(features) {
 
 			feature.properties = f1.properties;
 			feature.bbox = turf.bbox(feature);
-			//feature.properties._counter = ++debuggerCounter;
 			
-			checkFeature(feature, true);
-			/*
-			if (debuggerTraceIds.has(feature.properties._counter)) throw Error(logFeatures({f1,f2,feature}));
-
-			//console.log('mergedFeature', mergedFeature);
-			try {
-				checkFeature(feature, true);
-			} catch (e) {
-				logFeatures({f1,f2,feature});
-				throw Error(e);
-			}*/
+			if (!checkFeature(feature, true)) throw logFeatures({f1, f2, feature});
 
 			features[i] = feature;
 			features.splice(j,1);
@@ -455,7 +441,7 @@ function tryMergingFeatures(features) {
 		
 		f1.geometry.coordinates = newLineString;
 
-		if (!checkFeature(f1, true)) return false;
+		if (!checkFeature(f1, true)) throw logFeatures({f1, f2});
 
 		try {
 			f1 = turf.simplify(f1, { tolerance:0.5, mutate:false })
@@ -463,10 +449,6 @@ function tryMergingFeatures(features) {
 			console.dir({f1}, {depth:6});
 			throw e;
 		}
-
-		//checkFeature(f1);
-
-		//console.dir({result:f1}, {depth:6})
 		
 		return f1;
 
@@ -576,34 +558,15 @@ function tryMergingFeatures(features) {
 	}
 
 	function mergePolygonFeatures(f1, f2) {
-		/*
-		if (debuggerTraceIds.has(f1.properties._counter) || debuggerTraceIds.has(f2.properties._counter)) {
-			console.dir({f1,f2}, {depth:8})
-			console.dir({
-				booleanIntersects:turf.booleanIntersects(f1, f2),
-				intersect:turf.intersect(f1, f2),
-			})
-			throw Error();
-		}
-		*/
 		try {
 			if (!turf.booleanIntersects(f1, f2)) return false;
-			//if (!turf.intersect(f1, f2)) return false;
+			let f = union(f1, f2);
+			if (f.geometry.type === 'MultiPolygon') return false;
+			return f;
 		} catch (e) {
-			console.dir({f1,f2}, {depth:8})
+			logFeatures({f1,f2})
 			throw e;
 		}
-		//let f = turf.union(f1, f2);
-		let f = union(f1, f2);
-
-		if (f.geometry.type === 'MultiPolygon') return false;
-		
-
-		//turf.simplify(f, { tolerance:0.5, mutate:true });
-		
-		//checkFeature(f);
-
-		return f;
 	}
 }
 
@@ -823,6 +786,9 @@ function checkFeature(feature, repair) {
 				data.splice(i,1);
 				i--;
 			}
+			for (let i = 0; i < data.length; i++) {
+				if (turf.booleanClockwise(data[i]) === (i === 0)) throw Error();
+			}
 			return true;
 		} else {
 			checkArray(data, 1)
@@ -894,22 +860,31 @@ function logFeatures(obj) {
 	}
 }
 
-function union() {
-	let coordsIn = [];
-	for (let feature of arguments) {
+function union(...features) {
+	return coords2GeoJSON(polygonClipping.union(features2Coords(features)));
+}
+
+function intersect(...features) {
+	return coords2GeoJSON(polygonClipping.intersection(features2Coords(features)));
+}
+
+function features2Coords(features) {
+	let coords = [];
+	for (let feature of features) {
 		switch (feature.geometry.type) {
-			case 'Polygon': coordsIn.push(feature.geometry.coordinates); continue
-			case 'MultiPolygon': coordsIn = coordsIn.concat(feature.geometry.coordinates); continue
+			case 'Polygon': coords.push(feature.geometry.coordinates); continue
+			case 'MultiPolygon': coords = coords.concat(feature.geometry.coordinates); continue
 		}
 		throw Error(feature.geometry.type);
 	}
+	return coords;
+}
 
-	let coordsOut = polygonClipping.union(coordsIn);
-
+function coords2GeoJSON(coords) {
 	let outside = [];
 	let inside = [];
 
-	coordsOut.forEach(polygon =>
+	coords.forEach(polygon =>
 		polygon.forEach(ring =>
 			(turf.booleanClockwise(ring) ? inside : outside).push(ring)
 		)
@@ -920,9 +895,9 @@ function union() {
 	} else if (inside.length === 0) {
 		return turf.multiPolygon(outside.map(p => [p]));
 	} else {
-		coordsOut.forEach(polygon => polygon.forEach((ring, index) => {
+		coords.forEach(polygon => polygon.forEach((ring, index) => {
 			if (turf.booleanClockwise(ring) === (index === 0)) throw Error();
 		}))
-		return turf.multiPolygon(coordsOut);
+		return turf.multiPolygon(coords);
 	}
 }
