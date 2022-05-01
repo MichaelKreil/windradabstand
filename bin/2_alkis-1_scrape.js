@@ -127,37 +127,40 @@ async function start() {
 
 					if (!feature) continue;
 					if (feature.geometry.coordinates.length === 0) continue;
-					if (!checkFeature(feature, true)) continue;
 
-					let properties = feature.properties;
+					turf.flatten(feature).features.forEach(f => {
+						if (!checkFeature(f, true)) return;
+
+						let properties = f.properties;
 					let isPolygon = false;
-					switch (feature.geometry.type) {
+						switch (f.geometry.type) {
 						case 'Point':
-							let p = feature.geometry.coordinates;
-							if (p[0] < bboxPixelMargin[0]) continue;
-							if (p[1] < bboxPixelMargin[1]) continue;
-							if (p[0] > bboxPixelMargin[2]) continue;
-							if (p[1] > bboxPixelMargin[3]) continue;
+								let p = f.geometry.coordinates;
+								if (p[0] < bboxPixelMargin[0]) return;
+								if (p[1] < bboxPixelMargin[1]) return;
+								if (p[0] > bboxPixelMargin[2]) return;
+								if (p[1] > bboxPixelMargin[3]) return;
 						break;
 						case 'LineString':
 						case 'MultiLineString':
-							feature = turf.bboxClip(feature, bboxPixelMargin)
+								f = turf.bboxClip(f, bboxPixelMargin)
 						break;
 						case 'Polygon':
 						case 'MultiPolygon':
 							isPolygon = true;
-							feature = turf.intersect(feature, bboxPixelMarginPolygon);
+								f = turf.intersect(f, bboxPixelMarginPolygon);
 						break;
-						default: throw Error(feature.geometry.type);
+							default: throw Error(f.geometry.type);
 					}
-					if (!feature) continue;
-					if (isEmptyFeature(feature)) continue;
-					if (!checkFeature(feature, true)) continue;
+						if (!f) return;
+						if (isEmptyFeature(f)) return;
+						if (!checkFeature(f, true)) return;
 
-					feature.properties = properties;
-					feature.properties.layerName = layerName;
+						f.properties = properties;
+						f.properties.layerName = layerName;
 
-					addResult(feature);
+						addResult(f);
+					})
 				}
 			}
 		}
