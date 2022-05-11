@@ -5,12 +5,13 @@ const { resolve } = require('path');
 
 const config = {
 	folders: {
-		static: 'static',
-		wind: '1_wind',
-		alkisCache: '2_alkis/cache',
-		alkisGeo: '2_alkis/data',
-		alkisResult: '2_alkis/result',
-		helper: 'helper',
+		static: 'data/static',
+		wind: 'data/1_wind',
+		alkisCache: 'data/2_alkis/cache',
+		alkisGeo: 'data/2_alkis/data',
+		alkisResult: 'data/2_alkis/result',
+		helper: 'data/helper',
+		web: 'docs/data',
 	},
 	getFilename: {},
 	rules: [
@@ -42,7 +43,7 @@ const config = {
 
 // prepare folders
 for (let name in config.folders) {
-	let path = resolve(__dirname, 'data', config.folders[name]);
+	let path = resolve(__dirname, config.folders[name]);
 	config.folders[name] = path
 	config.getFilename[name] = filename => resolve(path, filename);
 	fs.mkdirSync(path, { recursive:true });
@@ -102,8 +103,3 @@ config.rules = ruleLookup;
 
 
 module.exports = config;
-
-function randomString(n = 8) {
-	const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-	return Array.from({length:n}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-}

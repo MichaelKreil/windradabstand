@@ -1,8 +1,8 @@
 'use strict'
 
 const fs = require('fs');
-const zlib = require('zlib');
 const config = require('../config.js');
+const { writeWebData } = require('../lib/helper.js');
 
 (async () => {
 	let windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
@@ -46,7 +46,7 @@ const config = require('../config.js');
 
 		'Breitengrad': true,
 		'Bruttoleistung': true,
-		'bundeslandAGS': true,
+		'bundeslandAGS': false,
 		'hoehe': true,
 		'Inbetriebnahmedatum': true,
 		'Laengengrad': true,
@@ -84,31 +84,25 @@ const config = require('../config.js');
 		result[key] = windEntries.map(w => w[key]);
 	})
 	result = JSON.stringify(result);
-	//console.log(result);
-	//result = result.replaceAll('null','');
-	console.log(result.length);
-	console.log(zlib.gzipSync(result, {level:9}).length);
+
+	writeWebData('wind.json', result);
 })();
 
 async function tspSort(entries) {
 	const Delaunator = (await import('delaunator')).default;
 
 	const c = Math.cos(51*Math.PI/180);
-	const points0 = entries.map((e,i) => [e.Laengengrad/c, e.Breitengrad, i, 0, e]);
+	const points0 = entries.map((entry,index) => {
+		let point = [ entry.Laengengrad*c, entry.Breitengrad ];
+		return Object.assign(point, { index, group:index, count:0, entry, neighbours:[] });
+	});
 
 	let points = points0.slice();
-	let path = new Map();
-	let time0 = Date.now();
+	let segmentKeys = new Set();
 	let step = 0;
 
 	do {
-		if (step > 0) console.log([
-			points.length,
-			path.size,
-			step,
-			(Date.now()-time0)/step
-		].join('\t'));
-		step++;
+		if (step++ > 100) throw Error();
 
 		const { halfedges, hull, triangles } = Delaunator.from(points);
 
@@ -120,12 +114,6 @@ async function tspSort(entries) {
 		for (let i = 1; i < hull.length; i++) addEdge(hull[i-1], hull[i]);
 		addEdge(hull[hull.length-1], hull[0]);
 
-		if (points.length === 6) {
-			console.dir({hull,halfedges,triangles, points}, {depth:3, colors:true});
-			console.table(points.map(p => p[4]));
-			process.exit();
-		}
-
 		function addEdge(i0, i1) {
 			if (i0 === i1) return;
 			let p0 = points[i0];
@@ -133,95 +121,51 @@ async function tspSort(entries) {
 			let dx = p0[0] - p1[0];
 			let dy = p0[1] - p1[1];
 			let d = dx*dx + dy*dy;
-			edges.push([p0, p1, d]);
+			edges.push({p0, p1, d});
 		}
 
-		edges.sort((a,b) => a[2] - b[2]);
+		edges.sort((a,b) => a.d - b.d);
 
-		edges.forEach(([p0, p1]) => {
-			if (p0[3] >= 2) return;
-			if (p1[3] >= 2) return;
-			let i0 = p0[2];
-			let i1 = p1[2];
+		let maxIndex = Math.round(edges.length/5+2);
+
+		edges.slice(0,maxIndex).forEach(edge => {
+			let {p0, p1} = edge;
+			if (p0.count >= 2) return;
+			if (p1.count >= 2) return;
+			if (p0.group === p1.group) return;
+			let i0 = p0.index;
+			let i1 = p1.index;
 			let key = (i0 < i1) ? i0+'_'+i1 : i1+'_'+i0;
-			if (path.has(key)) return;
-			path.set(key, [p0,p1]);
-			p0[3]++;
-			p1[3]++;
+			if (segmentKeys.has(key)) return;
+			segmentKeys.add(key);
+
+			p0.count++; p0.neighbours.push(p1);
+			p1.count++; p1.neighbours.push(p0);
+
+			let p2, newGroup = p0.group;
+			while (true) {
+				p1.group = newGroup;
+				p2 = (p1.neighbours[0] === p0) ? p1.neighbours[1] : p1.neighbours[0];
+				if (!p2) break;
+				p0 = p1;
+				p1 = p2;
+			}
 		})
 
-		points = points.filter(p => p[3] < 2);
-	} while (points.length > 0)
+		points = points.filter(p => p.count < 2);
+	} while (points.length > 2)
 
-	path = Array.from(path.values());
-	console.log(path.pop());
-	let [ p0, p1 ] = path.pop();
-
-
-
-	console.log(p0, p1);
-
-	process.exit();
-	//let distances = [];
-
-	let sum = calcDistance(path[0], path[n-1]) + calcDistance(path[n-2], path[n-1]);
-	for (let i = 0; i < n-1; i++) sum += calcDistance(path[i], path[i+1]);
-	console.log(sum);
-
-	let ar, br = 0, maxI = 1e9;
-	for (let i = 0; i < maxI; i++) {
-		if (i % 1e6 === 0) process.stderr.write('\r'+(100*i/maxI).toFixed(1)+'%')
-
-		let dr = Math.floor(Math.pow(Math.random(),6)*n/2)+1;
-		ar = br;
-		br = (ar + dr) % n;
-
-		let a0,a1,a2,b0,b1,b2,d1,d2
-		switch (dr) {
-			case 1:
-				a0 = path[ ar       ];
-				b0 = path[ br       ]; // <= ar+1
-				b1 = path[(br+1) % n]; // <= br+1
-				b2 = path[(br+2) % n];
-				d1 = calcDistance(a0, b0) + calcDistance(b1, b2);
-				d2 = calcDistance(a0, b1) + calcDistance(b0, b2);
-				if (d1 <= d2) continue;
-			case 2:
-				a0 = path[ ar       ];
-				a1 = path[(ar+1) % n]; // <= ar+1
-				b0 = path[ br       ];
-				b1 = path[(br+1) % n]; // <= br+1
-				b2 = path[(br+2) % n];
-				d1 = calcDistance(a0, a1) + calcDistance(a1, b0) + calcDistance(b0, b1) + calcDistance(b1, b2);
-				d2 = calcDistance(a0, b1) + calcDistance(b1, b0) + calcDistance(b0, a1) + calcDistance(a1, b2);
-				if (d1 <= d2) continue;
-			default:
-				a0 = path[ ar       ];
-				a1 = path[(ar+1) % n];
-				a2 = path[(ar+2) % n];
-				b0 = path[ br       ];
-				b1 = path[(br+1) % n];
-				b2 = path[(br+2) % n];
-				d1 = calcDistance(a0, a1) + calcDistance(a1, a2) + calcDistance(b0, b1) + calcDistance(b1, b2);
-				d2 = calcDistance(a0, b1) + calcDistance(b1, a2) + calcDistance(b0, a1) + calcDistance(a1, b2);
-				if (d1 <= d2) continue;
-		}
-
-		let t = path[(ar+1) % n];
-		path[(ar+1) % n] = path[(br+1) % n];
-		path[(br+1) % n] = t;
+	let pStart = points[0];
+	let pEnd   = points[1];
+	
+	let p0 = pEnd, p1 = pStart, p2, path = [pStart];
+	while (true) {
+		p2 = (p1.neighbours[0] === p0) ? p1.neighbours[1] : p1.neighbours[0];
+		path.push(p2);
+		if (p2 === pEnd) break;
+		p0 = p1;
+		p1 = p2;
 	}
 
-	sum = calcDistance(path[0], path[n-1]) + calcDistance(path[n-2], path[n-1]);
-	for (let i = 0; i < n-1; i++) sum += calcDistance(path[i], path[i+1]);
-	console.log(sum);
-	process.exit();
-
-	function calcDistance(i0, i1) {
-		let p0 = entries[i0 % n].point;
-		let p1 = entries[i1 % n].point;
-		let dx = p0[0] - p1[0];
-		let dy = p0[1] - p1[1];
-		return Math.sqrt(dx*dx + dy*dy);
-	}
+	return path.map(p => p.entry);
 }

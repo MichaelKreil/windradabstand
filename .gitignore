@@ -2,9 +2,10 @@
 *.code-workspace
 *.mp4
 *.pdf
+/_trash
 /data/1_*
 /data/2_*
 /data/3_*
 /data/helper
+/docs/data/
 /node_modules/
-/_trash
