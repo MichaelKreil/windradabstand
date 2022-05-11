@@ -52,7 +52,7 @@ for (let name in config.folders) {
 // prepare laws
 let ruleLookup = new Map();
 config.rules.forEach(rule => {
-	const keys = [
+	const types = [
 		// gebaeudeflaeche
 		'wohngebaeude', // Einzelwohngebäude und Splittersiedlungen
 
@@ -87,13 +87,13 @@ config.rules.forEach(rule => {
 		'gesundheit', // Kur und Klinikgebiete
 		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft
 	]
-	Object.keys(rule).forEach(key => {
-		if (key === 'ags') return // bundesland id
-		if (key === 'name') return // bundesland name
-		if (!keys.includes(key)) throw Error('unknown rule key '+key);
-		if (typeof rule[key] === 'number') {
-			let v = rule[key];
-			rule[key] = () => v;
+	Object.keys(rule).forEach(type => {
+		if (type === 'ags') return // bundesland id
+		if (type === 'name') return // bundesland name
+		if (!types.includes(type)) throw Error('unknown rule key '+type);
+		if (typeof rule[type] === 'number') {
+			let v = rule[type];
+			rule[type] = () => v;
 		}
 	})
 	ruleLookup.set(rule.ags, rule);
