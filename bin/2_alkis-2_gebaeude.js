@@ -15,7 +15,7 @@ processAlkis(
 	'wohngebaeude'.split(','),
 	feature => {
 		let residential = isResidential.get(feature.properties.gebaeudefunktion)
-		if (residential === undefined) throw Error();
+		if (residential === undefined) throw Error(`Gebäudefunktion "${feature.properties.gebaeudefunktion}" unbekannt`);
 		if (!residential) return;
 		
 		if (turf.area(feature) > 1e6) return;
