@@ -25,8 +25,6 @@ const { writeWebData } = require('../lib/helper.js');
 	const keys = {
 		'Bundesland': false,
 		'bundeslandName': false,
-		'DatumBeginnVoruebergehendeStilllegung': false,
-		'DatumEndgueltigeStilllegung': false,
 		'DatumLetzteAktualisierung': false,
 		'DatumWiederaufnahmeBetrieb': false,
 		'EegMaStRNummer': false,
@@ -44,12 +42,14 @@ const { writeWebData } = require('../lib/helper.js');
 		'Postleitzahl': false,
 		'Registrierungsdatum': false,
 
+		'Laengengrad': true,
 		'Breitengrad': true,
 		'Bruttoleistung': true,
-		'bundeslandAGS': false,
+		'bundeslandAGS': true,
 		'hoehe': true,
 		'Inbetriebnahmedatum': true,
-		'Laengengrad': true,
+		'DatumBeginnVoruebergehendeStilllegung': true,
+		'DatumEndgueltigeStilllegung': true,
 		'min_autobahn': true,
 		'min_bahnlinie': true,
 		'min_biosphaere': true,
@@ -81,9 +81,29 @@ const { writeWebData } = require('../lib/helper.js');
 	let result = {};
 	Object.entries(keys).forEach(([key,use]) => {
 		if (!use) return;
-		result[key] = windEntries.map(w => w[key]);
+		let values = windEntries.map(w => w[key] ?? null);
+
+		switch (key) {
+			case 'Breitengrad':
+			case 'Laengengrad':
+				values = diffEncoding(values.map(v => Math.round(v*1e5)));
+			break;
+			case 'Inbetriebnahmedatum':
+				values = diffEncoding(values.map(v => {
+					if (v === null) return v;
+					v = v.split('-').map(s => parseInt(s,10));
+					return v[2] + 32*v[1] + 512*v[2];
+				}));
+			break;
+		}
+		values = runLengthEncoding(values);
+
+		result[key] = values;
+		console.log(key, JSON.stringify(values).length)
 	})
+	//console.log(result['Inbetriebnahmedatum']);
 	result = JSON.stringify(result);
+	console.log(result.length);
 
 	writeWebData('wind.json', result);
 })();
@@ -168,4 +188,32 @@ async function tspSort(entries) {
 	}
 
 	return path.map(p => p.entry);
+}
+
+function runLengthEncoding(array) {
+	let result = [], lastValue = 'zwetschenkuchen kommt bestimmt nicht vor';
+	for (let i = 0; i < array.length; i++) {
+		let value = array[i];
+		if (value === lastValue) {
+			let end = result.length-1;
+			if (Array.isArray(result[end])) {
+				result[end][1]++;
+			} else {
+				result[end] = [result[end], 2];
+			}
+		} else {
+			result.push(value);
+			lastValue = value;
+		}
+	}
+	return result;
+}
+
+function diffEncoding(array) {
+	for (let i = array.length-1; i > 0; i--) {
+		if (array[i] === null) continue;
+		if (array[i-1] === null) continue;
+		array[i] -= array[i-1];
+	}
+	return array;
 }
