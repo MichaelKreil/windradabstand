@@ -53,14 +53,16 @@ async function start() {
 		if (z0 > MAXLEVEL) throw Error();
 
 		let buffer = await downloadTile(x0,y0,z0);
+		
+		if (z0 === MAXLEVEL) {
+			progressPos++;
+			if (progressPos % 100 === 0) showProgress(progressPos/(progressMax-progressSkip));
+		}
+
 		if (!buffer) return [];
 
 		let features = [];
 		if (z0 === MAXLEVEL) {
-			progressPos++;
-			if (progressPos % 100 === 0) {
-				showProgress(progressPos/(progressMax-progressSkip));
-			}
 
 			const tile = new VectorTile(new Protobuf(buffer));
 			
@@ -124,7 +126,7 @@ async function start() {
 					if (await downloadTile(x,y,z)) {
 						todos.push({x,y,z});
 					} else {
-						progressSkip += 4 ** z;
+						progressSkip += 4 ** (MAXLEVEL-z);
 					}
 				}
 			}
