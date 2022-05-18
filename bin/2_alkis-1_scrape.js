@@ -18,7 +18,6 @@ const MAXLEVEL = 15
 const MAXSCALE = 2 ** MAXLEVEL;
 const SIZE = 4096*MAXSCALE;
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
-const BBOX = [5.8, 47.2, 15.1, 55.1]
 
 start()
 
@@ -31,22 +30,16 @@ async function start() {
 
 	const layerFiles = new LayerFiles();
 
-	const bboxGermany = deg2tile(BBOX[0], BBOX[3], 0).concat(deg2tile(BBOX[2], BBOX[1], 0));
-	const tileCount = (Math.floor(bboxGermany[2]*MAXSCALE) - Math.floor(bboxGermany[0]*MAXSCALE))
-	                * (Math.floor(bboxGermany[3]*MAXSCALE) - Math.floor(bboxGermany[1]*MAXSCALE));
-	const showProgress = Progress(tileCount);
+	const showProgress = Progress(1);
 
-	let tileIndex = 0;
+	
+	let progressMax = 4 ** MAXLEVEL;
+	let progressPos = 0;
+	let progressSkip = 0;
 
-	await downloadTileRec(0, 0, 0);
+	await downloadTileRec(0,0,0);
 
 	async function downloadTileRec(x0, y0, z0) {
-		const scale = 2 ** z0;
-		if (bboxGermany[0] * scale > x0 + 1) return;
-		if (bboxGermany[1] * scale > y0 + 1) return;
-		if (bboxGermany[2] * scale < x0    ) return;
-		if (bboxGermany[3] * scale < y0    ) return;
-
 		const tilePixelSize = 4096 * (2 ** (MAXLEVEL - z0));
 		const bboxPixel = [
 			 x0      * tilePixelSize,
@@ -59,20 +52,14 @@ async function start() {
 
 		if (z0 > MAXLEVEL) throw Error();
 
+		let buffer = await downloadTile(x0,y0,z0);
+		if (!buffer) return [];
+
 		let features = [];
 		if (z0 === MAXLEVEL) {
-			if (tileIndex % 100 === 0) showProgress(tileIndex);
-			tileIndex++;
-
-			const url = `${URL}${z0}/${x0}/${y0}.pbf`
-			const filename = config.getFilename.alkisCache(`${x0}/${y0}.pbf`)
-			let buffer = await fetchCached(filename, url, headers);
-			if (buffer.length === 0) return;
-
-			try {
-				buffer = await gunzip(buffer);
-			} catch (e) {
-				throw Error('Error in Buffer. Delete file and try again:', filename);
+			progressPos++;
+			if (progressPos % 100 === 0) {
+				showProgress(progressPos/(progressMax-progressSkip));
 			}
 
 			const tile = new VectorTile(new Protobuf(buffer));
@@ -128,10 +115,21 @@ async function start() {
 				}
 			}
 		} else {
+			let todos = [];
 			for (let dy = 0; dy <= 1; dy++) {
 				for (let dx = 0; dx <= 1; dx++) {
-					(await downloadTileRec(x0*2+dx, y0*2+dy, z0+1))?.forEach(f => features.push(f));
+					let x = x0*2+dx;
+					let y = y0*2+dy;
+					let z = z0+1;
+					if (await downloadTile(x,y,z)) {
+						todos.push({x,y,z});
+					} else {
+						progressSkip += 4 ** z;
+					}
 				}
+			}
+			for (let {x,y,z} of todos) {
+				(await downloadTileRec(x,y,z)).forEach(f => features.push(f));
 			}
 		}
 
@@ -204,14 +202,6 @@ async function start() {
 				})
 			}
 		}
-
-		/*
-		if (z0 <= 8) {
-			console.log(`\nleftovers: ${propagateResults.length}\tx0:${x0}\ty0:${y0}\tzoom:${z0}`)
-			let features = propagateResults.map(f => demercator(f));
-			fs.writeFileSync(`../data/2_alkis/leftovers-${x0}-${y0}.geojson`, JSON.stringify(turf.featureCollection(features)));
-		}
-		*/
 
 		return propagateResults;
 
@@ -307,6 +297,20 @@ async function start() {
 					sum += (p2.x - p1.x) * (p1.y + p2.y);
 				}
 				return sum;
+			}
+		}
+
+		async function downloadTile(x,y,z) {
+			const url = `${URL}${z}/${x}/${y}.pbf`
+			const filename = config.getFilename.alkisCache(`${z}/${x}/${y}.pbf`)
+
+			let buffer = await fetchCached(filename, url, headers);
+			
+			if (buffer.length === 0) return;
+			try {
+				return await gunzip(buffer);
+			} catch (e) {
+				throw Error('Error in Buffer. Delete file and try again:', filename);
 			}
 		}
 	}
