@@ -3,7 +3,7 @@
 
 // Based on the idea of: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
 
-const { fetchCached, Progress, forEachParallel } = require('../lib/helper.js');
+const { fetchCached, Progress } = require('../lib/helper.js');
 const config = require('../config.js');
 const gunzip = require('util').promisify(require('zlib').gunzip);
 

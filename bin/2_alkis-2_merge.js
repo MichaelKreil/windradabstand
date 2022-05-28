@@ -7,7 +7,7 @@ const fs = require('fs');
 const turf = require('@turf/turf');
 const VectorTile = require('@mapbox/vector-tile').VectorTile;
 const Protobuf = require('pbf');
-const { fetchCached, Progress } = require('../lib/helper.js');
+const { Progress } = require('../lib/helper.js');
 const polygonClipping = require('polygon-clipping');
 const config = require('../config.js');
 const { createHash } = require('crypto');
@@ -296,12 +296,12 @@ async function start() {
 		}
 
 		async function getTile(x,y,z) {
-			const url = `${URL}${z}/${x}/${y}.pbf`
 			const filename = config.getFilename.alkisCache(`${z}/${x}/${y}.pbf`)
+			if (!fs.existsSync(filename)) return;
 
-			let buffer = await fetchCached(filename, url, headers);
-			
+			let buffer = fs.readFileSync(filename);
 			if (buffer.length === 0) return;
+
 			try {
 				return await gunzip(buffer);
 			} catch (e) {
