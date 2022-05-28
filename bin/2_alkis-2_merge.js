@@ -134,21 +134,9 @@ async function start() {
 			const lookup = new Map();
 			features.forEach(f => {
 				f.bbox ??= turf.bbox(f);
-				const hash = (f.hash ??= getHash(f));
+				const hash = (f.hash ??= calcFeatureHash(f));
 				if (!lookup.has(hash)) lookup.set(hash, []);
 				return lookup.get(hash).push(f);
-
-				function getHash(f) {
-					let entries = Object.entries(f.properties);
-					entries = entries.filter(e => !e[0].startsWith('_'))
-					entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
-					entries = entries.map(e => e.join(':'));
-					entries.push(f.properties.layerName);
-
-					const hash = createHash('sha256');
-					hash.update(entries.join(','));
-					return hash.digest('base64');
-				}
 			})
 			features = [];
 			for (let group of lookup.values()) {
@@ -168,7 +156,7 @@ async function start() {
 						part.bbox ??= turf.bbox(part);
 						part.properties = Object.assign({}, feature.properties);
 
-						if (countPoints(part) > 1e4) return writeResult(part);
+						if (countPointsInFeature(part) > 1e6) return writeResult(part);
 
 						if (z0 === MAXLEVEL) return propagateResults.push(part);
 						if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
@@ -178,22 +166,6 @@ async function start() {
 						
 						writeResult(part);
 					})
-
-					function countPoints(feature) {
-						switch (feature.geometry.type) {
-							case 'Point':           return count(feature.geometry.coordinates, 0);
-							case 'LineString':      return count(feature.geometry.coordinates, 1);
-							case 'MultiLineString': return count(feature.geometry.coordinates, 2);
-							case 'Polygon':         return count(feature.geometry.coordinates, 2);
-							case 'MultiPolygon':    return count(feature.geometry.coordinates, 3);
-							default: throw Error(feature.geometry.type);
-						}
-
-						function count(coordinates, depth) {
-							if (depth === 0) return coordinates.length;
-							return coordinates.reduce((s,c) => s+count(c,depth-1), 0);
-						}
-					}
 				})
 			}
 		}
@@ -710,4 +682,32 @@ function coords2GeoJSON(coords) {
 		}))
 		return turf.multiPolygon(coords);
 	}
+}
+
+function countPointsInFeature(feature) {
+	switch (feature.geometry.type) {
+		case 'Point':           return count(feature.geometry.coordinates, 0);
+		case 'LineString':      return count(feature.geometry.coordinates, 1);
+		case 'MultiLineString': return count(feature.geometry.coordinates, 2);
+		case 'Polygon':         return count(feature.geometry.coordinates, 2);
+		case 'MultiPolygon':    return count(feature.geometry.coordinates, 3);
+		default: throw Error(feature.geometry.type);
+	}
+
+	function count(coordinates, depth) {
+		if (depth === 0) return coordinates.length;
+		return coordinates.reduce((s,c) => s+count(c,depth-1), 0);
+	}
+}
+
+function calcFeatureHash(feature) {
+	let entries = Object.entries(feature.properties);
+	entries = entries.filter(e => !e[0].startsWith('_'))
+	entries.sort((a,b) => a[0] < b[0] ? -1 : 1);
+	entries = entries.map(e => e.join(':'));
+	entries.push(feature.properties.layerName);
+
+	const hash = createHash('sha256');
+	hash.update(entries.join(','));
+	return hash.digest('base64');
 }
