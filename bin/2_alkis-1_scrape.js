@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#!/usr/bin/env node
 'use strict'
 
 // Based on the idea of: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
