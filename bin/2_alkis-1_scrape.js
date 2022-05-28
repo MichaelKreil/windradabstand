@@ -11,8 +11,6 @@ const gunzip = require('util').promisify(require('zlib').gunzip);
 const MAXLEVEL = 15
 const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
 const BBOX = [5.8, 47.2, 15.1, 55.1]
-
-
 const headers = {
 	'Referer': 'https://adv-smart.de/map-editor/map',
 	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
