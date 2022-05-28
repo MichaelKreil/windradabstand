@@ -17,29 +17,40 @@ const gunzip = require('util').promisify(require('zlib').gunzip);
 const MAXLEVEL = 15
 const MAXSCALE = 2 ** MAXLEVEL;
 const SIZE = 4096*MAXSCALE;
-const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
+const BBOX = [5.8, 47.2, 15.1, 55.1]
 
 start()
 
 async function start() {
-
-	const headers = {
-		'Referer': 'https://adv-smart.de/map-editor/map',
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+	const LEVELBBOX = [];
+	for (let z = 0; z <= MAXLEVEL; z++) {
+		const tileMin = deg2tile(BBOX[0], BBOX[3], z).map(Math.floor);
+		const tileMax = deg2tile(BBOX[2], BBOX[1], z).map(Math.floor);
+		LEVELBBOX[z] = [tileMin[0], tileMin[1], tileMax[0], tileMax[1]]
 	}
+
+	const progressMax = (LEVELBBOX[MAXLEVEL][2] - LEVELBBOX[MAXLEVEL][0] + 1)*(LEVELBBOX[MAXLEVEL][3] - LEVELBBOX[MAXLEVEL][1] + 1)
+	let progressPos = 0;
 
 	const layerFiles = new LayerFiles();
 
-	const showProgress = Progress(1);
+	const showProgress = Progress(progressMax);
 
-	
-	let progressMax = 4 ** MAXLEVEL;
-	let progressPos = 0;
-	let progressSkip = 0;
+	await mergeTileRec(0,0,0);
 
-	await downloadTileRec(0,0,0);
+	async function mergeTileRec(x0, y0, z0) {
+		if (z0 > MAXLEVEL) throw Error();
 
-	async function downloadTileRec(x0, y0, z0) {
+		if (LEVELBBOX[z0][0] > x0) return [];
+		if (LEVELBBOX[z0][1] > y0) return [];
+		if (LEVELBBOX[z0][2] < x0) return [];
+		if (LEVELBBOX[z0][3] < y0) return [];
+		
+		if (z0 === MAXLEVEL) {
+			progressPos++;
+			if (progressPos % 10 === 0) showProgress(progressPos);
+		}
+
 		const tilePixelSize = 4096 * (2 ** (MAXLEVEL - z0));
 		const bboxPixel = [
 			 x0      * tilePixelSize,
@@ -50,15 +61,7 @@ async function start() {
 
 		const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
 
-		if (z0 > MAXLEVEL) throw Error();
-
-		let buffer = await downloadTile(x0,y0,z0);
-		
-		if (z0 === MAXLEVEL) {
-			progressPos++;
-			if (progressPos % 100 === 0) showProgress(progressPos/(progressMax-progressSkip));
-		}
-
+		let buffer = await getTile(x0,y0,z0);
 		if (!buffer) return [];
 
 		let features = [];
@@ -68,14 +71,13 @@ async function start() {
 			
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
+				// Ignoriere
 				if (layerName === 'Hintergrund') continue;
-				if (layerName === 'Vegetationsflaeche') continue;
-				if (layerName === 'Gewaesserflaeche') continue;
+				//if (layerName === 'Vegetationsflaeche') continue;
+				//if (layerName === 'Gewaesserflaeche') continue;
 
 				for (let i = 0; i < layer.length; i++) {
 					let feature = featureToObject(layer.feature(i));
-
-					//if ((x0 === 17145) && (y0 === 10366)) console.log(feature);
 
 					if (!feature) continue;
 					checkFeature(feature, true);
@@ -83,7 +85,6 @@ async function start() {
 
 					let properties = feature.properties;
 					properties.layerName = layerName;
-
 
 					switch (feature.geometry.type) {
 						case 'Point':
@@ -117,21 +118,13 @@ async function start() {
 				}
 			}
 		} else {
-			let todos = [];
 			for (let dy = 0; dy <= 1; dy++) {
 				for (let dx = 0; dx <= 1; dx++) {
 					let x = x0*2+dx;
 					let y = y0*2+dy;
 					let z = z0+1;
-					if (await downloadTile(x,y,z)) {
-						todos.push({x,y,z});
-					} else {
-						progressSkip += 4 ** (MAXLEVEL-z);
-					}
+					(await mergeTileRec(x,y,z)).forEach(f => features.push(f));
 				}
-			}
-			for (let {x,y,z} of todos) {
-				(await downloadTileRec(x,y,z)).forEach(f => features.push(f));
 			}
 		}
 
@@ -302,7 +295,7 @@ async function start() {
 			}
 		}
 
-		async function downloadTile(x,y,z) {
+		async function getTile(x,y,z) {
 			const url = `${URL}${z}/${x}/${y}.pbf`
 			const filename = config.getFilename.alkisCache(`${z}/${x}/${y}.pbf`)
 
