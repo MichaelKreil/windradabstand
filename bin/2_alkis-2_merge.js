@@ -1,4 +1,4 @@
-#!/usr/bin/env node --max-old-space-size=8192
+#!/usr/bin/env -S node --max-old-space-size=4096
 'use strict'
 
 // Based on the idea of: https://github.com/bundesAPI/deutschland/blob/main/src/deutschland/geo.py
