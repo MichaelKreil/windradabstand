@@ -191,7 +191,7 @@ async function tspSort(entries) {
 						groupIndex = knownGroups.size;
 						knownGroups.set(groupId, groupIndex);
 					}
-					p.entry.groupIndex = groupIndex;
+					p.entry._group = groupIndex;
 				})
 				console.log('   found',knownGroups.size,'groups');
 				groupsSaved = true;
@@ -236,5 +236,8 @@ async function tspSort(entries) {
 		p1 = p2;
 	}
 
-	return path.map(p => p.entry);
+	path = path.map(p => p.entry);
+	path.forEach((e,i) => e._index = i);
+
+	return path;
 }
