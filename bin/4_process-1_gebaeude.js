@@ -10,10 +10,10 @@ const { processAlkis } = require('../lib/geohelper.js');
 
 let isResidential = initLookup()
 
-processAlkis(
-	'gebaeudeflaeche',
-	'wohngebaeude'.split(','),
-	feature => {
+processAlkis({
+	slug:'gebaeudeflaeche',
+	ruleTypes:'wohngebaeude'.split(','),
+	cbFeature: feature => {
 		let residential = isResidential.get(feature.properties.gebaeudefunktion)
 		if (residential === undefined) throw Error(`Gebäudefunktion "${feature.properties.gebaeudefunktion}" unbekannt`);
 		if (!residential) return;
@@ -24,8 +24,8 @@ processAlkis(
 
 		return true;
 	},
-	windEntries => windEntries.every(([w,d]) => d > 10)
-)
+	cbWindEntries: windEntries => windEntries.every(([w,d]) => d > 10),
+})
 
 
 

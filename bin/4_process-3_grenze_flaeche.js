@@ -9,15 +9,15 @@ const { processAlkis } = require('../lib/geohelper.js');
 
 let getType = initLookup();
 
-processAlkis(
-	'grenze_flaeche',
-	'biosphaere,ffhabitat,landschaftsschutz,naturpark,nationalpark,naturschutz,vogelschutz,naturdenkmal'.split(','),
-	feature => {
+processAlkis({
+	slug:'grenze_flaeche',
+	ruleTypes:'biosphaere,ffhabitat,landschaftsschutz,naturpark,nationalpark,naturschutz,vogelschutz,naturdenkmal'.split(','),
+	cbFeature:feature => {
 		feature.properties.type = getType.get(feature.properties.klasse);
 		if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
 		return feature.properties.type;
 	}
-)
+})
 
 function initLookup() {
 	let lookup = new Map();
