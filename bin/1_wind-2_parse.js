@@ -136,7 +136,7 @@ function floatyEnough(value) {
 }
 
 async function tspSort(entries) {
-	const maxDInGroup = 0.03;
+	const maxDInGroup = 0.01;
 
 	const Delaunator = (await import('delaunator')).default;
 
