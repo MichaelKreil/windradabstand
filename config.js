@@ -9,7 +9,7 @@ const config = {
 		wind: 'data/1_wind',
 		alkisCache: 'data/2_alkis/cache',
 		alkisGeo: 'data/2_alkis/data',
-		alkisResult: 'data/2_alkis/result',
+		schutzgebiete: 'data/3_schutzgebiete/data',
 		helper: 'data/helper',
 		web: 'docs/data',
 	},
