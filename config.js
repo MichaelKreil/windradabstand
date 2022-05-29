@@ -33,11 +33,10 @@ const config = {
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },
 		{ ags:16, name:'Thüringen',              wohngebiet:(h,r)=>(h+r)<150?750:1000, wohngebaeude:600, naturschutz:300, nationalpark:600, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:40, freileitung:100 },
 	],
-	extremeWindStations: [
-		{ h:116, r:180 },
-		{ h:167, r:170 },
-		{ h:169, r:162 },
-		{ h:174, r:137 },
+	typicalWindTurbines: [
+		{ hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
+		{ hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
+		{ hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
 	]
 }
 
