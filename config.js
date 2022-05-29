@@ -10,6 +10,8 @@ const config = {
 		alkisCache: 'data/2_alkis/cache',
 		alkisGeo: 'data/2_alkis/data',
 		schutzgebiete: 'data/3_schutzgebiete',
+		mapGroup: 'data/4_map_result/group',
+		mapFeature: 'data/4_map_result/feature',
 		helper: 'data/helper',
 		web: 'docs/data',
 	},
