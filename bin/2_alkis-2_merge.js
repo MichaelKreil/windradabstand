@@ -72,7 +72,7 @@ async function start() {
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
 
 				// Ignoriere
-				if (layerName === 'Hintergrund') continue;
+				//if (layerName === 'Hintergrund') continue;
 				//if (layerName === 'Vegetationsflaeche') continue;
 				//if (layerName === 'Gewaesserflaeche') continue;
 
