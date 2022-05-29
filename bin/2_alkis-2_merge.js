@@ -41,8 +41,8 @@ async function start() {
 	async function mergeTileRec(x0, y0, z0) {
 		if (z0 > MAXLEVEL) throw Error();
 
-		if (LEVELBBOX[z0][0] > x0) return [];
-		if (LEVELBBOX[z0][1] > y0) return [];
+		if (x0 < LEVELBBOX[z0][0]) return [];
+		if (y0 < LEVELBBOX[z0][1]) return [];
 		if (LEVELBBOX[z0][2] < x0) return [];
 		if (LEVELBBOX[z0][3] < y0) return [];
 		
@@ -59,14 +59,12 @@ async function start() {
 			(y0 + 1) * tilePixelSize,
 		]
 
-		const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
-
-		let buffer = await getTile(x0,y0,z0);
-		if (!buffer) return [];
-
 		let features = [];
 		if (z0 === MAXLEVEL) {
+		const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
 
+			const buffer = await getTile(x0,y0,z0);
+		if (!buffer) return [];
 			const tile = new VectorTile(new Protobuf(buffer));
 			
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
