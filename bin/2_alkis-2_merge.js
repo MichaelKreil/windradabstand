@@ -38,6 +38,8 @@ async function start() {
 
 	await mergeTileRec(0,0,0);
 
+	layerFiles.closeAll();
+
 	async function mergeTileRec(x0, y0, z0) {
 		if (z0 > MAXLEVEL) throw Error();
 
@@ -61,10 +63,10 @@ async function start() {
 
 		let features = [];
 		if (z0 === MAXLEVEL) {
-		const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
+			const bboxPixelPolygon = turf.bboxPolygon(bboxPixel);
 
 			const buffer = await getTile(x0,y0,z0);
-		if (!buffer) return [];
+			if (!buffer) return [];
 			const tile = new VectorTile(new Protobuf(buffer));
 			
 			for (let [layerName, layer] of Object.entries(tile.layers)) {
@@ -171,10 +173,9 @@ async function start() {
 		return propagateResults;
 
 		function writeResult(feature) {
-			let layerFile = layerFiles.get(feature.properties.layerName);
 			feature = demercator(feature);
 			delete feature.bbox;
-			layerFile.write(JSON.stringify(feature));
+			layerFiles.get(feature.properties.layerName).write(JSON.stringify(feature));
 		}
 
 		function featureToObject(feature) {
@@ -282,19 +283,31 @@ async function start() {
 
 	function LayerFiles() {
 		let map = new Map();
-		return { get, close }
+		return { get, closeAll }
 		function get(name) {
 			if (map.has(name)) return map.get(name);
 			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g, '_') + '.geojsonl');
 			let file = fs.openSync(filename, 'w')
+			let buffer = [];
 			let obj = {
-				write: line => fs.writeSync(file, line + '\n'),
-				close: () => fs.closeSync(file),
+				write: line => {
+					buffer.push(line+'\n');
+					if (buffer.length > 1e4) flush();
+				},
+				close: () => {
+					flush();
+					fs.closeSync(file)
+				}
 			}
 			map.set(name, obj);
 			return obj;
+
+			function flush() {
+				fs.writeSync(file, buffer.join('')),
+				buffer = [];
+			}
 		}
-		function close() {
+		function closeAll() {
 			for (let file of map.values()) file.close();
 		}
 	}
