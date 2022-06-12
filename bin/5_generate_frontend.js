@@ -8,6 +8,18 @@ const config = require('../config.js');
 const { writeWebData } = require('../lib/helper.js');
 
 (async () => {
+	const slugs = 'gebaeudeflaeche,siedlungsflaeche,grenze_flaeche,verkehrslinie,versorgungslinie'.split(',')
+
+	const windEntries = loadWindEntries();
+	const maxGroupIndex = windEntries.reduce((m,w) => Math.max(m,w.properties.groupIndex), 0);
+	
+	for (let i = 0; i <= maxGroupIndex; i++) generateGroup(i);
+
+	saveWindEntries()
+})()
+
+
+(async () => {
 	let windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
 	'gebaeudeflaeche,siedlungsflaeche,grenze_flaeche,verkehrslinie,versorgungslinie'
 	.split(',').forEach(slug => {
