@@ -12,6 +12,7 @@ const config = {
 		schutzgebiete: 'data/3_schutzgebiete',
 		mapGroup: 'data/4_map_result/group',
 		mapFeature: 'data/4_map_result/feature',
+		bufferedGeometry: 'data/6_buffered_geometry',
 		helper: 'data/helper',
 		web: 'docs/data',
 	},
@@ -35,25 +36,7 @@ const config = {
 		{ ags: 1, name:'Schleswig-Holstein',     wohngebiet: 800, wohngebaeude:400, camping:800, gewerbe:400, naturschutz:(h,r)=>200+r, nationalpark:(h,r)=>300+r, vogelschutz:(h,r)=>300+r, ffhabitat:(h,r)=>200+r, autobahn:100, bundesstr:40, bahnlinie:100 },
 		{ ags:16, name:'Thüringen',              wohngebiet:(h,r)=>(h+r)<150?750:1000, wohngebaeude:600, naturschutz:300, nationalpark:600, autobahn:40, bundesstr:20, landesstr:20, kreisstr:20, bahnlinie:40, freileitung:100 },
 	],
-	typicalWindTurbines: [
-		{ hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
-		{ hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
-		{ hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
-	]
-}
-
-// prepare folders
-for (let name in config.folders) {
-	let path = resolve(__dirname, config.folders[name]);
-	config.folders[name] = path
-	config.getFilename[name] = filename => resolve(path, filename);
-	fs.mkdirSync(path, { recursive:true });
-}
-
-// prepare laws
-let ruleLookup = new Map();
-config.rules.forEach(rule => {
-	const types = [
+	ruleTypes: [
 		// gebaeudeflaeche
 		'wohngebaeude', // Einzelwohngebäude und Splittersiedlungen
 
@@ -87,14 +70,34 @@ config.rules.forEach(rule => {
 		'denkmal', // Kulturdenkmale und geschützte Ensembles
 		'gesundheit', // Kur und Klinikgebiete
 		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft
+	],
+	typicalWindTurbines: [
+		{ hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
+		{ hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
+		{ hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
 	]
+}
+
+// prepare folders
+for (let name in config.folders) {
+	let path = resolve(__dirname, config.folders[name]);
+	config.folders[name] = path
+	config.getFilename[name] = filename => resolve(path, filename);
+	fs.mkdirSync(path, { recursive:true });
+}
+
+// prepare laws
+let ruleLookup = new Map();
+config.rules.forEach(rule => {
 	Object.keys(rule).forEach(type => {
 		if (type === 'ags') return // bundesland id
 		if (type === 'name') return // bundesland name
-		if (!types.includes(type)) throw Error('unknown rule key '+type);
+		if (!config.ruleTypes.includes(type)) throw Error('unknown rule key '+type);
 		if (typeof rule[type] === 'number') {
 			let v = rule[type];
-			rule[type] = () => v;
+			let f = function () { return v }
+			Object.defineProperty(f, 'name', {value: type, writable: false});
+			rule[type] = f;
 		}
 	})
 	ruleLookup.set(rule.ags, rule);
