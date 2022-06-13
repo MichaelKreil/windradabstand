@@ -8,7 +8,7 @@ const turf = require('@turf/turf');
 const VectorTile = require('@mapbox/vector-tile').VectorTile;
 const Protobuf = require('pbf');
 const { Progress } = require('../lib/helper.js');
-const polygonClipping = require('polygon-clipping');
+const { union, intersect } = require('../lib/geohelper.js');
 const config = require('../config.js');
 const { createHash } = require('crypto');
 const gunzip = require('util').promisify(require('zlib').gunzip);
@@ -649,49 +649,6 @@ function logFeatures(obj) {
 			area: turf.area(f),
 		})
 		console.log(JSON.stringify(f));
-	}
-}
-
-function union(...features) {
-	return coords2GeoJSON(polygonClipping.union(features2Coords(features)));
-}
-
-function intersect(f1, f2) {
-	return coords2GeoJSON(polygonClipping.intersection(features2Coords([f1]), features2Coords([f2])));
-}
-
-function features2Coords(features) {
-	let coords = [];
-	for (let feature of features) {
-		feature = turf.rewind(feature, {mutate:true})
-		switch (feature.geometry.type) {
-			case 'Polygon': coords.push(feature.geometry.coordinates); continue
-			case 'MultiPolygon': coords = coords.concat(feature.geometry.coordinates); continue
-		}
-		throw Error(feature.geometry.type);
-	}
-	return coords;
-}
-
-function coords2GeoJSON(coords) {
-	let outside = [];
-	let inside = [];
-
-	coords.forEach(polygon =>
-		polygon.forEach(ring =>
-			(turf.booleanClockwise(ring) ? inside : outside).push(ring)
-		)
-	)
-
-	if (outside.length === 1) {
-		return turf.polygon(outside.concat(inside));
-	} else if (inside.length === 0) {
-		return turf.multiPolygon(outside.map(p => [p]));
-	} else {
-		coords.forEach(polygon => polygon.forEach((ring, index) => {
-			if (turf.booleanClockwise(ring) === (index === 0)) throw Error();
-		}))
-		return turf.multiPolygon(coords);
 	}
 }
 
