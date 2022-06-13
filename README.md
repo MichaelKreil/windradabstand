@@ -2,21 +2,25 @@
 
 1. Windräder
 	- 1.1. ZIP runterladen
-	- 1.2. Windräder parsen, in welchem Bundesland steht es, Metadaten aufbereiten, (Leistung, Höhen, IDs vergeben ...)
+	- 1.2. Windräder parsen, in welchem Bundesland stehen sie, Metadaten aufbereiten (Leistung, Höhen, IDs vergeben ...) und durch Clustererkennung in Gruppen sortieren.
 2. ALKIS
 	- 2.1. Scrapen
-	- 2.2. Gebäude filtern, ist es ein Wohngebäude, welches Bundesland, Windradnähe, und als GeoPackage speichern.
-	- 2.3. Siedlungsfläche filtern, welches Bundesland, Windradnähe, und als GeoPackage speichern.
-	- 2.4. Naturschutzgebiete filtern, welches Bundesland, Windradnähe, und als GeoPackage speichern.
-3. Karte der möglichen Flächen
-	- 4.1. bei Höhen von
-		- 100m
-		- 200m		
-4. Karte rendern
-	- 3.1. Kartenkacheln generieren
-5. Web vorbereiten:
-	- 3.2. GeoJSON für Frontend mit:
-		- Windrädern
-		- kollidierende Gebäude
-		- kollidierende Siedlungsflächen
-		- kollidierende Naturschutzgebiete
+	- 2.2. Merge die Geometrien der Vektorkacheln und speichere sie als Layer
+3. Schutzgebiete
+	- 3.1. Lade die Schutzgebiete als einzelne Layer runter, wie Vogel-, Natur-, Landschaftsschutzgebiete, usw.
+4. Verarbeite die Quelldaten
+	- Berechne Nähe zu Windrädern
+	- generiere GeoJSONs für alle Features
+	- generiere NDJSONs für Features in der Nähe zu Windrädern, gruppiert nach Windradgruppen
+	- 4.1. Gebäude
+	- 4.2. Siedlungsfläche
+	- 4.3. Naturschutzgebiete
+	- 4.4. Verkehrslinien (z.B. Autobahnen, Bundesstraßen, …)
+	- 4.5. Versorgungslinien (z.B. Hochspannungsleitungen, …)
+5. Frontend vorbereiten
+
+---
+
+6. Mögliche Nutzflächen berechnen
+7. Karte rendern
+
