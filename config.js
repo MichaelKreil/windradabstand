@@ -38,43 +38,43 @@ const config = {
 	],
 	ruleTypes: [
 		// gebaeudeflaeche
-		'wohngebaeude', // Einzelwohngebäude und Splittersiedlungen
+		{ slug:'wohngebaeude', name:'Einzelwohngebäude und Splittersiedlungen' },
 
 		// siedlungsflaeche
-		'wohngebiet', // Allgemeine und reine Wohngebiete
-		'camping', // Campingplätze
-		'erholung', // Schwerpunkträume für Tourismus, Freizeit/Erholung
-		'gewerbe', // Gewerbe und Industriegebiete
+		{ slug:'wohngebiet', name:'Allgemeine und reine Wohngebiete' },
+		{ slug:'camping', name:'Campingplätze' },
+		{ slug:'erholung', name:'Schwerpunkträume für Tourismus, Freizeit/Erholung' },
+		{ slug:'gewerbe', name:'Gewerbe und Industriegebiete' },
 		
 		// grenze_flaeche
-		'biosphaere', // Biosphärenreservate (§ 25 BNatSchG)
-		'ffhabitat', // FFH-Gebiete (Richtlinie 92/43 EWG)
-		'landschaftsschutz', // Landschaftsschutzgebiete (§ 26 BNatSchG)
-		'naturschutz', // Naturschutzgebiete (§ 23 BNatSchG)
-		'nationalpark', // Nationalparke (§ 24 BNatSchG)
-		'naturpark', // Naturpark
-		'vogelschutz', // SPA-Gebiete (Richtlinie 79/409 EWG)
-		'naturdenkmal', // Naturdenkmale
+		{ slug:'biosphaere', name:'Biosphärenreservate (§ 25 BNatSchG)' },
+		{ slug:'ffhabitat', name:'FFH-Gebiete (Richtlinie 92/43 EWG)' },
+		{ slug:'landschaftsschutz', name:'Landschaftsschutzgebiete (§ 26 BNatSchG)' },
+		{ slug:'naturschutz', name:'Naturschutzgebiete (§ 23 BNatSchG)' },
+		{ slug:'nationalpark', name:'Nationalparke (§ 24 BNatSchG)' },
+		{ slug:'naturpark', name:'Naturpark' },
+		{ slug:'vogelschutz', name:'SPA-Gebiete (Richtlinie 79/409 EWG)' },
+		{ slug:'naturdenkmal', name:'Naturdenkmale' },
 
 		// verkehrslinie
-		'autobahn', // Bundesautobahnen
-		'bundesstr', // Bundesstraßen
-		'landesstr', // Landesstraßen
-		'kreisstr', // Kreisstraßen
-		'bahnlinie', // Bahnlinien
+		{ slug:'autobahn', name:'Bundesautobahnen' },
+		{ slug:'bundesstr', name:'Bundesstraßen' },
+		{ slug:'landesstr', name:'Landesstraßen' },
+		{ slug:'kreisstr', name:'Kreisstraßen' },
+		{ slug:'bahnlinie', name:'Bahnlinien' },
 
 		// versorgungslinie
-		'freileitung', // Freileitungen
+		{ slug:'freileitung', name:'Freileitungen' },
 
 		// todos
-		'denkmal', // Kulturdenkmale und geschützte Ensembles
-		'gesundheit', // Kur und Klinikgebiete
-		'schutzgebiet', // Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft
+		{ slug:'denkmal', name:'Kulturdenkmale und geschützte Ensembles' },
+		{ slug:'gesundheit', name:'Kur und Klinikgebiete' },
+		{ slug:'schutzgebiet', name:'Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft' },
 	],
 	typicalWindTurbines: [
-		{ hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
-		{ hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
-		{ hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
+		{ level:0, color:'#e30613', hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
+		{ level:1, color:'#ea5b0c', hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
+		{ level:2, color:'#f39200', hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
 	]
 }
 
@@ -88,11 +88,12 @@ for (let name in config.folders) {
 
 // prepare laws
 let ruleLookup = new Map();
+let ruleTypeLookup = new Set(config.ruleTypes.map(r => r.slug))
 config.rules.forEach(rule => {
 	Object.keys(rule).forEach(type => {
 		if (type === 'ags') return // bundesland id
 		if (type === 'name') return // bundesland name
-		if (!config.ruleTypes.includes(type)) throw Error('unknown rule key '+type);
+		if (!ruleTypeLookup.has(type)) throw Error('unknown rule key '+type);
 		if (typeof rule[type] === 'number') {
 			let v = rule[type];
 			let f = function () { return v }
