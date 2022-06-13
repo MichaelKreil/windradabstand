@@ -7,8 +7,11 @@ const fs = require('fs');
 const config = require('../config.js');
 const { writeWebData } = require('../lib/helper.js');
 
+const slugs = 'gebaeudeflaeche,siedlungsflaeche,grenze_flaeche,verkehrslinie,versorgungslinie'.split(',');
+
+/*
 (async () => {
-	const slugs = 'gebaeudeflaeche,siedlungsflaeche,grenze_flaeche,verkehrslinie,versorgungslinie'.split(',')
+	
 
 	const windEntries = loadWindEntries();
 	const maxGroupIndex = windEntries.reduce((m,w) => Math.max(m,w.properties.groupIndex), 0);
@@ -17,12 +20,12 @@ const { writeWebData } = require('../lib/helper.js');
 
 	saveWindEntries()
 })()
-
+*/
 
 (async () => {
+	
 	let windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
-	'gebaeudeflaeche,siedlungsflaeche,grenze_flaeche,verkehrslinie,versorgungslinie'
-	.split(',').forEach(slug => {
+	slugs.forEach(slug => {
 		JSON.parse(fs.readFileSync(config.getFilename.alkisResult(slug+'.json'))).forEach(link => {
 			let windEntry = windEntries[link.index];
 			Object.entries(link.minDistance).forEach(([key,val]) => {
@@ -34,9 +37,10 @@ const { writeWebData } = require('../lib/helper.js');
 			})
 		})
 	})
-
 	windEntries = await tspSort(windEntries);
+	console.log(windEntries);
 
+/*
 	const keys = {
 		'Bundesland': false,
 		'bundeslandName': false,
@@ -121,6 +125,7 @@ const { writeWebData } = require('../lib/helper.js');
 	console.log(result.length);
 
 	writeWebData('wind.json', result);
+	*/
 })();
 
 async function tspSort(entries) {
