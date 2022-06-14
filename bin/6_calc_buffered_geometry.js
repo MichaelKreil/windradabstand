@@ -20,7 +20,7 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 			if (!func) continue;
 
 			if (type.slug === 'wohngebaeude') continue;
-			if (type.slug === 'wohngebiet') continue;
+			//if (type.slug === 'wohngebiet') continue;
 
 
 			// Wir berechnen die Geometrien für alle 3 typischen Windturbinen,
@@ -39,7 +39,7 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 			for (let windTurbine of windTurbines) {
 				console.log('processing '+[bundesland.properties.name, type.slug, 'level '+windTurbine.level].join(' - '));
 				
-				let filenameOut = config.getFilename.bufferedGeometry([type.slug, windTurbine.level, bundesland.properties.ags].join('-')+'.geojson');
+				let filenameOut = config.getFilename.bufferedGeometry([type.slug, windTurbine.level, bundesland.properties.ags].join('-')+'.geojsonl');
 				if (fs.existsSync(filenameOut)) {
 					console.log('   already exists')
 					continue;
@@ -50,8 +50,8 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 				bbox = turf.buffer(bbox, windTurbine.dist/1000);
 				bbox = turf.bbox(bbox);
 
-				const featureTree = [[]];
-				const featureTreeCount = [0];
+				let featureMerger = new FeatureMerger();
+
 				await new Promise(res => Havel.pipeline()
 					.readFile(filenameIn, { showProgress: true })
 					.spawn('jq', ['-c', `. | select (.bbox[0] < ${bbox[2]}) | select (.bbox[1] < ${bbox[3]}) | select (.bbox[2] > ${bbox[0]}) | select (.bbox[3] > ${bbox[1]})`])
@@ -62,66 +62,112 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 
 						if (!doBboxOverlap(bbox, feature.bbox)) return;
 						feature = turf.buffer(feature, windTurbine.dist/1000);
+
 						features2Coords([feature]).forEach(f => {
 							f.forEach(r => r.forEach(p => {
-								p[0] = Math.round(p[0]*1e6);
-								p[1] = Math.round(p[1]*1e6);
+								p[0] = Math.round(p[0]*1e7);
+								p[1] = Math.round(p[1]*1e7);
 							}))
-							featureTree[0].push(f)
-						});
-						if (featureTree[0].length > 10) merge();
+							featureMerger.add(f);
+						})
 					})
 					.drain()
 					.finished(() => {
-						let features = merge(true);
+						let features = featureMerger.getResult();
 						features.forEach(f => f.forEach(r => r.forEach(p => {
-							p[0] /= 1e6;
-							p[1] /= 1e6;
+							p[0] /= 1e7;
+							p[1] /= 1e7;
 						})));
-						features = polygonClipping.intersection(features, features2Coords([bundesland]));
-						features = coords2GeoJSON(features);
-						features = turf.flatten(features);
-						features = JSON.stringify(features);
-						fs.writeFileSync(filenameOut, features);
+						let b = features2Coords([bundesland]);
+						let result = [];
+						features.forEach(f => polygonClipping.intersection([f], b).forEach(f => result.push(f)))
+						result = coords2GeoJSON(result);
+						result = turf.flatten(result);
+						
+						result = result.features.map(f => JSON.stringify(f)).join('\n');
+						fs.writeFileSync(filenameOut, result);
 						res();
 					})
 				)
-
-				function merge(force) {
-					let i = 0;
-					let lastI = featureTreeCount.length;
-					while (true) {
-						if (!featureTree[i+1]) {
-							featureTree[i+1] = []
-							featureTreeCount[i+1] = 0;
-						}
-
-						let result;
-						try {
-							result = polygonClipping.union(featureTree[i]);
-						} catch (e) {
-							// ok, irgendwas hat nicht funktioniert
-							// also wigglen an allen Koordinaten und schauen, ob es dann funktioniert
-							console.log('\n   problems …');
-							let c = featureTree[i];
-							fs.writeFileSync('test.json', JSON.stringify(c, null, '\t'));
-							//result = polygonClipping.union(c);
-							throw e;
-						}
-						result.forEach(f => featureTree[i+1].push(f));
-
-						featureTree[i] = [];
-						featureTreeCount[i] = 0;
-						featureTreeCount[i+1]++;
-						if (force) {
-							if (i === lastI) return featureTree[i+1];
-						} else {
-							if (featureTreeCount[i+1] < 10) return;
-						}
-						i++;
-					}
-				}
 			}
 		}
 	}
 })()
+
+function FeatureMerger() {
+	const featureTree = [[]];
+	const featureTreeCount = [0];
+	return {
+		add,
+		getResult,
+	}
+	function add(feature) {
+		featureTree[0].push(feature)
+		if (featureTree[0].length > 10) merge();
+	}
+
+	function getResult() {
+		return merge(true);
+	}
+
+	function merge(force) {
+		let i = 0;
+		let lastI = featureTreeCount.length;
+		while (true) {
+			if (!featureTree[i+1]) {
+				featureTree[i+1] = []
+				featureTreeCount[i+1] = 0;
+			}
+
+			let coordinates = featureTree[i];
+			featureTree[i] = [];
+			featureTreeCount[i] = 0;
+
+			let result;
+			try {
+				result = polygonClipping.union(coordinates);
+			} catch (e) {
+				cleanupCoordinates(coordinates);
+				try {
+					console.log('   merge in tiny steps …')
+					result = splitAndMerge(coordinates);
+					function splitAndMerge(c) {
+						if (c.length > 2) {
+							let i = Math.floor(c.length/2);
+							let t = splitAndMerge(c.slice(0,i));
+							splitAndMerge(c.slice(i)).forEach(f => t.push(f));
+							return t;
+						} else if (c.length < 2) {
+							return c;
+						} else {
+							return polygonClipping.union(c);
+						}
+					}
+				} catch (e) {
+					console.log('\nPROBLEMS');
+					fs.writeFileSync('error.json', JSON.stringify(coordinates, null, '\t'));
+					throw e;
+				}
+			}
+			result.forEach(f => featureTree[i+1].push(f));
+			featureTreeCount[i+1]++;
+			if (force) {
+				if (i === lastI) return featureTree[i+1];
+			} else {
+				if (featureTreeCount[i+1] < 10) return;
+			}
+			i++;
+		}
+	}
+}
+
+function cleanupCoordinates(features) {
+	features.forEach(feature => {
+		feature.forEach(ring => {
+			ring.forEach(point => {
+				point[0] = Math.round(point[0]);
+				point[1] = Math.round(point[1]);
+			})
+		})
+	})
+}
