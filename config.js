@@ -1,7 +1,11 @@
 'use strict'
 
+
+
 const fs = require('fs');
 const { resolve } = require('path');
+
+
 
 const config = {
 	folders: {
@@ -19,6 +23,7 @@ const config = {
 	getFilename: {},
 	rules: [
 		// source: https://www.fachagentur-windenergie.de/fileadmin/files/PlanungGenehmigung/FA_Wind_Abstandsempfehlungen_Laender.pdf
+		// (h,r) - Nabenhoehe und Rotorradius
 		{ ags: 8, name:'Baden-Württemberg',      wohngebiet: 700, wohngebaeude: 700, naturschutz:200, nationalpark:200, vogelschutz:700, autobahn:100, bundesstr:40, landesstr:40, kreisstr:30, bahnlinie:50 },
 		{ ags: 9, name:'Bayern',                 wohngebiet:(h,r)=>10*(h+r), wohngebaeude:(h,r)=>10*(h+r), schutzgebiet:1000, naturschutz:1000, nationalpark:1000, vogelschutz:(h,r)=>Math.max(1200,10*(h+r)), biosphaere:1000, autobahn:40, bundesstr:20, landesstr:20, kreisstr:15 },
 		{ ags:11, name:'Berlin',                 },
@@ -72,8 +77,8 @@ const config = {
 		{ slug:'schutzgebiet', name:'Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft' },
 	],
 	typicalWindTurbines: [
-		{ level:0, color:'#e30613', hoehe:100, Nabenhoehe:65,  Rotordurchmesser:70  },
-		{ level:1, color:'#ea5b0c', hoehe:150, Nabenhoehe:105, Rotordurchmesser:90  },
+		{ level:0, color:'#e30613', hoehe:100, Nabenhoehe: 65, Rotordurchmesser: 70 },
+		{ level:1, color:'#ea5b0c', hoehe:150, Nabenhoehe:105, Rotordurchmesser: 90 },
 		{ level:2, color:'#f39200', hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
 	]
 }
