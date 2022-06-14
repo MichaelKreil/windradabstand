@@ -49,7 +49,7 @@ simpleCluster(async function (runWorker) {
 
 	todos.sort((a,b) => a.order < b.order ? -1 : 1);
 	
-	await todos.forEachParallel(1, runWorker)
+	await todos.forEachParallel(runWorker)
 	
 	console.log('finished');
 
