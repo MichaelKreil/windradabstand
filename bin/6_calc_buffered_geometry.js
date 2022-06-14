@@ -87,7 +87,7 @@ Havel.registerNodeFactoryStream('spawnOut', spawnOut);
 						feature.bbox = turf.bbox(feature);
 
 						i++;
-						if (i % 5000 === 0) console.log(i);
+						if (i % 20000 === 0) console.log(i);
 
 						if (!doBboxOverlap(bbox, feature.bbox)) return;
 						feature = turf.buffer(feature, windTurbine.dist/1000);
