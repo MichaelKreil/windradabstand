@@ -4,6 +4,7 @@
 
 
 const fs = require('fs');
+const child_process = require('child_process');
 const Havel = require('havel');
 const turf = require('@turf/turf');
 const config = require('../config.js');
@@ -11,6 +12,11 @@ const polygonClipping = require('polygon-clipping');
 const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = require('../lib/geohelper.js');
 
 
+function spawnOut(cmd, args) {
+	const process = child_process.spawn(cmd, args, { highWaterMark: 1024 * 1024 });
+	return { readable: process.stdout }
+}
+Havel.registerNodeFactoryStream('spawnOut', spawnOut);
 
 (async () => {
 	for (let bundesland of getBundeslaender()) {
@@ -19,7 +25,7 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 			let func = rules[type.slug];
 			if (!func) continue;
 
-			if (type.slug === 'wohngebaeude') continue;
+			//if (type.slug === 'wohngebaeude') continue;
 			//if (type.slug === 'wohngebiet') continue;
 
 
@@ -34,7 +40,7 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 			})
 			windTurbines = Array.from(windTurbines.values());
 
-			let filenameIn = config.getFilename.mapFeature(type.slug+'.geojsonl');
+			let filenameIn = config.getFilename.mapFeature(type.slug+'.fgb');
 
 			for (let windTurbine of windTurbines) {
 				console.log('processing '+[bundesland.properties.name, type.slug, 'level '+windTurbine.level].join(' - '));
@@ -53,7 +59,7 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 				let filenameTemp = config.getFilename.bufferedGeometry('temp.geojsonl');
 				let fd = fs.openSync(filenameTemp, 'w');
 				let featureMerger = new FeatureMerger(function save(features) {
-					console.log('\n   save')
+					console.log('   save')
 					features.forEach(f => f.forEach(r => r.forEach(p => {
 						p[0] /= 1e7;
 						p[1] /= 1e7;
@@ -68,13 +74,20 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 					fs.writeSync(fd, result);
 				})
 
+				let spawnArgs = ['-spat'].concat(bbox.map(v => v.toString())).concat(['-f', 'GeoJSONSeq', '/vsistdout/', filenameIn]);
+				let i = 0;
 				await new Promise(res => Havel.pipeline()
-					.readFile(filenameIn, { showProgress: true })
-					.spawn('jq', ['-c', `. | select (.bbox[0] < ${bbox[2]}) | select (.bbox[1] < ${bbox[3]}) | select (.bbox[2] > ${bbox[0]}) | select (.bbox[3] > ${bbox[1]})`])
+					.spawnOut('ogr2ogr', spawnArgs)
+					//.readFile(filenameIn, { showProgress: true })
+					//.spawn('jq', ['-c', `. | select (.bbox[0] < ${bbox[2]}) | select (.bbox[1] < ${bbox[3]}) | select (.bbox[2] > ${bbox[0]}) | select (.bbox[3] > ${bbox[1]})`])
 					.split()
 					.forEach(feature => {
 						if (feature.length === 0) return;
 						feature = JSON.parse(feature);
+						feature.bbox = turf.bbox(feature);
+
+						i++;
+						if (i % 5000 === 0) console.log(i);
 
 						if (!doBboxOverlap(bbox, feature.bbox)) return;
 						feature = turf.buffer(feature, windTurbine.dist/1000);
@@ -150,13 +163,13 @@ function FeatureMerger(cbSave) {
 						}
 					}
 				} catch (e) {
-					console.log('\nPROBLEMS');
+					console.log('PROBLEMS');
 					fs.writeFileSync('error.json', JSON.stringify(coordinates, null, '\t'));
 					throw e;
 				}
 			}
 
-			if ((i > 2) && (JSON.stringify(result).length > 1e7)) {
+			if ((i > 2) && (JSON.stringify(result).length > 1e6)) {
 				cbSave(result)
 			} else {
 				result.forEach(f => featureTree[i+1].push(f));
