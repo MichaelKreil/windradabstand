@@ -50,7 +50,23 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 				bbox = turf.buffer(bbox, windTurbine.dist/1000);
 				bbox = turf.bbox(bbox);
 
-				let featureMerger = new FeatureMerger();
+				let filenameTemp = config.getFilename.bufferedGeometry('temp.geojsonl');
+				let fd = fs.openSync(filenameTemp, 'w');
+				let featureMerger = new FeatureMerger(function save(features) {
+					console.log('\n   save')
+					features.forEach(f => f.forEach(r => r.forEach(p => {
+						p[0] /= 1e7;
+						p[1] /= 1e7;
+					})));
+					let b = features2Coords([bundesland]);
+					let result = [];
+					features.forEach(f => polygonClipping.intersection([f], b).forEach(f => result.push(f)))
+					result = coords2GeoJSON(result);
+					result = turf.flatten(result);
+					
+					result = result.features.map(f => JSON.stringify(f)+'\n').join('');
+					fs.writeSync(fd, result);
+				})
 
 				await new Promise(res => Havel.pipeline()
 					.readFile(filenameIn, { showProgress: true })
@@ -73,19 +89,9 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 					})
 					.drain()
 					.finished(() => {
-						let features = featureMerger.getResult();
-						features.forEach(f => f.forEach(r => r.forEach(p => {
-							p[0] /= 1e7;
-							p[1] /= 1e7;
-						})));
-						let b = features2Coords([bundesland]);
-						let result = [];
-						features.forEach(f => polygonClipping.intersection([f], b).forEach(f => result.push(f)))
-						result = coords2GeoJSON(result);
-						result = turf.flatten(result);
-						
-						result = result.features.map(f => JSON.stringify(f)).join('\n');
-						fs.writeFileSync(filenameOut, result);
+						featureMerger.flush();
+						fs.closeSync(fd);
+						fs.renameSync(filenameTemp, filenameOut);
 						res();
 					})
 				)
@@ -94,20 +100,20 @@ const { doBboxOverlap, getBundeslaender, features2Coords, coords2GeoJSON } = req
 	}
 })()
 
-function FeatureMerger() {
+function FeatureMerger(cbSave) {
 	const featureTree = [[]];
 	const featureTreeCount = [0];
 	return {
 		add,
-		getResult,
+		flush,
 	}
 	function add(feature) {
 		featureTree[0].push(feature)
 		if (featureTree[0].length > 10) merge();
 	}
 
-	function getResult() {
-		return merge(true);
+	function flush() {
+		cbSave(merge(true))
 	}
 
 	function merge(force) {
@@ -149,13 +155,20 @@ function FeatureMerger() {
 					throw e;
 				}
 			}
-			result.forEach(f => featureTree[i+1].push(f));
-			featureTreeCount[i+1]++;
+
+			if ((i > 2) && (JSON.stringify(result).length > 1e7)) {
+				cbSave(result)
+			} else {
+				result.forEach(f => featureTree[i+1].push(f));
+				featureTreeCount[i+1]++;
+			}
+
 			if (force) {
 				if (i === lastI) return featureTree[i+1];
 			} else {
 				if (featureTreeCount[i+1] < 10) return;
 			}
+
 			i++;
 		}
 	}
