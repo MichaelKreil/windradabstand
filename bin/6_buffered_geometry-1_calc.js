@@ -230,8 +230,8 @@ simpleCluster(async function (runWorker) {
 					}
 				}
 
-					result.forEach(f => featureTree[i+1].push(f));
-					featureTreeCount[i+1]++;
+				result.forEach(f => featureTree[i+1].push(f));
+				featureTreeCount[i+1]++;
 
 				if (force) {
 					if (i === lastI) {
@@ -240,7 +240,7 @@ simpleCluster(async function (runWorker) {
 						return result;
 					}
 				} else {
-					if (i >= 3) {
+					if (i >= 2) {
 						let size = 0;
 						featureTree[i+1].forEach(f => f.forEach(r => size += r.length));
 						if (size > 1e4) {
