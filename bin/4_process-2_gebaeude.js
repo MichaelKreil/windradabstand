@@ -4,11 +4,13 @@
 
 
 const turf = require('@turf/turf');
-const { processAlkis } = require('../lib/geohelper.js');
+const config = require('../config.js');
+const { processAlkis, GeoPecker } = require('../lib/geohelper.js');
 
 
 
-let isResidential = initLookup()
+let isResidential = initLookup();
+let pecker = GeoPecker(config.getFilename.mapFeature('wohngebiet.gpkg'));
 
 processAlkis({
 	slug:'gebaeudeflaeche',
@@ -22,7 +24,8 @@ processAlkis({
 
 		feature.properties.type = 'wohngebaeude';
 
-		return true;
+		let p = turf.pointOnFeature(feature).geometry.coordinates;
+		return pecker(p);
 	},
 	cbWindEntries: windEntries => windEntries.every(([w,d]) => d > 10),
 })
