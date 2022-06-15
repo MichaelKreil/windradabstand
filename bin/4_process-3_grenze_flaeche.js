@@ -31,6 +31,7 @@ async function start() {
 			filenameIn: config.getFilename.schutzgebiete(type+'.geojsonl'),
 			cbFeature:feature => {
 				feature.properties.type = type;
+				return true;
 			}
 		})
 	}
