@@ -8,6 +8,8 @@ simpleCluster(async function (runWorker) {
 	const config = require('../config.js');
 	const { getBundeslaender } = require('../lib/geohelper.js');
 
+	deleteTemporaryFiles()
+
 	let todos = [];
 
 	for (let bundesland of getBundeslaender()) {
@@ -50,10 +52,18 @@ simpleCluster(async function (runWorker) {
 	todos.sort((a,b) => a.order < b.order ? -1 : 1);
 	
 	await todos.forEachParallel(runWorker)
+
+	deleteTemporaryFiles();
 	
 	console.log('finished');
 
-}, async (item, index) => {
+
+	function deleteTemporaryFiles() {
+		fs.readdirSync(config.folders.bufferedGeometry).forEach(f => {
+			if (/^tmp-/.test(f)) fs.rmSync(config.getFilename.bufferedGeometry(f));
+		})
+	}
+}, async item => {
 	const { bundesland, ruleType, windTurbine, filenameIn, filenameOut, filenameTmp } = item;
 
 	console.log('processing '+[bundesland.properties.name, ruleType.slug, 'level '+windTurbine.level].join(' - '));
