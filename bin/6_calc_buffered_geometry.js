@@ -5,6 +5,7 @@ const { simpleCluster } = require('big-data-tools');
 
 simpleCluster(async function (runWorker) {
 	const fs = require('fs');
+	const turf = require('@turf/turf');
 	const config = require('../config.js');
 	const { getBundeslaender } = require('../lib/geohelper.js');
 
@@ -23,6 +24,8 @@ simpleCluster(async function (runWorker) {
 				console.log('File '+filenameIn+' is missing');
 				process.exit();
 			}
+			let order = fs.statSync(filenameIn).size * turf.area(bundesland);
+
 			// Wir berechnen die Geometrien für alle 3 typischen Windturbinen,
 			// aber müssen das nur tun, wenn sich unterschiedliche Abstände ergeben.
 			let windTurbines = new Map();
@@ -47,13 +50,13 @@ simpleCluster(async function (runWorker) {
 					filenameIn,
 					filenameOut,
 					filenameTmp,
-					order:[ruleType.slug, windTurbine.level, bundesland.properties.ags].join('/'),
+					order,
 				})
 			}
 		}
 	}
 
-	todos.sort((a,b) => a.order < b.order ? -1 : 1);
+	todos.sort((a,b) => b.order - a.order);
 	
 	await todos.forEachParallel(runWorker)
 
