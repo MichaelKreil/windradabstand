@@ -92,6 +92,7 @@ simpleCluster(async function (runWorker) {
 	console.log('finished');
 
 
+
 	function deleteTemporaryFiles() {
 		fs.readdirSync(config.folders.bufferedGeometry).forEach(f => {
 			if (/^tmp-/.test(f)) fs.rmSync(config.getFilename.bufferedGeometry(f));
@@ -148,7 +149,7 @@ simpleCluster(async function (runWorker) {
 			feature.bbox = turf.bbox(feature);
 
 			i++;
-			if (i % 20000 === 0) console.log(i);
+			if (i % 20000 === 0) console.log('   ',i);
 
 			if (!doBboxOverlap(bbox, feature.bbox)) return;
 			feature = turf.buffer(feature, windTurbine.dist/1000);
@@ -171,12 +172,15 @@ simpleCluster(async function (runWorker) {
 	)
 
 	function FeatureMerger(cbSave) {
-		const featureTree = [[]];
-		const featureTreeCount = [0];
-		return {
-			add,
-			flush,
+		let featureTree, featureTreeCount
+		init();
+		return { add, flush }
+
+		function init() {
+			featureTree = [[]];
+			featureTreeCount = [0];
 		}
+
 		function add(feature) {
 			featureTree[0].push(feature)
 			if (featureTree[0].length > 10) merge();
@@ -226,16 +230,24 @@ simpleCluster(async function (runWorker) {
 					}
 				}
 
-				if ((i > 2) && (JSON.stringify(result).length > 1e6)) {
-					cbSave(result)
-				} else {
 					result.forEach(f => featureTree[i+1].push(f));
 					featureTreeCount[i+1]++;
-				}
 
 				if (force) {
-					if (i === lastI) return featureTree[i+1];
+					if (i === lastI) {
+						let result = featureTree[i+1];
+						init()
+						return result;
+					}
 				} else {
+					if (i >= 3) {
+						let size = 0;
+						featureTree[i+1].forEach(f => f.forEach(r => size += r.length));
+						if (size > 1e4) {
+							flush();
+							return;
+						}
+					}
 					if (featureTreeCount[i+1] < 10) return;
 				}
 
