@@ -143,23 +143,28 @@ simpleCluster(async function (runWorker) {
 	await new Promise(res => Havel.pipeline()
 		.spawnOut('ogr2ogr', spawnArgs)
 		.split()
-		.forEach(feature => {
-			if (feature.length === 0) return;
-			feature = JSON.parse(feature);
-			feature.bbox = turf.bbox(feature);
-
+		.forEach(line => {
+			if (line.length === 0) return;
+			let feature = JSON.parse(line);
 			i++;
 			if (i % 20000 === 0) console.log('   ',i);
 
-			if (!doBboxOverlap(bbox, feature.bbox)) return;
-			feature = turf.buffer(feature, windTurbine.dist/1000);
+			//console.log('OBJECTID', feature.properties.OBJECTID, line.length);
 
-			features2Coords([feature]).forEach(f => {
-				f.forEach(r => r.forEach(p => {
-					p[0] = Math.round(p[0]*1e7);
-					p[1] = Math.round(p[1]*1e7);
-				}))
-				featureMerger.add(f);
+			turf.flatten(feature).features.forEach(feature => {
+				feature.bbox = turf.bbox(feature);
+
+				if (!doBboxOverlap(bbox, feature.bbox)) return;
+
+				feature = turf.buffer(feature, windTurbine.dist/1000);
+
+				features2Coords([feature]).forEach(f => {
+					f.forEach(r => r.forEach(p => {
+						p[0] = Math.round(p[0]*1e7);
+						p[1] = Math.round(p[1]*1e7);
+					}))
+					featureMerger.add(f);
+				})
 			})
 		})
 		.drain()
@@ -172,17 +177,36 @@ simpleCluster(async function (runWorker) {
 	)
 
 	function FeatureMerger(cbSave) {
-		let featureTree, featureTreeCount
+		const MAX_VERTICES = 1e4;
+		let featureTree, featureTreeCount, featureTreeSize, maxIndex, verticesCount;
+		//setInterval(log, 10000);
 		init();
 		return { add, flush }
 
 		function init() {
-			featureTree = [[]];
-			featureTreeCount = [0];
+			featureTree = [];
+			featureTreeSize = [];
+			featureTreeCount = [];
+			maxIndex = 0;
+			verticesCount = 0;
+			//triggerFlush = false;
+			for (let i = 0; i < 10; i++) {
+				featureTree[i] = [];
+				featureTreeSize[i] = 0;
+				featureTreeCount[i] = 0;
+			}
 		}
 
 		function add(feature) {
-			featureTree[0].push(feature)
+			featureTree[0].push(feature);
+
+			let size = countPoints(feature);
+			featureTreeSize[0] += size;
+
+			verticesCount += size;
+			//console.log('add', verticesCount);
+			if (verticesCount > MAX_VERTICES) return flush();
+
 			if (featureTree[0].length > 10) merge();
 		}
 
@@ -192,15 +216,10 @@ simpleCluster(async function (runWorker) {
 
 		function merge(force) {
 			let i = 0;
-			let lastI = featureTreeCount.length;
 			while (true) {
-				if (!featureTree[i+1]) {
-					featureTree[i+1] = []
-					featureTreeCount[i+1] = 0;
-				}
-
 				let coordinates = featureTree[i];
 				featureTree[i] = [];
+				featureTreeSize[i] = 0;
 				featureTreeCount[i] = 0;
 
 				let result;
@@ -230,29 +249,47 @@ simpleCluster(async function (runWorker) {
 					}
 				}
 
-				result.forEach(f => featureTree[i+1].push(f));
-				featureTreeCount[i+1]++;
+				i++;
+
+				result.forEach(f => {
+					featureTreeSize[i] += countPoints(f);
+					featureTree[i].push(f);
+				});
+				featureTreeCount[i]++;
+				if (i > maxIndex) maxIndex = i;
 
 				if (force) {
-					if (i === lastI) {
-						let result = featureTree[i+1];
-						init()
+					if ((i === maxIndex) && (featureTreeCount[i] === 1)) {
+						let result = featureTree[i];
+						init();
 						return result;
 					}
 				} else {
-					if (i >= 2) {
-						let size = 0;
-						featureTree[i+1].forEach(f => f.forEach(r => size += r.length));
-						if (size > 1e4) {
-							flush();
-							return;
-						}
-					}
-					if (featureTreeCount[i+1] < 10) return;
+					verticesCount = 0;
+					featureTreeSize.forEach(s => verticesCount += s);
+					//console.log('merge', verticesCount, featureTree[i].length);
+					if (verticesCount > MAX_VERTICES) return flush();
+					if (featureTree[i].length > 20) return flush();
+					if (featureTreeCount[i] < 10) return;
 				}
-
-				i++;
 			}
+		}
+
+		function countPoints(f) {
+			let size = 0;
+			f.forEach(r => size += r.length);
+			return size;
+		}
+
+		function log() {
+			console.log('tree:')
+			featureTree.forEach(m => {
+				console.log('   '+m.map(f => {
+					let size = 0;
+					f.forEach(r => size += r.length);
+					return size;
+				}).join(','))
+			})
 		}
 	}
 
