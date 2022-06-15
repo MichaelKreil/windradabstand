@@ -18,6 +18,11 @@ simpleCluster(async function (runWorker) {
 			let func = rules[ruleType.slug];
 			if (!func) continue;
 
+			let filenameIn = config.getFilename.mapFeature(ruleType.slug+'.fgb');
+			if (!fs.existsSync(filenameIn)) {
+				console.log('File '+filenameIn+' is missing');
+				process.exit();
+			}
 			// Wir berechnen die Geometrien für alle 3 typischen Windturbinen,
 			// aber müssen das nur tun, wenn sich unterschiedliche Abstände ergeben.
 			let windTurbines = new Map();
@@ -31,7 +36,6 @@ simpleCluster(async function (runWorker) {
 
 			for (let windTurbine of windTurbines) {
 
-				let filenameIn = config.getFilename.mapFeature(ruleType.slug+'.fgb');
 				let filenameOut = config.getFilename.bufferedGeometry([ruleType.slug, windTurbine.level, bundesland.properties.ags].join('-')+'.geojsonl');
 				let filenameTmp = config.getFilename.bufferedGeometry('tmp-'+Math.random().toString(36).slice(2)+'.geojsonl');
 				if (fs.existsSync(filenameOut)) continue;
