@@ -5,13 +5,15 @@ const { simpleCluster } = require('big-data-tools');
 
 simpleCluster(async function (runWorker) {
 	const fs = require('fs');
+	const child_process = require('child_process');
 	const turf = require('@turf/turf');
 	const config = require('../config.js');
 	const { getBundeslaender } = require('../lib/geohelper.js');
 
 	deleteTemporaryFiles()
 
-	let todos = [];
+	let todoGenerate = [];
+	let todoMerge = new Map();
 
 	for (let bundesland of getBundeslaender()) {
 		let rules = config.rules.get(bundesland.properties.ags);
@@ -24,7 +26,7 @@ simpleCluster(async function (runWorker) {
 				console.log('File '+filenameIn+' is missing');
 				process.exit();
 			}
-			let order = fs.statSync(filenameIn).size * turf.area(bundesland);
+			let workEffort = fs.statSync(filenameIn).size * turf.area(bundesland);
 
 			// Wir berechnen die Geometrien für alle 3 typischen Windturbinen,
 			// aber müssen das nur tun, wenn sich unterschiedliche Abstände ergeben.
@@ -39,28 +41,53 @@ simpleCluster(async function (runWorker) {
 
 			for (let windTurbine of windTurbines) {
 
-				let filenameOut = config.getFilename.bufferedGeometry([ruleType.slug, windTurbine.level, bundesland.properties.ags].join('-')+'.geojsonl');
+				let name = [ruleType.slug, windTurbine.level, bundesland.properties.ags].join('-');
+				let filenameOut = config.getFilename.bufferedGeometry(name+'.geojsonl');
+				let layerName = [ruleType.slug, windTurbine.level].join('-');
 				let filenameTmp = config.getFilename.bufferedGeometry('tmp-'+Math.random().toString(36).slice(2)+'.geojsonl');
-				if (fs.existsSync(filenameOut)) continue;
 
-				todos.push({
+				let todo = {
 					bundesland,
 					ruleType,
 					windTurbine,
 					filenameIn,
 					filenameOut,
 					filenameTmp,
-					order,
-				})
+					workEffort,
+				}
+
+				if (!fs.existsSync(filenameOut)) todoGenerate.push(todo);
+
+				if (!todoMerge.has(layerName)) todoMerge.set(layerName, { layerName, workEffort:0, files:[] })
+				todoMerge.get(layerName).workEffort += workEffort;
+				todoMerge.get(layerName).files.push(name);
 			}
 		}
 	}
 
-	todos.sort((a,b) => b.order - a.order);
+	todoGenerate.sort((a,b) => b.workEffort - a.workEffort);
 	
-	await todos.forEachParallel(runWorker)
+	await todoGenerate.forEachParallel(runWorker)
 
 	deleteTemporaryFiles();
+
+	todoMerge = Array.from(todoMerge.values());
+	todoMerge.sort((a,b) => b.workEffort - a.workEffort);
+
+	await todoMerge.forEachParallel(async entry => {
+		let filename = config.getFilename.bufferedGeometry(entry.layerName);
+		let vrt = `<OGRVRTDataSource>\n\t<OGRVRTUnionLayer name="${entry.layerName}">\n`;
+		entry.files.forEach((f,i) => {
+			vrt += `\t\t<OGRVRTLayer name="${f}"><SrcDataSource>${f}.geojsonl</SrcDataSource></OGRVRTLayer>\n`
+		});
+		vrt += `\t</OGRVRTUnionLayer>\n</OGRVRTDataSource>`;
+		fs.writeFileSync(filename+'.vrt', vrt);
+
+		await new Promise(res => {
+			child_process.spawn('ogr2ogr', ['-progress', filename+'.fgb', filename+'.vrt'])
+				.on('close', res);
+		})
+	})
 	
 	console.log('finished');
 
