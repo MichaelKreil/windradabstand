@@ -77,15 +77,21 @@ simpleCluster(async function (runWorker) {
 	await todoMerge.forEachParallel(async entry => {
 		let filename = config.getFilename.bufferedGeometry(entry.layerName);
 		let vrt = `<OGRVRTDataSource>\n\t<OGRVRTUnionLayer name="${entry.layerName}">\n`;
-		entry.files.forEach((f,i) => {
-			vrt += `\t\t<OGRVRTLayer name="${f}"><SrcDataSource>${f}.geojsonl</SrcDataSource></OGRVRTLayer>\n`
+		entry.files.forEach(f => {
+			let full = config.getFilename.bufferedGeometry(f+'.geojsonl');
+			if (!fs.existsSync(full)) throw Error('file is missing: '+full);
+			if (fs.statSync(full).size === 0) return;
+			vrt += `\t\t<OGRVRTLayer name="${f}"><SrcDataSource>${full}</SrcDataSource></OGRVRTLayer>\n`
 		});
 		vrt += `\t</OGRVRTUnionLayer>\n</OGRVRTDataSource>`;
 		fs.writeFileSync(filename+'.vrt', vrt);
 
+		console.log('generate',entry.layerName+'.fgb')
 		await new Promise(res => {
-			child_process.spawn('ogr2ogr', ['-progress', filename+'.fgb', filename+'.vrt'])
-				.on('close', res);
+			let cp = child_process.spawn('ogr2ogr', ['-progress', filename+'.fgb', filename+'.vrt'])
+			cp.on('close', res);
+			cp.stderr.pipe(process.stderr);
+			//cp.stdout.pipe(process.stdout);
 		})
 	})
 	
@@ -97,7 +103,7 @@ simpleCluster(async function (runWorker) {
 		fs.readdirSync(config.folders.bufferedGeometry).forEach(f => {
 			if (/^tmp-/.test(f)) fs.rmSync(config.getFilename.bufferedGeometry(f));
 		})
-	}
+	}3
 }, async item => {
 	const { bundesland, ruleType, windTurbine, filenameIn, filenameOut, filenameTmp } = item;
 
@@ -123,7 +129,7 @@ simpleCluster(async function (runWorker) {
 
 	let fd = fs.openSync(filenameTmp, 'w');
 	let featureMerger = new FeatureMerger(function save(features) {
-		console.log('   save')
+		//console.log('   save')
 		features.forEach(f => f.forEach(r => r.forEach(p => {
 			p[0] /= 1e7;
 			p[1] /= 1e7;
