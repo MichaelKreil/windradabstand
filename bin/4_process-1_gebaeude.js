@@ -171,7 +171,6 @@ function initLookup() {
 		'Museum',
 		'Mühle',
 		'Müllbunker',
-		'Nach Quellenlage nicht zu spezifizieren',
 		'Obdachlosenheim',
 		'Parkdeck',
 		'Parkhaus',
@@ -269,6 +268,9 @@ function initLookup() {
 		'Wohngebäude',
 		'Wohnhaus',
 		'Wohnheim',
+
+		// Weil in Sachsen ein Großteil der Gebäude nicht spezifiziert sind:
+		'Nach Quellenlage nicht zu spezifizieren',
 	].forEach(label => isResidential.set(label, true));
 
 	return isResidential;
