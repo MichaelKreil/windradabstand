@@ -86,12 +86,11 @@ simpleCluster(async function (runWorker) {
 		vrt += `\t</OGRVRTUnionLayer>\n</OGRVRTDataSource>`;
 		fs.writeFileSync(filename+'.vrt', vrt);
 
-		console.log('generate',entry.layerName+'.fgb')
+		console.log('generate',entry.layerName+'.gpkg')
 		await new Promise(res => {
-			let cp = child_process.spawn('ogr2ogr', ['-progress', filename+'.fgb', filename+'.vrt'])
+			let cp = child_process.spawn('ogr2ogr', ['-progress', filename+'.gpkg', filename+'.vrt'])
 			cp.on('close', res);
 			cp.stderr.pipe(process.stderr);
-			//cp.stdout.pipe(process.stdout);
 		})
 	})
 	
@@ -103,7 +102,8 @@ simpleCluster(async function (runWorker) {
 		fs.readdirSync(config.folders.bufferedGeometry).forEach(f => {
 			if (/^tmp-/.test(f)) fs.rmSync(config.getFilename.bufferedGeometry(f));
 		})
-	}3
+	}
+
 }, async item => {
 	const { bundesland, ruleType, windTurbine, filenameIn, filenameOut, filenameTmp } = item;
 
