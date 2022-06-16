@@ -110,7 +110,6 @@ simpleCluster(async function (runWorker) {
 	console.log('processing '+[bundesland.properties.name, ruleType.slug, 'level '+windTurbine.level].join(' - '));
 	
 	const fs = require('fs');
-	const child_process = require('child_process');
 	const Havel = require('havel');
 	const turf = require('@turf/turf');
 	const polygonClipping = require('polygon-clipping');
