@@ -116,12 +116,6 @@ simpleCluster(async function (runWorker) {
 	const polygonClipping = require('polygon-clipping');
 	const { doBboxOverlap, features2Coords, coords2GeoJSON } = require('../lib/geohelper.js');
 
-	function spawnOut(cmd, args) {
-		const process = child_process.spawn(cmd, args, { highWaterMark: 1024 * 1024 });
-		return { readable: process.stdout }
-	}
-	Havel.registerNodeFactoryStream('spawnOut', spawnOut);
-
 	let bbox = bundesland.bbox;
 	bbox = turf.bboxPolygon(bbox);
 	bbox = turf.buffer(bbox, windTurbine.dist/1000);
