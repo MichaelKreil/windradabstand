@@ -67,7 +67,10 @@ simpleCluster(async function (runWorker) {
 
 	todoGenerate.sort((a,b) => b.workEffort - a.workEffort);
 	
-	await todoGenerate.forEachParallel(runWorker)
+	await todoGenerate.forEachParallel(async item => {
+		let result = await runWorker(item);
+		if (!result) throw Error('Error in buffered geometry');
+	})
 
 	deleteTemporaryFiles();
 
@@ -174,6 +177,8 @@ simpleCluster(async function (runWorker) {
 			res();
 		})
 	)
+
+	return true;
 
 	function FeatureMerger(cbSave) {
 		const MAX_VERTICES = 1e4;
