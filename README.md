@@ -24,3 +24,15 @@
 6. Mögliche Nutzflächen berechnen
 7. Karte rendern
 
+
+
+
+Todos:
+- Frontend für:
+	- Windräder
+	- buffered geometry
+- Welche Flächen bleiben übrigen, in %
+- Berücksichtigung der bayrischen Windvorranggebiete für
+	- buffered geometry
+	- windräder
+
