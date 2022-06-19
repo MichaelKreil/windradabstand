@@ -2,6 +2,7 @@
 *.code-workspace
 *.mp4
 *.pdf
+*.tar
 /_trash
 /data/1_*
 /data/2_*
