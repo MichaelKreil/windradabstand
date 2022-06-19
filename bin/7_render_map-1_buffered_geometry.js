@@ -36,6 +36,8 @@ simpleCluster(async function (runWorker) {
 			process.stderr.write('\r'+(100*(i+1)/todos.length).toFixed(1)+'%');
 			return runWorker(todo)
 		});
+
+		console.log('');
 	}
 
 }, async function (todo) {
