@@ -8,6 +8,8 @@ const { resolve } = require('path');
 
 
 const config = {
+	bbox: [ 5.8, 47.2, 15.1, 55.1 ],
+	maxMapZoomLevel: 14,
 	folders: {
 		static: 'data/static',
 		wind: 'data/1_wind',
@@ -20,6 +22,7 @@ const config = {
 		bufferedGeometry: 'data/6_buffered_geometry',
 		helper: 'data/helper',
 		web: 'docs/data',
+		tiles: 'docs/tiles',
 	},
 	getFilename: {},
 	rules: [
