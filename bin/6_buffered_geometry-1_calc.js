@@ -73,14 +73,19 @@ simpleCluster(async function (runWorker) {
 	})
 
 	deleteTemporaryFiles();
-
+	
 	todoMerge = Array.from(todoMerge.values());
 	todoMerge.sort((a,b) => b.workEffort - a.workEffort);
+	await todoMerge.forEachParallel(entry => merge2GPKG(entry.layerName, entry.files))
+	await merge2GPKG('all', [].concat(...todoMerge.map(e => e.files)), true);
+	
+	console.log('finished');
 
-	await todoMerge.forEachParallel(async entry => {
-		let filename = config.getFilename.bufferedGeometry(entry.layerName);
-		let vrt = `<OGRVRTDataSource>\n\t<OGRVRTUnionLayer name="${entry.layerName}">\n`;
-		entry.files.forEach(f => {
+	async function merge2GPKG(layerName, files, progress) {
+		let filename = config.getFilename.bufferedGeometry(layerName);
+
+		let vrt = `<OGRVRTDataSource>\n\t<OGRVRTUnionLayer name="${layerName}">\n`;
+		files.forEach(f => {
 			let full = config.getFilename.bufferedGeometry(f+'.geojsonl');
 			if (!fs.existsSync(full)) throw Error('file is missing: '+full);
 			if (fs.statSync(full).size === 0) return;
@@ -89,21 +94,19 @@ simpleCluster(async function (runWorker) {
 		vrt += `\t</OGRVRTUnionLayer>\n</OGRVRTDataSource>`;
 		fs.writeFileSync(filename+'.vrt', vrt);
 
-		console.log('generate',entry.layerName+'.gpkg')
+		console.log('generate', layerName+'.gpkg')
+
 		await new Promise(res => {
 			let cp = child_process.spawn('ogr2ogr', ['-progress', filename+'.gpkg', filename+'.vrt'])
 			cp.on('close', res);
 			cp.stderr.pipe(process.stderr);
+			if (progress) cp.stdout.pipe(process.stdout);
 		})
-	})
-	
-	console.log('finished');
-
-
+	}
 
 	function deleteTemporaryFiles() {
 		fs.readdirSync(config.folders.bufferedGeometry).forEach(f => {
-			if (/^tmp-/.test(f)) fs.rmSync(config.getFilename.bufferedGeometry(f));
+			if (f.startsWith('tmp-') || f.endsWith('.vrt')) fs.rmSync(config.getFilename.bufferedGeometry(f));
 		})
 	}
 
