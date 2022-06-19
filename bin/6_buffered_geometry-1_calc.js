@@ -136,7 +136,11 @@ simpleCluster(async function (runWorker) {
 		result = coords2GeoJSON(result);
 		result = turf.flatten(result);
 		
-		result = result.features.map(f => JSON.stringify(f)+'\n').join('');
+		result = result.features.map(f => {
+			f.properties.rule = ruleType.slug;
+			f.properties.level = windTurbine.level;
+			return JSON.stringify(f)+'\n'
+		}).join('');
 		fs.writeSync(fd, result);
 	})
 
@@ -149,9 +153,7 @@ simpleCluster(async function (runWorker) {
 			if (line.length === 0) return;
 			let feature = JSON.parse(line);
 			i++;
-			if (i % 20000 === 0) console.log('   ',i);
-
-			//console.log('OBJECTID', feature.properties.OBJECTID, line.length);
+			if (i % 20000 === 0) console.log('   ', i);
 
 			turf.flatten(feature).features.forEach(feature => {
 				feature.bbox = turf.bbox(feature);
