@@ -117,17 +117,11 @@ const KEYS = {
 			case 'bundeslandAGS':
 			case 'hoehe':
 			case 'groupIndex':
-			case '':
-			case '':
-			case '':
-			case '':
-			case '':
-			case '':
 				values = runLengthEncoding(values);
 				break;
 			default:
 				if (key.startsWith('min_')) {
-					values = values.join(',');
+					values = runLengthEncoding(values);
 					break;
 				}
 				console.log('dont know what to do with', key);
