@@ -2,10 +2,10 @@
 cd "$(dirname "$0")"
 cd ../docs/tiles
 
-set -ex
+set -e
 
 echo "1/5 cleanup"
-find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "md5sum {}/*.png | grep '91035755a501e30825fe66e5cc71f9ab' | cut -d' ' -f3- | xargs rm"
+find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "md5sum {}/*.png | grep '91035755a501e30825fe66e5cc71f9ab' | cut -d' ' -f3- | xargs -r rm"
 
 echo "2/5 delete empty folders"
 find . -empty -type d -delete
