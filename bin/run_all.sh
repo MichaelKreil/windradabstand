@@ -7,4 +7,4 @@ rm -r ../data/6_buffered_geometry
 rm -r ../data/helper
 
 ./4_process-all.sh
-./6_calc_buffered_geometry.js
+./6_buffered_geometry-1_calc.js

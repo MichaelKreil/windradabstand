@@ -28,7 +28,7 @@ async function start() {
 			slug:'grenze_flaeche',
 			slugOut:type,
 			ruleTypes:[type],
-			filenameIn: config.getFilename.schutzgebiete(type+'.geojsonl'),
+			filenameIn: config.getFilename.andereGebiete(type+'.geojsonl'),
 			cbFeature:feature => {
 				feature.properties.type = type;
 				return true;

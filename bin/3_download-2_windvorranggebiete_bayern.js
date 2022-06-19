@@ -84,7 +84,7 @@ async function downloadLayer(layerId, slug) {
 	}
 
 	fs.writeFileSync(
-		config.getFilename.anderegebiete(slug+'.geojson'),
+		config.getFilename.andereGebiete(slug+'.geojson'),
 		JSON.stringify(turf.featureCollection(features))
 	)
 

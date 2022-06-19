@@ -13,7 +13,7 @@ const config = {
 		wind: 'data/1_wind',
 		alkisCache: 'data/2_alkis/cache',
 		alkisGeo: 'data/2_alkis/data',
-		anderegebiete: 'data/3_andere_gebiete',
+		andereGebiete: 'data/3_andere_gebiete',
 		otherCache: 'data/cache',
 		mapGroup: 'data/4_map_result/group',
 		mapFeature: 'data/4_map_result/feature',
