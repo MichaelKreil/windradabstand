@@ -11,10 +11,9 @@ const DATABASE_FILENAME = config.getFilename.bufferedGeometry('all.gpkg');
 const COMBINED_RENDER_LEVELS = 4;
 const TILE_SIZE = 512;
 
-simpleCluster(true, async function (runWorker) {
+simpleCluster(async function (runWorker) {
 	const zoomLevel = config.maxMapZoomLevel-(COMBINED_RENDER_LEVELS-1);
-	//const BBOX = config.bbox;
-	const BBOX = [13.1, 52.3, 13.8, 52.7];
+	const BBOX = config.bbox;
 
 	await processLevel('render', zoomLevel);
 	for (let z = zoomLevel-1; z >= 0; z--) await processLevel('merge', z);
@@ -46,14 +45,14 @@ simpleCluster(true, async function (runWorker) {
 	const { dirname } = require('path');
 
 	switch (todo.action) {
-		case 'render': return renderTile(todo);
-		case 'merge': return mergeTile(todo);
+		case 'render': return await renderTile(todo);
+		case 'merge':  return await mergeTile(todo);
 		default:
 			console.log({todo});
 			throw Error();
 	}
 
-	function renderTile(todo) {
+	async function renderTile(todo) {
 		const { x,y,z } = todo;
 		const bbox = getTileBbox(x,y,z);
 		const ZOOM_LEVEL_SCALE = 2 ** z;
@@ -111,7 +110,7 @@ simpleCluster(true, async function (runWorker) {
 
 		const canvasTile = Canvas.createCanvas(TILE_SIZE, TILE_SIZE);
 		const ctxTile = canvasTile.getContext('2d');
-		for (let level = 0; level < COMBINED_RENDER_LEVELS; level++) {
+		for (let level = COMBINED_RENDER_LEVELS-1; level >= 0; level--) {
 			let count = 2 ** level;
 			let srcSize = (2 ** (COMBINED_RENDER_LEVELS-level-1))*TILE_SIZE;
 			for (let dx = 0; dx < count; dx++) {
@@ -128,6 +127,32 @@ simpleCluster(true, async function (runWorker) {
 				}
 			}
 		}
+	}
+
+	async function mergeTile(todo) {
+		const { x,y,z } = todo;
+		const HALF_SIZE = TILE_SIZE/2;
+
+		const canvas = Canvas.createCanvas(TILE_SIZE, TILE_SIZE);
+		const ctx = canvas.getContext('2d');
+		ctx.clearRect(0,0,TILE_SIZE,TILE_SIZE);
+
+		for (let dx = 0; dx < 2; dx++) {
+			for (let dy = 0; dy < 2; dy++) {
+				let filename = getTileFilename(x*2+dx, y*2+dy, z+1);
+				if (!fs.existsSync(filename)) continue;
+				let img = await Canvas.loadImage(filename);
+				ctx.drawImage(
+					img,
+					0, 0, TILE_SIZE, TILE_SIZE,
+					HALF_SIZE*dx, HALF_SIZE*dy, HALF_SIZE, HALF_SIZE,
+				)
+			}
+		}
+
+		let filename = getTileFilename(x, y, z);
+		ensureFolder(dirname(filename));
+		fs.writeFileSync(filename, canvas.toBuffer());
 	}
 })
 
