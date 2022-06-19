@@ -14,30 +14,133 @@
 <body style="margin: 0;">
 	<div id='map' style='width: 100vw; height: 100vh;'></div>
 	<script>
-		let map = new maplibregl.Map({
-			container: 'map',
-			style: 'https://karten.party/styles/positron/style.json',
-			center: [10, 51],
-			zoom: 5,
-		});
-		map.on('load', async () => {
-			map.addSource('tilesSource', {
-				type: 'raster',
-				tiles: [ '/tiles/buffered/{z}/{y}/{x}.png' ],
-				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-				minzoom: 0,
-				maxzoom: 14,
-				tileSize: 512,
+		(() => {
+			let map = new maplibregl.Map({
+				container: 'map',
+				style: 'https://karten.party/styles/positron/style.json',
+				center: [10, 51],
+				zoom: 5,
+			});
+			map.on('load', async () => {
+				map.addSource('tilesSource', {
+					type: 'raster',
+					tiles: [ '/tiles/buffered/{z}/{y}/{x}.png' ],
+					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
+					minzoom: 0,
+					maxzoom: 14,
+					tileSize: 512,
+				})
+				map.addLayer({
+					id: 'tilesLayer',
+					type: 'raster',
+					source: 'tilesSource',
+					paint: {
+						'raster-opacity': 0.5,
+					},
+				})
+
+				let wind = await loadWind();
+				let features = wind.map(w => ({
+					type: 'Feature',
+					geometry: {
+						type: 'Point',
+						coordinates: [parseFloat(w.Laengengrad), parseFloat(w.Breitengrad)]
+					},
+					properties: {
+					}
+				}))
+
+				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
+				map.addLayer({
+					id: 'pointLayer',
+					type: 'circle',
+					source: 'pointData',
+					paint: {
+						'circle-radius': [
+							'interpolate',
+							['exponential', 1],
+							['zoom'],
+							5, 0.7,
+							20, 12,
+						],
+						'circle-color': '#000000',
+					},
+				});
 			})
-			map.addLayer({
-				id: 'tilesLayer',
-				type: 'raster',
-				source: 'tilesSource',
-				paint: {
-					'raster-opacity': 0.6,
-				},
-			})
-		})
+
+			async function loadWind() {
+				let data = await loadViaAjax('data/wind.json');
+				let wind = [];
+				Object.entries(JSON.parse(await loadViaAjax('data/wind.json'))).forEach(([key,values]) => {
+					switch (key) {
+						case 'Breitengrad':
+						case 'Laengengrad':
+							values = runLengthDecoding(values);
+							values = diffDecoding(values);
+							values = values.map(v => v / 1e5);
+						break;
+						case 'Bruttoleistung':
+						case 'Nabenhoehe':
+						case 'Rotordurchmesser':
+						case 'bundeslandAGS':
+						case 'hoehe':
+						case 'groupIndex':
+							values = runLengthDecoding(values);
+							break;
+						default:
+							if (key.startsWith('min_')) {
+								values = runLengthDecoding(values);
+								break;
+							}
+							console.log('what should we do with', key);
+					}
+
+					values.forEach((v,i) => {
+						if (!wind[i]) wind[i] = {};
+						wind[i][key] = v;
+					})
+				});
+				
+				return wind;
+
+				function runLengthDecoding(array) {
+					let result = [];
+					array.forEach(v => {
+						if (Array.isArray(v)) {
+							for (let i = 0; i < v[1]; i++) result.push(v[0])
+						} else {
+							result.push(v);
+						}
+					})
+					return result;
+				}
+
+				function diffDecoding(array) {
+					for (let i = 1; i < array.length; i++) {
+						if (array[i] === null) continue;
+						if (array[i - 1] === null) continue;
+						array[i] += array[i - 1];
+					}
+					return array;
+				}
+			}
+
+			function loadViaAjax(url) {
+				return new Promise((res, rej) => {
+					let req = new XMLHttpRequest();
+					req.open('GET', url, true);
+					req.onload = () => {
+						if (req.status < 200 || req.status >= 400) {
+							console.log(req);
+							return rej(req.status);
+						}
+						res(req.response);
+					}
+					req.send();
+				})
+			}
+
+		})()
 </script>
 </body>
 
