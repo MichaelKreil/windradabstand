@@ -17,4 +17,4 @@ echo "4/5 optipng"
 find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"
 
 echo "5/5 cleanup"
-find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "md5sum {}/*.png | grep '42cc2561c002c4e07aff64fc6f144241' | cut -d' ' -f3- | xargs rm"
+find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "md5sum {}/*.png | grep '42cc2561c002c4e07aff64fc6f144241' | cut -d' ' -f3- | xargs -r rm"
