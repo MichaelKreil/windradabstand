@@ -6,6 +6,7 @@ const fs = require('fs');
 const config = require('../config.js');
 const { simpleCluster } = require('big-data-tools');
 const { bbox2Tiles, getTileBbox, mercator } = require('../lib/geohelper.js');
+const { ensureFolder, Progress } = require('../lib/helper.js');
 
 const DATABASE_FILENAME = config.getFilename.bufferedGeometry('all.gpkg');
 const COMBINED_RENDER_LEVELS = 4;
@@ -32,8 +33,12 @@ simpleCluster(async function (runWorker) {
 			}
 		}
 
+		todos.sort(() => Math.random()-0.5);
+
+		let progress = new Progress(todos.length);
+
 		await todos.forEachParallel((todo,i) => {
-			process.stderr.write('\r'+(100*(i+1)/todos.length).toFixed(1)+'%');
+			progress(i);
 			return runWorker(todo)
 		});
 
@@ -43,7 +48,6 @@ simpleCluster(async function (runWorker) {
 }, async function (todo) {
 	const Canvas = require('canvas');
 	const gdal = require('gdal-next');
-	const { ensureFolder } = require('../lib/helper.js');
 	const { dirname } = require('path');
 
 	switch (todo.action) {
