@@ -125,7 +125,7 @@ simpleCluster(async function (runWorker) {
 
 	let bbox = bundesland.bbox;
 	bbox = turf.bboxPolygon(bbox);
-	bbox = turf.buffer(bbox, windTurbine.dist/1000);
+	bbox = turf.buffer(bbox, windTurbine.dist/1000, { steps:18 });
 	bbox = turf.bbox(bbox);
 
 	let fd = fs.openSync(filenameTmp, 'w');
