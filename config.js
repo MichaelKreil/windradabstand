@@ -250,8 +250,8 @@ const config = {
 	],
 	typicalWindTurbines: [
 		{ level:0, color:'#e30613', hoehe:100, Nabenhoehe: 65, Rotordurchmesser: 70 },
-		{ level:1, color:'#ea5b0c', hoehe:150, Nabenhoehe:105, Rotordurchmesser: 90 },
-		{ level:2, color:'#f39200', hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
+		{ level:1, color:'#e74011', hoehe:150, Nabenhoehe:105, Rotordurchmesser: 90 },
+		{ level:2, color:'#ec6608', hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
 	]
 }
 
