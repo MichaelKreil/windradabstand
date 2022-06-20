@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+'use strict'
+
+
+const { resolve, relative } = require('path');
+const { getFileTarDB } = require('../lib/tar.js')
+const config = require('../config.js')
+
+const express = require('express');
+const mime = require('mime-types');
+const fs = require('fs');
+const app = express()
+
+const folder = resolve(__dirname, '../docs/');
+const port = 8080;
+
+
+app.use('/data', precompressionStatic(resolve(folder, 'data')));
+app.use('/assets', express.static(resolve(folder, 'assets')));
+
+app.get('/', (req, res) => {
+	res.sendFile(resolve(folder, 'index.html'))
+})
+
+const bufferedTiles = getFileTarDB(config.getFilename.tiles('buffered.tar'));
+app.get(/\/tiles\/(buffered.*\.png)/, (req, res) => {
+	let filename = req.params[0];
+	res
+		.set('Content-Type', 'image/png')
+		.end(bufferedTiles.get(filename));
+})
+
+app.listen(port, () => {
+	console.log(`listening on port ${port}`)
+})
+
+function precompressionStatic(baseFolder) {
+	let files = new Map();
+	scanFiles(baseFolder);
+
+	function scanFiles(folder) {
+		fs.readdirSync(folder).forEach(name => {
+			let fullname = resolve(folder, name);
+			if (fs.statSync(fullname).isDirectory()) return scanFiles(fullname);
+
+			let encoding = 'raw', match;
+			let keyName = relative(baseFolder, fullname);
+			if (match = keyName.match(/(.*)\.gz/i)) {
+				keyName = match[1];
+				encoding = 'gz';
+			} else if (match = keyName.match(/(.*)\.br/i)) {
+				keyName = match[1];
+				encoding = 'br';
+			}
+			keyName = ('/'+keyName).replace(/\/{2,}/,'/');
+
+			let file = files.get(keyName);
+			if (!file) files.set(keyName, file = { mime:mime.lookup(keyName) });
+			file[encoding] = fs.readFileSync(fullname);
+		})
+	}
+
+	return function compress(req, res, next) {
+		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+
+		let acceptEncoding = req.headers['accept-encoding'];
+		if (!acceptEncoding) return next()
+
+		let file = files.get(req.url);
+		if (!file) return next();
+
+		res.setHeader('Content-Type', file.mime);
+
+		if ((acceptEncoding.indexOf('br') > -1) && file.br) {
+			res.setHeader('Content-Encoding', 'br');
+			res.send(file.br);
+		} else if ((acceptEncoding.indexOf('gzip') > -1) && file.gz) {
+			res.setHeader('Content-Encoding', 'gzip');
+			res.send(file.gz);
+		} else if (file.raw) {
+			res.send(file.raw);
+		}
+		
+		return next();
+	}
+}
+

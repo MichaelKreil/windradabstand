@@ -22,6 +22,7 @@ const config = {
 		bufferedGeometry: 'data/6_buffered_geometry',
 		helper: 'data/helper',
 		webData: 'docs/data',
+		webAssets: 'docs/assets',
 		tiles: 'docs/tiles',
 	},
 	getFilename: {},
