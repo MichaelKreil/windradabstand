@@ -20,6 +20,9 @@
 				style: 'https://karten.party/styles/positron/style.json',
 				center: [10, 51],
 				zoom: 5,
+				maxZoom: 14,
+				minPitch: 0,
+				maxPitch: 0,
 			});
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
@@ -50,20 +53,25 @@
 					}
 				}))
 
+				map.addImage('wind', document.getElementById('windIcon'), {pixelRatio:128})
 				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
 				map.addLayer({
 					id: 'pointLayer',
-					type: 'circle',
+					type: 'symbol',
 					source: 'pointData',
 					paint: {
-						'circle-radius': [
+						'icon-color': '#FF0000',
+					},
+					layout: {
+						'icon-image': 'wind',
+						'icon-allow-overlap': true,
+						'icon-size': [
 							'interpolate',
 							['exponential', 1],
 							['zoom'],
 							5, 0.7,
 							20, 12,
 						],
-						'circle-color': '#000000',
 					},
 				});
 			})
@@ -142,6 +150,6 @@
 
 		})()
 </script>
+<img id="windIcon" src="assets/icon.png" />
 </body>
-
 </html>
