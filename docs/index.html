@@ -5,14 +5,47 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Tankstellen-Test</title>
+	<title>Die Verhinderung der Windenergie</title>
 
 	<script src='https://karten.party/static/maplibre-gl-1.15.3/maplibre-gl.js'></script>
 	<link href='https://karten.party/static/maplibre-gl-1.15.3/maplibre-gl.css' rel='stylesheet' />
+	<style>
+		body {
+			font-family: sans-serif;
+		}
+		p {
+			max-width: 600px;
+			margin: 1em auto;
+		}
+		h1, h2 {
+			text-align: center;
+		}
+	</style>
 </head>
 
 <body style="margin: 0;">
+	<h1>Die Verhinderung der Windenergie</h1>
+	
+	<p>Um das vereinbarte Ziel, die Erderwärmung auf 1,5 Grad zu begrenzen, noch erreichen zu können, bleiben uns noch etwa 5 Jahre. Ab dann müssten wir von einem Tag auf den nächsten alles was Klimagase erzeugt, ausschalten. Das heißt keine Autos mit Benzin und Dieselmotoren mehr, keine Flugzeuge, keine Kohle-, Öl- und Gasheizungen, keine Stahlproduktion, kein Fleisch, kein Stromproduktion aus fossilen Brennstoffen.</p>
+
+	<p>Weder das Reißen von Klimazielen, noch das Abschalten notwendiger Infrastrukturen können wir uns leisten. Aber die gute Nachricht der Wissenschaft ist, dass es eine Lösung gibt: Der radikale Umstieg auf erneuerbare Energien: Heizen mit grünem Strom, Fahren mit grünem Strom, Fliegen mit Treibstoff aus grünem Strom. Dieser radikale Umstieg ist möglich, aber er braucht eine Menge Strom aus regenerativen Energien. Schätzungen bewegen sich im Bereich von x Watt, die Tag und Nacht gebraucht werden. Das wird uns nur mit x Windrädern gelingen. Aber die haben wir nicht.</p>
+
+	<p>Im Gegenteil: Die alten Bundesregierungen, hauptsächlich unter der Führung von CDU und CSU, haben in 16 Jahren <a href="https://www.focus.de/finanzen/news/focus-online-serie-energiewende-in-deutschland-ein-fataler-rechenfehler-vergroesstert-deutschlands-stromhunger-nur-noch-weiter_id_28981979.html">falsche Prognosen</a> und <a href="https://www.spiegel.de/wirtschaft/altmaier-entschuldigt-sich-fuer-rechenfehler-bei-windkraft-schallbelastung-a-9d8ed560-395e-4fd9-8c58-e0d4c3ecd011">falsche Studien</a> veröffentlicht, <a href="https://www.deutschlandfunk.de/ausschreibungspflicht-bei-solaranlagen-kaum-chancen-fuer-100.html">Solarenergie</a> und <a href="https://www.klimareporter.de/strom/ausschreibungen-fuer-alte-windraeder-fallen-weg">Windenergie</a> mit komplexen Ausschreibungsverfahren verteuert, und als Gipfel wurden auf <a href="https://www.fr.de/meinung/totengloeckchen-energiewende-10922087.html">Wunsch von CDU-Kanzlerkandidat Armin Laschet neue Abstandsregelungen auf Länderebene</a> ermöglicht, die man nur als Sargnagel für den Ausbau von Windenergie bezeichnen kann.</p>
+
+	<p>Diese Abstandsregeln sind inzwischen zum zentralen Streitthema geworden, denn es ist klar: Wer den Ausbau von regenerativen Energien in Deutschland verhindern will, muss einfach nur jedem Gemeinderat ein Mitspracherecht geben.</p>
+
+	<p>Nun ist es zum ersten Mal gelungen, auf der Basis der Abstandsregelungen aller Bundesländer in Kombination mit den amtlichen Daten für Wohngebäude, Straßen, Stromleitungen, Bahntrassen, Naturschutzgebieten usw. deutschlandweit auszurechnen, wo der Bau von Windräder verboten ist.</p>
+
 	<div id='map' style='width: 100vw; height: 100vh;'></div>
+
+	<p>Wenn man in die Karte näher reinzoomt, erscheinen die bisher gebauten Windräder. Ein großer Teil liegt in Gebieten, wo sie gegen die Abstandsregelungen verstoßen. Das bedeutet, dass sie nach Ablauf der Genehmigungen nicht weiter betrieben oder aufgerüstet werden dürfen. Sie müssen abgerissen werden.</p>
+
+	<h2>Statistik der Bundesländer</h2>
+
+	<p>So wird das mit dem Ausbau der regenerativen Energien nichts. Die Weigerung, sich mit der Notwendigkeit auseinanderzusetzen, wurde hinter komplizierten Paragrafen versteckt.</p>
+
+	<p>Warum konnte noch niemand so eine Karte zeigen? Weil die Daten bisher nicht vorlagen. Auch hier hatte die Politik einen Weg gefunden, die notwendige Transparenz zu verhindern, in dem sie diese von Steuerzahler*innen finanzierte Daten unter Verschluss hielt. Die Begründung lautet, dass die Verwaltung Urheberrechte darauf hat, weil sie mit dem Verkauf an Unternehmen damit Geld verdienen möchte. Allein die Lage der Wohngebäude, die man für die Berechnung der Abstandsregelungen benötigt, wird zwar von xyz kostenfrei rausgegeben, aber abc wollen dafür in Summe 140.000 € haben. Da sich die Länder weigern, diese Daten rauszugeben, verstoße ich mit dieser Veröffentlichung gegen behauptete Urheberrechte. Die Staatsanwaltschaft München ermittelt bereits gegen mich. Gemeinsam mit der Unterstützung der Wikimedia-Foundation, dem CCC und der GFF freuen wir uns auf das Verfahren, mit dem wir endlich die Nichtigkeiten von staatlichen Urheberrechten und der Notwendigkeit von OpenData erklagen wollen.</p>
+
 	<script>
 		(() => {
 			let map = new maplibregl.Map({
@@ -20,6 +53,9 @@
 				style: 'https://karten.party/styles/positron/style.json',
 				center: [10, 51],
 				zoom: 5,
+				maxZoom: 14.5,
+				minPitch: 0,
+				maxPitch: 0,
 			});
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
@@ -51,19 +87,27 @@
 				}))
 
 				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
+
+				map.loadImage('assets/wind-1-red.png',  (e, img) => { map.addImage('wind-red',  img, { pixelRatio:128 }) });
+				map.loadImage('assets/wind-1-blue.png', (e, img) => { map.addImage('wind-blue', img, { pixelRatio:128 }) });
+
 				map.addLayer({
 					id: 'pointLayer',
-					type: 'circle',
+					type: 'symbol',
 					source: 'pointData',
 					paint: {
-						'circle-radius': [
+						'icon-color': '#FF0000',
+					},
+					layout: {
+						'icon-image': 'wind-red',
+						'icon-allow-overlap': true,
+						'icon-size': [
 							'interpolate',
 							['exponential', 1],
 							['zoom'],
 							5, 0.7,
 							20, 12,
 						],
-						'circle-color': '#000000',
 					},
 				});
 			})
@@ -143,5 +187,4 @@
 		})()
 </script>
 </body>
-
 </html>
