@@ -21,7 +21,7 @@ const config = {
 		mapFeature: 'data/4_map_result/feature',
 		bufferedGeometry: 'data/6_buffered_geometry',
 		helper: 'data/helper',
-		web: 'docs/data',
+		webData: 'docs/data',
 		tiles: 'docs/tiles',
 	},
 	getFilename: {},
