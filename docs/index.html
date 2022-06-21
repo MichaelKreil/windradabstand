@@ -89,6 +89,28 @@
 				maxZoom: 14.5,
 				minPitch: 0,
 				maxPitch: 0,
+				customAttribution: [
+					'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg',
+					'Landesamt für Digitalisierung, Breitband und Vermessung Bayern',
+					'Senatsverwaltung für Stadtentwicklung und Wohnen Berlin',
+					'Landesvermessung und Geobasisinformation Brandenburg',
+					'Landesamt Geoinformation Bremen',
+					'Landesbetrieb Geoinformation und Vermessung',
+					'Hessische Verwaltung für Bodenmanagement und Geoinformation',
+					'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern',
+					'Landesamt für Geoinformation und Landesvermessung Niedersachsen',
+					'Geobasis NRW',
+					'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz',
+					'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland',
+					'Staatsbetrieb Geobasisinformation und Vermessung Sachsen',
+					'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt',
+					'Landesamt für Vermessung und Geoinformation Schleswig-Holstein',
+					'Thüringer Landesamt für Bodenmanagement und Geoinformation',
+					'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
+				].map(e => {
+					e = e.split(';');
+					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
+				}).join(' | ')
 			});
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
