@@ -126,7 +126,14 @@
 					type: 'raster',
 					source: 'tilesSource',
 					paint: {
-						'raster-opacity': 0.5,
+						'raster-opacity': [
+							'interpolate',
+							['exponential', 1],
+							['zoom'],
+							5, 1,
+							6, 1,
+							9, 0.4,
+						],
 					},
 				})
 
@@ -143,15 +150,21 @@
 
 				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
 
-				map.loadImage('assets/wind-1-red.png',  (e, img) => { map.addImage('wind-red',  img, { pixelRatio:128 }) });
-				map.loadImage('assets/wind-1-blue.png', (e, img) => { map.addImage('wind-blue', img, { pixelRatio:128 }) });
+				map.loadImage('assets/wind-1-red.png',  (e,img) => map.addImage('wind-red',  img, { pixelRatio:128 }));
+				map.loadImage('assets/wind-1-blue.png', (e,img) => map.addImage('wind-blue', img, { pixelRatio:128 }));
 
 				map.addLayer({
 					id: 'pointLayer',
 					type: 'symbol',
 					source: 'pointData',
 					paint: {
-						'icon-color': '#FF0000',
+						'icon-opacity': [
+							'interpolate',
+							['linear'],
+							['zoom'],
+							7, 0,
+							9, 1,
+						],
 					},
 					layout: {
 						'icon-image': 'wind-red',
@@ -160,8 +173,8 @@
 							'interpolate',
 							['exponential', 1],
 							['zoom'],
-							5, 0.7,
-							20, 12,
+							 7,  1,
+							14, 24,
 						],
 					},
 				});
