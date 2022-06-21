@@ -41,6 +41,9 @@
 			max-width: 612px;
 			height: 80vh;
 		}
+		.maplibregl-ctrl-attrib-inner {
+			line-height: 1.2em;
+		}
 	</style>
 </head>
 
@@ -80,8 +83,9 @@
 	<script>
 		(() => {
 			const URL = 'http://168.119.98.135:8080/'
+			let container = document.getElementById('map');
 			let map = new maplibregl.Map({
-				container: 'map',
+				container,
 				style: 'https://karten.party/styles/positron/style.json',
 				center: [10, 51],
 				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
@@ -89,6 +93,10 @@
 				maxZoom: 14.5,
 				minPitch: 0,
 				maxPitch: 0,
+				cooperativeGestures: true,
+				attributionControl: false
+			});
+			map.addControl(new maplibregl.AttributionControl({ compact: true,
 				customAttribution: [
 					'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg',
 					'Landesamt für Digitalisierung, Breitband und Vermessung Bayern',
@@ -111,7 +119,8 @@
 					e = e.split(';');
 					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
 				}).join(' | ')
-			});
+			}));
+			map.addControl(new maplibregl.FullscreenControl({container}));
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
 					type: 'raster',
@@ -154,7 +163,7 @@
 				map.loadImage('assets/wind-1-blue.png', (e,img) => map.addImage('wind-blue', img, { pixelRatio:128 }));
 
 				map.addLayer({
-					id: 'pointLayer',
+					id: 'windSymbols',
 					type: 'symbol',
 					source: 'pointData',
 					paint: {
@@ -178,6 +187,19 @@
 						],
 					},
 				});
+
+				map.on('mouseenter', 'windSymbols', () => {
+					if (map.getZoom() < 7.5) return;
+					map.getCanvas().style.cursor = 'pointer';
+				});
+
+				// Change it back to a pointer when it leaves.
+				map.on('mouseleave', 'windSymbols', () => {
+					map.getCanvas().style.cursor = '';
+				});
+				map.on('click', 'windSymbols', e => {
+
+				})
 			})
 
 			async function loadWind() {
