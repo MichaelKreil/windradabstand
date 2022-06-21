@@ -45,11 +45,12 @@
 	<p>So wird das mit dem Ausbau der regenerativen Energien nichts. Die Weigerung, sich mit der Notwendigkeit auseinanderzusetzen, wurde hinter komplizierten Paragrafen versteckt.</p>
 
 	<p>Warum konnte noch niemand so eine Karte zeigen? Weil die Daten bisher nicht vorlagen. Auch hier hatte die Politik einen Weg gefunden, die notwendige Transparenz zu verhindern, in dem sie diese von Steuerzahler*innen finanzierte Daten unter Verschluss hielt. Die Begründung lautet, dass die Verwaltung Urheberrechte darauf hat, weil sie mit dem Verkauf an Unternehmen damit Geld verdienen möchte. Allein die Lage der Wohngebäude, die man für die Berechnung der Abstandsregelungen benötigt, wird zwar von 8 Bundesländen kostenfrei rausgegeben, aber allein Bayern verlangt dafür 40.000 €. In Summe würde die Datengrundlage für die Karte mehrere Hunderttausend Euro kosten.</p>
-	
+
 	<p>Da sich einige Bundesländer weigern, diese Daten rauszugeben, verstoße ich mit dieser Veröffentlichung gegen behauptete Urheberrechte. Die Staatsanwaltschaft München ermittelt bereits gegen mich. Gemeinsam mit der Unterstützung der GFF, der Wikimedia-Foundation und dem CCC freuen wir uns auf das Verfahren, mit dem wir endlich die Nichtigkeiten von staatlichen Urheberrechten erklagen und die Notwendigkeit von OpenData bestätigen lassen wollen.</p>
 
 	<script>
 		(() => {
+			const URL = 'http://168.119.98.135:8080/'
 			let map = new maplibregl.Map({
 				container: 'map',
 				style: 'https://karten.party/styles/positron/style.json',
@@ -62,7 +63,7 @@
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
 					type: 'raster',
-					tiles: [ '/tiles/buffered/{z}/{y}/{x}.png' ],
+					tiles: [ URL+'tiles/buffered/{z}/{y}/{x}.png' ],
 					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
 					minzoom: 0,
 					maxzoom: 14,
@@ -115,9 +116,9 @@
 			})
 
 			async function loadWind() {
-				let data = await loadViaAjax('data/wind.json');
+				let data = await loadViaAjax(URL+'data/wind.json');
 				let wind = [];
-				Object.entries(JSON.parse(await loadViaAjax('data/wind.json'))).forEach(([key,values]) => {
+				Object.entries(JSON.parse(data)).forEach(([key,values]) => {
 					switch (key) {
 						case 'Breitengrad':
 						case 'Laengengrad':
