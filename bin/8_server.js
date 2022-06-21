@@ -2,19 +2,21 @@
 'use strict'
 
 
+const fs = require('fs');
 const { resolve, relative } = require('path');
-const { getFileTarDB } = require('../lib/tar.js')
-const config = require('../config.js')
 
 const express = require('express');
 const mime = require('mime-types');
-const fs = require('fs');
+
+const { getFileTarDB } = require('../lib/tar.js')
+const config = require('../config.js')
+
 const app = express()
 
 const folder = resolve(__dirname, '../docs/');
 const port = 8080;
 
-
+app.use(cors())
 app.use('/data', precompressionStatic(resolve(folder, 'data')));
 app.use('/assets', express.static(resolve(folder, 'assets')));
 
@@ -85,3 +87,17 @@ function precompressionStatic(baseFolder) {
 	}
 }
 
+function cors() {
+	return function handler(req, res, next) {
+		let origin = req.headers.origin;
+		if (!origin) return next();
+		let url = new URL(origin);
+		switch (url.hostname) {
+			case 'localhost':
+			case 'michaelkreil.github.io':
+				res.setHeader('Access-Control-Allow-Origin', origin);
+			break;
+		}
+		next();
+	}
+}
