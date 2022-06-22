@@ -23,7 +23,8 @@ const users = {
 app.use((req, res, next) => {
 	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
-	console.log({login,password});
+	
+	if (req.url.length < 15) console.log({url:req.url, login, password});
 
 	if (login && password && (users[login] === password)) return next()
 
