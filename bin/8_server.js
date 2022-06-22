@@ -15,8 +15,25 @@ const app = express()
 
 const folder = resolve(__dirname, '../docs/');
 const port = 8080;
+const users = {
+	'taz': 'seilbahn',
+	'gff': 'afrika',
+}
+
+app.use((req, res, next) => {
+	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
+	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+	console.log({login,password});
+
+	if (login && password && (users[login] === password)) return next()
+
+	// Access denied...
+	res.set('WWW-Authenticate', 'Basic realm="401"')
+	res.status(401).send('Authentication required.')
+})
 
 app.use(cors())
+
 app.use('/data', precompressionStatic(resolve(folder, 'data')));
 app.use('/assets', express.static(resolve(folder, 'assets')));
 
@@ -54,10 +71,10 @@ function precompressionStatic(baseFolder) {
 				keyName = match[1];
 				encoding = 'br';
 			}
-			keyName = ('/'+keyName).replace(/\/{2,}/,'/');
+			keyName = ('/' + keyName).replace(/\/{2,}/, '/');
 
 			let file = files.get(keyName);
-			if (!file) files.set(keyName, file = { mime:mime.lookup(keyName) });
+			if (!file) files.set(keyName, file = { mime: mime.lookup(keyName) });
 			file[encoding] = fs.readFileSync(fullname);
 		})
 	}
@@ -82,7 +99,7 @@ function precompressionStatic(baseFolder) {
 		} else if (file.raw) {
 			res.send(file.raw);
 		}
-		
+
 		return next();
 	}
 }
@@ -96,7 +113,7 @@ function cors() {
 			case 'localhost':
 			case 'michaelkreil.github.io':
 				res.setHeader('Access-Control-Allow-Origin', origin);
-			break;
+				break;
 		}
 		next();
 	}
