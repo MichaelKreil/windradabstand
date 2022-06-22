@@ -18,6 +18,7 @@ const port = 8080;
 const users = {
 	'taz': 'seilbahn',
 	'gff': 'afrika',
+	'privat': 'omnibus',
 }
 
 app.use((req, res, next) => {
