@@ -36,10 +36,14 @@
 			margin: 1em auto;
 			font-size: 16px;
 		}
-		#map {
+		#mapContainer {
 			margin: auto;
 			max-width: 612px;
 			height: 80vh;
+		}
+		#map {
+			width: 100%;
+			height: 100%;
 		}
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
@@ -66,7 +70,7 @@
 
 	<h2>Rote Karte für den Windkraftausbau</h2>
 	
-	<div id="map"></div>
+	<div id="mapContainer"><div id="map"></div></div>
 
 	<p>Wenn man in die Karte näher reinzoomt, erscheinen die bisher gebauten Windräder. Viele Windräder liegen in Gebieten, wo sie gegen die Abstandsregelungen verstoßen. Das bedeutet, dass sie nach Ablauf der Genehmigungen nicht weiter betrieben oder aufgerüstet werden dürfen. Sie müssen abgerissen werden.</p>
 
@@ -120,7 +124,7 @@
 					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
 				}).join(' | ')
 			}));
-			map.addControl(new maplibregl.FullscreenControl({container}));
+			map.addControl(new maplibregl.FullscreenControl());
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
 					type: 'raster',
