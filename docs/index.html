@@ -151,14 +151,16 @@
 				})
 
 				let wind = await loadWind();
+				wind.forEach(w => {
+					w.icon = (Object.keys(w.min).length === 0) ? 'wind-blue' : 'wind-red';
+				})
 				let features = wind.map(w => ({
 					type: 'Feature',
 					geometry: {
 						type: 'Point',
 						coordinates: [parseFloat(w.Laengengrad), parseFloat(w.Breitengrad)]
 					},
-					properties: {
-					}
+					properties: w
 				}))
 
 				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
@@ -180,7 +182,7 @@
 						],
 					},
 					layout: {
-						'icon-image': 'wind-red',
+						'icon-image': ['get','icon'],
 						'icon-allow-overlap': true,
 						'icon-size': [
 							'interpolate',
@@ -202,7 +204,10 @@
 					map.getCanvas().style.cursor = '';
 				});
 				map.on('click', 'windSymbols', e => {
-
+					let {lng,lat} = e.lngLat;
+					let wind = e.features[0];
+					if (!wind) return;
+					console.log(wind.properties);
 				})
 			})
 
@@ -234,8 +239,12 @@
 					}
 
 					values.forEach((v,i) => {
-						if (!wind[i]) wind[i] = {};
-						wind[i][key] = v;
+						if (!wind[i]) wind[i] = {min:{}};
+						if (key.startsWith('min_')) {
+							if (v !== null) wind[i].min[key.slice(4)] = v;
+						} else {
+							wind[i][key] = v;
+						}
 					})
 				});
 				
