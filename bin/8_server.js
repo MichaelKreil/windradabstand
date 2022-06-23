@@ -19,6 +19,7 @@ const users = {
 	'taz': 'seilbahn',
 	'gff': 'rollschuhe',
 	'privat': 'omnibus',
+	'swr': 'hafermilch',
 }
 
 app.use((req, res, next) => {
