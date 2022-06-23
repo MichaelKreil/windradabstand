@@ -28,7 +28,7 @@ processAlkis({
 		let p = turf.pointOnFeature(feature).geometry.coordinates;
 		return pecker(p);
 	},
-	cbWindEntries: windEntries => windEntries.every(([w,d]) => d > 10),
+	cbWindEntries: windEntries => windEntries.every(({wind,distance}) => distance > 10),
 })
 
 
