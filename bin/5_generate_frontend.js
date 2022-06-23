@@ -5,8 +5,8 @@
 
 const fs = require('fs');
 const config = require('../config.js');
-const { writeWebData } = require('../lib/helper.js');
-const zlib = require('zlib');
+const { gzip, brotli } = require('../lib/helper.js');
+require('big-data-tools');
 
 const slugs = 'biosphaere,ffhabitat,gebaeudeflaeche,grenze_flaeche,landschaftsschutz,nationalpark,naturpark,naturschutz,siedlungsflaeche,verkehrslinie,versorgungslinie,vogelschutz'.split(',');
 
@@ -45,20 +45,21 @@ const KEYS = {
 	'Nabenhoehe': true,
 	'Rotordurchmesser': true,
 };
-/*
-(async () => {
-	
 
-	const windEntries = loadWindEntries();
-	const maxGroupIndex = windEntries.reduce((m,w) => Math.max(m,w.properties.groupIndex), 0);
-	
-	for (let i = 0; i <= maxGroupIndex; i++) generateGroup(i);
 
-	saveWindEntries()
-})()
-*/
 
-(async () => {
+start()
+
+async function start() {
+	await generateWindEntries()
+	await generateGroups()
+	console.log('Finished')
+}
+
+
+
+async function generateWindEntries() {
+	console.log('generate wind entries')
 	let windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
 
 	windEntries = windEntries.map(w => {
@@ -74,7 +75,7 @@ const KEYS = {
 
 	// add min distances
 	slugs.forEach(slug => {
-		console.log('read', slug)
+		console.log('   read', slug)
 		JSON.parse(fs.readFileSync(config.getFilename.mapFeature(slug + '.json'))).forEach(link => {
 			let windEntry = windEntries[link.index];
 			Object.entries(link.minDistance).forEach(([key, val]) => {
@@ -129,11 +130,47 @@ const KEYS = {
 		}
 
 		result[key] = values;
-		console.log('\t',zlib.gzipSync(JSON.stringify(values)).length, key)
+		//console.log('\t',zlib.gzipSync(JSON.stringify(values)).length, key)
 	})
 	result = JSON.stringify(result);
-	writeWebData('wind.json', result);
-})();
+	await writeWebData('wind.json', result);
+}
+
+async function generateGroups() {
+	console.log('generate groups');
+	const windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
+	const maxGroupIndex = windEntries.reduce((m,w) => Math.max(m,w.groupIndex), 0);
+	const todos = []
+	for (let i = 0; i <= maxGroupIndex; i++) todos.push(i);
+
+	await todos.forEachParallel(async i => {
+		process.stdout.write('\r   '+(100*i/maxGroupIndex).toFixed(1)+'% ');
+		let group = [];
+		slugs.forEach(slug => {
+			let filename = config.getFilename.mapGroup(`${slug}-${i}.geojsonl`);
+			if (!fs.existsSync(filename)) return;
+			let data = fs.readFileSync(filename, 'utf8')
+				.split('\n')
+				.filter(l => l.length > 0)
+				.forEach(l => {
+					let e = JSON.parse(l);
+					e.properties = {
+						type: e.properties.type,
+						windEntr: e.properties.windEntr,
+						windDist: e.properties.windDist,
+					}
+					group.push(e);
+				})
+		})
+		await writeWebData(`group-${i}.json`, JSON.stringify(group));
+	})
+}
+
+async function writeWebData(filename, buffer) {
+	fs.writeFileSync(config.getFilename.webData(filename, buffer), buffer);
+	fs.writeFileSync(config.getFilename.webData(filename+'.gz', buffer), await gzip(buffer));
+	fs.writeFileSync(config.getFilename.webData(filename+'.br', buffer), await brotli(buffer));
+}
 
 
 function runLengthEncoding(array) {
