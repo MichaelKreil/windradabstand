@@ -17,7 +17,7 @@ const folder = resolve(__dirname, '../docs/');
 const port = 8080;
 const users = {
 	'taz': 'seilbahn',
-	'gff': 'afrika',
+	'gff': 'rollschuhe',
 	'privat': 'omnibus',
 }
 
@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
 	
-	if (req.url.length < 15) console.log({url:req.url, login, password});
+	if (req.url === '/') console.log({time:(new Date()).toLocaleString('de'), login, password});
 
 	if (login && password && (users[login] === password)) return next()
 
