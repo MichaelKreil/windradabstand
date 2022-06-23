@@ -144,8 +144,7 @@
 							['exponential', 1],
 							['zoom'],
 							5, 1,
-							6, 1,
-							9, 0.4,
+							7, 0.5,
 						],
 					},
 				})
@@ -165,8 +164,8 @@
 
 				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
 
-				map.loadImage('assets/wind-1-red.png',  (e,img) => map.addImage('wind-red',  img, { pixelRatio:128 }));
-				map.loadImage('assets/wind-1-blue.png', (e,img) => map.addImage('wind-blue', img, { pixelRatio:128 }));
+				map.loadImage('assets/wind-2-red.png',  (e,img) => map.addImage('wind-red',  img, { pixelRatio:128 }));
+				map.loadImage('assets/wind-2-blue.png', (e,img) => map.addImage('wind-blue', img, { pixelRatio:128 }));
 
 				map.addLayer({
 					id: 'windSymbols',
@@ -177,8 +176,8 @@
 							'interpolate',
 							['linear'],
 							['zoom'],
-							7, 0,
-							9, 1,
+							6, 0,
+							7, 1,
 						],
 					},
 					layout: {
@@ -188,7 +187,7 @@
 							'interpolate',
 							['exponential', 1],
 							['zoom'],
-							 7,  1,
+							 6,  1,
 							14, 24,
 						],
 					},
