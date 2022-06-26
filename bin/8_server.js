@@ -38,6 +38,7 @@ app.use((req, res, next) => {
 app.use(cors())
 
 app.use('/data', precompressionStatic(resolve(folder, 'data')));
+app.use('/scripts', precompressionStatic(resolve(folder, 'scripts')));
 app.use('/assets', express.static(resolve(folder, 'assets')));
 
 app.get('/', (req, res) => {
