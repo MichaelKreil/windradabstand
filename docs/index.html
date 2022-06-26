@@ -139,13 +139,7 @@
 					type: 'raster',
 					source: 'tilesSource',
 					paint: {
-						'raster-opacity': [
-							'interpolate',
-							['exponential', 1],
-							['zoom'],
-							5, 1,
-							7, 0.5,
-						],
+						'raster-opacity': [ 'interpolate', ['exponential', 1], ['zoom'], 6, 1, 7, 0.5 ],
 					},
 				})
 
@@ -172,27 +166,15 @@
 					type: 'symbol',
 					source: 'pointData',
 					paint: {
-						'icon-opacity': [
-							'interpolate',
-							['linear'],
-							['zoom'],
-							6, 0,
-							7, 1,
-						],
+						'icon-opacity': [ 'interpolate', ['linear'], ['zoom'], 6, 0, 7, 1 ],
 					},
 					layout: {
-						'icon-image': ['get','icon'],
+						'icon-image': ['get', 'icon'],
 						'icon-allow-overlap': true,
-						'icon-size': [
-							'interpolate',
-							['exponential', 1],
-							['zoom'],
-							 6,  1,
-							14, 24,
-						],
+						'icon-size': [ 'interpolate', ['exponential', 1], ['zoom'], 6,  1, 14, 24 ],
 					},
 				});
-
+				
 				map.on('mouseenter', 'windSymbols', () => {
 					if (map.getZoom() < 7.5) return;
 					map.getCanvas().style.cursor = 'pointer';

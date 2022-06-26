@@ -28,10 +28,6 @@
 
 
 Todos:
-- Frontend:
-	- Windräder clickable mit Linien zu den Hauskoordinaten
-	- Legende
-	- Passwortschutz
 - Welche Flächen bleiben übrigen, in %
 - Berücksichtigung der bayrischen Windvorranggebiete für
 	- buffered geometry
