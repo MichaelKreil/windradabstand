@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Die Verhinderung der Windenergie</title>
 
 	<script src="/scripts/maplibre-gl.js"></script>
@@ -38,7 +38,7 @@
 		}
 		#mapContainer {
 			margin: auto;
-			max-width: 612px;
+			max-width: 800px;
 			height: 80vh;
 		}
 		#map {
@@ -86,14 +86,16 @@
 	</div>
 	<script>
 		(() => {
-			const URL = 'http://168.119.98.135:8080/'
+			//const URL = 'http://168.119.98.135:8080/'
+			//const URL = 'http://192.168.178.23:8080/'
+			const URL = '/'
 			let container = document.getElementById('map');
 			let map = new maplibregl.Map({
 				container,
 				style: 'https://karten.party/styles/positron/style.json',
 				center: [10, 51],
 				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-				maxBounds: [ 3.8, 45.2, 17.1, 55.1 ],
+				maxBounds: [ 1.8, 46.2, 19.1, 56.1 ],
 				maxZoom: 14.5,
 				minPitch: 0,
 				maxPitch: 0,
@@ -179,7 +181,7 @@
 				});
 				
 				map.on('mouseenter', 'windSymbols', () => {
-					if (map.getZoom() < 7.5) return;
+					if (map.getZoom() < 6) return;
 					map.getCanvas().style.cursor = 'pointer';
 				});
 
