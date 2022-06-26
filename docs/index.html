@@ -145,7 +145,9 @@
 
 				let wind = await loadWind();
 				wind.forEach(w => {
-					w.icon = (Object.keys(w.min).length === 0) ? 'wind-blue' : 'wind-red';
+					w.ok = (Object.keys(w.min).length === 0);
+					w.icon = w.ok ? 'wind-blue' : 'wind-red';
+					w.order = (w.ok ? 0 : 1) + w.Breitengrad;
 				})
 				let features = wind.map(w => ({
 					type: 'Feature',
@@ -172,6 +174,7 @@
 						'icon-image': ['get', 'icon'],
 						'icon-allow-overlap': true,
 						'icon-size': [ 'interpolate', ['exponential', 1], ['zoom'], 6,  1, 14, 24 ],
+						'symbol-sort-key': ['get', 'order'],
 					},
 				});
 				
