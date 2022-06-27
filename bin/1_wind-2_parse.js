@@ -32,7 +32,7 @@ async function start() {
 		windEntries = windEntries.concat(loadZipEntry(zipEntry));
 	}
 
-	console.log('parse xml entries');
+	console.log(`parse xml entries (${windEntries.length})`);
 	let progress = Progress(windEntries.length);
 	let debugGeoJSON = [];
 	let map = new Map();
@@ -49,8 +49,7 @@ async function start() {
 		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], bundesland));
 
 		if (!bundesland) return; // only in germany
-		if (bundesland.gf !== 4) return; // only on land
-		windEntry.bundeslandName = bundesland.gen;
+		windEntry.bundeslandName = bundesland.name;
 		windEntry.bundeslandAGS  = parseInt(bundesland.ags, 10);
 
 		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
