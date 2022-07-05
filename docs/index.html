@@ -149,7 +149,7 @@
 					type: 'raster',
 					source: 'tilesSource',
 					paint: {
-						'raster-opacity': [ 'interpolate', ['exponential', 1], ['zoom'], 6, 1, 7, 0.5 ],
+						'raster-opacity': [ 'interpolate', ['exponential', 1], ['zoom'], 5, 1, 8, 0.3 ],
 					},
 				})
 
@@ -178,7 +178,7 @@
 					paint: {
 						'circle-color': ['get', 'color'],
 						'circle-opacity': [ 'interpolate', ['linear'], ['zoom'], 6, 0, 7, 1 ],
-						'circle-radius': [ 'interpolate', ['exponential', 1], ['zoom'], 6,  0.3, 14, 8 ],
+						'circle-radius': [ 'interpolate', ['exponential', 1.5], ['zoom'], 6,  1, 14, 12 ],
 					}
 				});
 				
