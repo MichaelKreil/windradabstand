@@ -115,10 +115,10 @@ function serveStatic(source, recursive=true) {
 		let file = files.get(urlName);
 		if (!file) files.set(urlName, file = { mime: mime.lookup(filename) });
 		if (productionMode) {
-			file[encoding] = () => fs.readFileSync(filename);
-		} else {
 			let buffer = fs.readFileSync(filename);
 			file[encoding] = () => buffer;
+		} else {
+			file[encoding] = () => fs.readFileSync(filename);
 		}
 	}
 
