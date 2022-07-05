@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const { resolve, relative } = require('path');
+const zlib = require('zlib');
 
 const express = require('express');
 const mime = require('mime-types');
@@ -21,7 +22,12 @@ const users = {
 	'privat': 'omnibus',
 	'swr': 'hafermilch',
 }
+const productionMode = process.argv.includes('production');
+if (productionMode) console.log('run server in production mode')
 
+
+
+// add login
 app.use((req, res, next) => {
 	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
@@ -35,15 +41,13 @@ app.use((req, res, next) => {
 	res.status(401).send('Authentication required.')
 })
 
+// add CORS
 app.use(cors())
 
-app.use('/data', precompressionStatic(resolve(folder, 'data')));
-app.use('/scripts', precompressionStatic(resolve(folder, 'scripts')));
-app.use('/assets', express.static(resolve(folder, 'assets')));
-
-app.get('/', (req, res) => {
-	res.sendFile(resolve(folder, 'index.html'))
-})
+app.use('/data', serveStatic('data'));
+app.use('/scripts', serveStatic('scripts'));
+app.use('/assets', serveStatic('assets'));
+app.use(/\//, serveStatic('.', false))
 
 const bufferedTiles = getFileTarDB(config.getFilename.tiles('buffered.tar'));
 app.get(/\/tiles\/(buffered.*\.png)/, (req, res) => {
@@ -53,55 +57,94 @@ app.get(/\/tiles\/(buffered.*\.png)/, (req, res) => {
 		.end(bufferedTiles.get(filename));
 })
 
-app.listen(port, () => {
-	console.log(`listening on port ${port}`)
-})
+app.listen(port, console.log(`listening on port ${port}`))
 
-function precompressionStatic(baseFolder) {
+function serveStatic(source, recursive=true) {
+	console.log(`add files from ${source}`)
+	source = resolve(folder, source);
 	let files = new Map();
-	scanFiles(baseFolder);
+	scanFiles(source);
+	if (productionMode) {
+		files.forEach((f,key) => {
+			if (key.endsWith('.png')) return;
+			if (!f.br) {
+				console.log(`   compress ${key} with brotli`);
+				let buffer = f.raw();
+				buffer = zlib.brotliCompressSync(buffer, {params:{
+					[zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY,
+					[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buffer.length,
+				}});
+				f.br = () => buffer;
+			}
+			if (!f.gz) {
+				console.log(`   compress ${key} with gzip`);
+				let buffer = f.raw();
+				buffer = zlib.gzipSync(buffer, {level:9});
+				f.gz = () => buffer;
+			}
+		})
+	}
 
 	function scanFiles(folder) {
 		fs.readdirSync(folder).forEach(name => {
 			let fullname = resolve(folder, name);
-			if (fs.statSync(fullname).isDirectory()) return scanFiles(fullname);
+			if (fs.statSync(fullname).isDirectory()) {
+				if (recursive) scanFiles(fullname);
+				return;
+			}
 
 			let encoding = 'raw', match;
-			let keyName = relative(baseFolder, fullname);
-			if (match = keyName.match(/(.*)\.gz/i)) {
-				keyName = match[1];
+			let urlName = relative(source, fullname);
+			if (match = urlName.match(/(.*)\.gz/i)) {
+				urlName = match[1];
 				encoding = 'gz';
-			} else if (match = keyName.match(/(.*)\.br/i)) {
-				keyName = match[1];
+			} else if (match = urlName.match(/(.*)\.br/i)) {
+				urlName = match[1];
 				encoding = 'br';
 			}
-			keyName = ('/' + keyName).replace(/\/{2,}/, '/');
+			urlName = ('/' + urlName).replace(/\/{2,}/, '/');
+			addFile(urlName, fullname, encoding);
 
-			let file = files.get(keyName);
-			if (!file) files.set(keyName, file = { mime: mime.lookup(keyName) });
-			file[encoding] = fs.readFileSync(fullname);
+			if (urlName.endsWith('/index.html')) {
+				addFile(urlName.slice(0,-10), fullname, encoding);
+			}
 		})
 	}
 
-	return function compress(req, res, next) {
+	function addFile(urlName, filename, encoding) {
+		let file = files.get(urlName);
+		if (!file) files.set(urlName, file = { mime: mime.lookup(filename) });
+		if (productionMode) {
+			file[encoding] = () => fs.readFileSync(filename);
+		} else {
+			let buffer = fs.readFileSync(filename);
+			file[encoding] = () => buffer;
+		}
+	}
+
+	return function serve(req, res, next) {
 		if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
 		let acceptEncoding = req.headers['accept-encoding'];
 		if (!acceptEncoding) return next()
 
 		let file = files.get(req.url);
-		if (!file) return next();
+
+		if (!file) {
+			if (!productionMode) console.log(`can not find file "${req.url}"`)
+			return next();
+		}
 
 		res.setHeader('Content-Type', file.mime);
 
-		if ((acceptEncoding.indexOf('br') > -1) && file.br) {
+		if (file.br && (acceptEncoding.indexOf('br') > -1)) {
 			res.setHeader('Content-Encoding', 'br');
-			res.send(file.br);
-		} else if ((acceptEncoding.indexOf('gzip') > -1) && file.gz) {
+			res.send(file.br());
+		} else if (file.gz && (acceptEncoding.indexOf('gzip') > -1)) {
 			res.setHeader('Content-Encoding', 'gzip');
-			res.send(file.gz);
+			res.send(file.gz());
 		} else if (file.raw) {
-			res.send(file.raw);
+			res.send(file.raw());
 		}
 
 		return next();
