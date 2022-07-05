@@ -107,7 +107,8 @@
 			});
 			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
 			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
-			map.addControl(new maplibregl.AttributionControl({ compact: true,
+
+			let attributionControl = new maplibregl.AttributionControl({ compact: true,
 				customAttribution: [
 					'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
 
@@ -133,7 +134,10 @@
 					e = e.split(';');
 					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
 				}).join(' | ')
-			}));
+			})
+			map.addControl(attributionControl);
+			attributionControl._updateCompactMinimize();
+			
 			map.addControl(new maplibregl.FullscreenControl());
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
