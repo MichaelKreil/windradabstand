@@ -46,7 +46,7 @@ app.use(cors())
 
 app.use('/data', serveStatic('data'));
 app.use('/scripts', serveStatic('scripts'));
-app.use('/assets', serveStatic('assets'));
+//app.use('/assets', serveStatic('assets'));
 app.use(/\//, serveStatic('.', false))
 
 const bufferedTiles = getFileTarDB(config.getFilename.tiles('buffered.tar'));
