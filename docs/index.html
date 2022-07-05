@@ -106,6 +106,7 @@
 				attributionControl: false
 			});
 			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
+			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
 			map.addControl(new maplibregl.AttributionControl({ compact: true,
 				customAttribution: [
 					'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
