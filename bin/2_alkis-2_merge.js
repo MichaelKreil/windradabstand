@@ -11,7 +11,8 @@ const { Progress } = require('../lib/helper.js');
 const { union, intersect } = require('../lib/geohelper.js');
 const config = require('../config.js');
 const { createHash } = require('crypto');
-const gunzip = require('util').promisify(require('zlib').gunzip);
+const zlib = require('zlib');
+const gunzip = require('util').promisify(zlib.gunzip);
 
 
 const MAXLEVEL = 15
@@ -38,7 +39,7 @@ async function start() {
 
 	await mergeTileRec(0,0,0);
 
-	layerFiles.closeAll();
+	await await layerFiles.closeAll();
 
 	async function mergeTileRec(x0, y0, z0) {
 		if (z0 > MAXLEVEL) throw Error();
@@ -94,7 +95,7 @@ async function start() {
 							if (p[0] > bboxPixel[2]) continue;
 							if (p[1] > bboxPixel[3]) continue;
 							feature.properties = Object.assign({}, properties)
-							writeResult(feature);
+							await writeResult(feature);
 							continue;
 						break;
 						case 'LineString':
@@ -142,40 +143,55 @@ async function start() {
 			for (let group of lookup.values()) {
 				if (group.length > 1) group = tryMergingFeatures(group);
 
-				group.forEach(feature => {
-
+				for (let feature of group) {
 					if (!feature.properties.layerName) throw Error();
 				
-					if (z0 === 0) return writeResult(feature);
-					if (feature.geometry.type === 'Point') return writeResult(feature);
+					if (z0 === 0) {
+						await writeResult(feature);
+						continue;
+					}
+
+					if (feature.geometry.type === 'Point') {
+						await writeResult(feature);
+						continue;
+					}
 					
-					turf.flatten(feature).features.forEach(part => {
-						if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part)) < 0.1)) return;
-						if (!checkFeature(part, true)) return;
+					let parts = turf.flatten(feature).features;
+					for (let part of parts) {
+						if (part.geometry.type.endsWith('Polygon') && (turf.area(demercator(part)) < 0.1)) continue;
+						if (!checkFeature(part, true)) continue;
 
 						part.bbox ??= turf.bbox(part);
 						part.properties = Object.assign({}, feature.properties);
 
-						if (countPointsInFeature(part) > 1e6) return writeResult(part);
+						if (countPointsInFeature(part) > 1e6) {
+							await writeResult(part);
+							continue;
+						}
 
-						if (z0 === MAXLEVEL) return propagateResults.push(part);
-						if (part.bbox[0] <= bboxPixel[0]) return propagateResults.push(part);
-						if (part.bbox[1] <= bboxPixel[1]) return propagateResults.push(part);
-						if (part.bbox[2] >= bboxPixel[2]) return propagateResults.push(part);
-						if (part.bbox[3] >= bboxPixel[3]) return propagateResults.push(part);
+						if (
+							(z0 === MAXLEVEL)
+							|| (part.bbox[0] <= bboxPixel[0])
+							|| (part.bbox[1] <= bboxPixel[1])
+							|| (part.bbox[2] >= bboxPixel[2])
+							|| (part.bbox[3] >= bboxPixel[3])
+						) {
+							propagateResults.push(part);
+							continue;
+						}
 						
-						writeResult(part);
-					})
-				})
+						await writeResult(part);
+					}
+				}
 			}
 		}
 
 		return propagateResults;
 
-		function writeResult(feature) {
+		async function writeResult(feature) {
 			feature = demercator(feature);
 			delete feature.bbox;
-			layerFiles.get(feature.properties.layerName).write(JSON.stringify(feature));
+			await layerFiles.get(feature.properties.layerName).write(JSON.stringify(feature)+'\n');
 		}
 
 		function featureToObject(feature) {
@@ -286,29 +302,27 @@ async function start() {
 		return { get, closeAll }
 		function get(name) {
 			if (map.has(name)) return map.get(name);
-			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g, '_') + '.geojsonl');
-			let file = fs.openSync(filename, 'w')
-			let buffer = [];
+
+			let filename = config.getFilename.alkisGeo(name.toLowerCase().replace(/\s/g, '_') + '.geojsonl.gz');
+			let fileStream = fs.createWriteStream(filename);
+			let gzipStream = zlib.createGzip({level:9});
+			gzipStream.pipe(fileStream);
+			
 			let obj = {
-				write: line => {
-					buffer.push(line+'\n');
-					if (buffer.length > 1e4) flush();
-				},
-				close: () => {
-					flush();
-					fs.closeSync(file)
-				}
+				write: chunk => new Promise(res => {
+					if (gzipStream.write(chunk)) return res();
+					gzipStream.once('drain', res);
+				}),
+				close: () => new Promise(res => {
+					fileStream.once('close', res);
+					gzipStream.end()
+				})
 			}
 			map.set(name, obj);
 			return obj;
-
-			function flush() {
-				fs.writeSync(file, buffer.join('')),
-				buffer = [];
-			}
 		}
-		function closeAll() {
-			for (let file of map.values()) file.close();
+		async function closeAll() {
+			for (let file of map.values()) await file.close();
 		}
 	}
 
