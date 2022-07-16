@@ -13,9 +13,9 @@ async function start() {
 	let lookup = initLookup();
 
 	await processAlkis({
-		slug:'grenze_flaeche',
-		ruleTypes:'naturdenkmal,biosphaere,ffhabitat,landschaftsschutz,nationalpark,naturpark,naturschutz,vogelschutz'.split(','),
-		cbFeature:feature => {
+		slug: 'grenze_flaeche',
+		ruleTypes: 'naturdenkmal,biosphaere,ffhabitat,landschaftsschutz,nationalpark,naturpark,naturschutz,vogelschutz'.split(','),
+		cbFeature: feature => {
 			feature.properties.type = lookup.get(feature.properties.klasse);
 			if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
 			return feature.properties.type;
@@ -25,11 +25,11 @@ async function start() {
 	let types = 'biosphaere,ffhabitat,landschaftsschutz,nationalpark,naturpark,naturschutz,vogelschutz'.split(',');
 	for (let type of types) {
 		await processAlkis({
-			slug:'grenze_flaeche',
-			slugOut:type,
-			ruleTypes:[type],
-			filenameIn: config.getFilename.andereGebiete(type+'.geojsonl'),
-			cbFeature:feature => {
+			slug: 'grenze_flaeche',
+			slugOut: type,
+			ruleTypes: [type],
+			filenameIn: config.getFilename.andereGebiete(type + '.geojsonl'),
+			cbFeature: feature => {
 				feature.properties.type = type;
 				return true;
 			}

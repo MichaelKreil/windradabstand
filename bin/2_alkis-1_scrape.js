@@ -22,20 +22,20 @@ for (let z = 0; z <= MAXLEVEL; z++) {
 	const tileMax = deg2tile(BBOX[2], BBOX[1], z).map(Math.floor);
 	for (let x = tileMin[0]; x <= tileMax[0]; x++) {
 		for (let y = tileMin[1]; y <= tileMax[1]; y++) {
-			todos.push({x,y,z});
+			todos.push({ x, y, z });
 		}
 	}
 }
 const showProgress = Progress(todos.length);
 
-todos.forEachParallel(4, async ({x,y,z}, i) => {
+todos.forEachParallel(4, async ({ x, y, z }, i) => {
 	if (i % 100 === 0) showProgress(i);
-	
+
 	const url = `${URL}${z}/${x}/${y}.pbf`
 	const filename = config.getFilename.alkisCache(`${z}/${x}/${y}.pbf`)
 
 	const buffer = await fetchCached(filename, url, headers);
-	
+
 	if (buffer.length === 0) return;
 
 	try {

@@ -31,8 +31,8 @@ if (productionMode) console.log('run server in production mode')
 app.use((req, res, next) => {
 	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
-	
-	if (req.url === '/') console.log({time:(new Date()).toLocaleString('de'), login, password});
+
+	if (req.url === '/') console.log({ time: (new Date()).toLocaleString('de'), login, password });
 
 	if (login && password && (users[login] === password)) return next()
 
@@ -59,27 +59,29 @@ app.get(/\/tiles\/(buffered.*\.png)/, (req, res) => {
 
 app.listen(port, console.log(`listening on port ${port}`))
 
-function serveStatic(source, recursive=true) {
+function serveStatic(source, recursive = true) {
 	console.log(`add files from ${source}`)
 	source = resolve(folder, source);
 	let files = new Map();
 	scanFiles(source);
 	if (productionMode) {
-		files.forEach((f,key) => {
+		files.forEach((f, key) => {
 			if (key.endsWith('.png')) return;
 			if (!f.br) {
 				console.log(`   compress ${key} with brotli`);
 				let buffer = f.raw();
-				buffer = zlib.brotliCompressSync(buffer, {params:{
-					[zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY,
-					[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buffer.length,
-				}});
+				buffer = zlib.brotliCompressSync(buffer, {
+					params: {
+						[zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY,
+						[zlib.constants.BROTLI_PARAM_SIZE_HINT]: buffer.length,
+					}
+				});
 				f.br = () => buffer;
 			}
 			if (!f.gz) {
 				console.log(`   compress ${key} with gzip`);
 				let buffer = f.raw();
-				buffer = zlib.gzipSync(buffer, {level:9});
+				buffer = zlib.gzipSync(buffer, { level: 9 });
 				f.gz = () => buffer;
 			}
 		})
@@ -106,7 +108,7 @@ function serveStatic(source, recursive=true) {
 			addFile(urlName, fullname, encoding);
 
 			if (urlName.endsWith('/index.html')) {
-				addFile(urlName.slice(0,-10), fullname, encoding);
+				addFile(urlName.slice(0, -10), fullname, encoding);
 			}
 		})
 	}

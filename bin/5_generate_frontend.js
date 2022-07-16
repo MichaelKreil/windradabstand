@@ -139,12 +139,12 @@ async function generateWindEntries() {
 async function generateGroups() {
 	console.log('generate groups');
 	const windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
-	const maxGroupIndex = windEntries.reduce((m,w) => Math.max(m,w.groupIndex), 0);
+	const maxGroupIndex = windEntries.reduce((m, w) => Math.max(m, w.groupIndex), 0);
 	const todos = []
 	for (let i = 0; i <= maxGroupIndex; i++) todos.push(i);
 
 	await todos.forEachParallel(async i => {
-		process.stdout.write('\r   '+(100*i/maxGroupIndex).toFixed(1)+'% ');
+		process.stdout.write('\r   ' + (100 * i / maxGroupIndex).toFixed(1) + '% ');
 		let group = [];
 		slugs.forEach(slug => {
 			let filename = config.getFilename.mapGroup(`${slug}-${i}.geojsonl`);
@@ -168,8 +168,8 @@ async function generateGroups() {
 
 async function writeWebData(filename, buffer) {
 	fs.writeFileSync(config.getFilename.webData(filename, buffer), buffer);
-	fs.writeFileSync(config.getFilename.webData(filename+'.gz', buffer), await gzip(buffer));
-	fs.writeFileSync(config.getFilename.webData(filename+'.br', buffer), await brotli(buffer));
+	fs.writeFileSync(config.getFilename.webData(filename + '.gz', buffer), await gzip(buffer));
+	fs.writeFileSync(config.getFilename.webData(filename + '.br', buffer), await brotli(buffer));
 }
 
 

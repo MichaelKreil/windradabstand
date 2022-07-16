@@ -21,9 +21,9 @@ simpleCluster(async function (runWorker) {
 			let func = rules[ruleType.slug];
 			if (!func) continue;
 
-			let filenameIn = config.getFilename.mapFeature(ruleType.slug+'.fgb');
+			let filenameIn = config.getFilename.mapFeature(ruleType.slug + '.fgb');
 			if (!fs.existsSync(filenameIn)) {
-				console.log('File '+filenameIn+' is missing');
+				console.log('File ' + filenameIn + ' is missing');
 				process.exit();
 			}
 			let workEffort = fs.statSync(filenameIn).size * turf.area(bundesland);
@@ -33,18 +33,18 @@ simpleCluster(async function (runWorker) {
 			let windTurbines = new Map();
 			config.typicalWindTurbines.forEach(windTurbine => {
 				let { level } = windTurbine;
-				let dist = func(windTurbine.Nabenhoehe, windTurbine.Rotordurchmesser/2);
+				let dist = func(windTurbine.Nabenhoehe, windTurbine.Rotordurchmesser / 2);
 				if (windTurbines.has(dist) && (windTurbines.get(dist).level < level)) return;
-				windTurbines.set(dist, {level, dist});
+				windTurbines.set(dist, { level, dist });
 			})
 			windTurbines = Array.from(windTurbines.values());
 
 			for (let windTurbine of windTurbines) {
 
 				let name = [ruleType.slug, windTurbine.level, bundesland.properties.ags].join('-');
-				let filenameOut = config.getFilename.bufferedGeometry(name+'.geojsonl');
+				let filenameOut = config.getFilename.bufferedGeometry(name + '.geojsonl');
 				let layerName = [ruleType.slug, windTurbine.level].join('-');
-				let filenameTmp = config.getFilename.bufferedGeometry('tmp-'+Math.random().toString(36).slice(2)+'.geojsonl');
+				let filenameTmp = config.getFilename.bufferedGeometry('tmp-' + Math.random().toString(36).slice(2) + '.geojsonl');
 
 				let todo = {
 					bundesland,
@@ -58,27 +58,27 @@ simpleCluster(async function (runWorker) {
 
 				if (!fs.existsSync(filenameOut)) todoGenerate.push(todo);
 
-				if (!todoMerge.has(layerName)) todoMerge.set(layerName, { layerName, workEffort:0, files:[] })
+				if (!todoMerge.has(layerName)) todoMerge.set(layerName, { layerName, workEffort: 0, files: [] })
 				todoMerge.get(layerName).workEffort += workEffort;
 				todoMerge.get(layerName).files.push(name);
 			}
 		}
 	}
 
-	todoGenerate.sort((a,b) => b.workEffort - a.workEffort);
-	
+	todoGenerate.sort((a, b) => b.workEffort - a.workEffort);
+
 	await todoGenerate.forEachParallel(async item => {
 		let result = await runWorker(item);
 		if (!result) throw Error('Error in buffered geometry');
 	})
 
 	deleteTemporaryFiles();
-	
+
 	todoMerge = Array.from(todoMerge.values());
-	todoMerge.sort((a,b) => b.workEffort - a.workEffort);
+	todoMerge.sort((a, b) => b.workEffort - a.workEffort);
 	await todoMerge.forEachParallel(entry => merge2GPKG(entry.layerName, entry.files))
 	await merge2GPKG('all', [].concat(...todoMerge.map(e => e.files)), true);
-	
+
 	console.log('finished');
 
 	async function merge2GPKG(layerName, files, progress) {
@@ -86,20 +86,20 @@ simpleCluster(async function (runWorker) {
 
 		let vrt = `<OGRVRTDataSource>\n\t<OGRVRTUnionLayer name="${layerName}">\n`;
 		files.forEach(f => {
-			let full = config.getFilename.bufferedGeometry(f+'.geojsonl');
-			if (!fs.existsSync(full)) throw Error('file is missing: '+full);
+			let full = config.getFilename.bufferedGeometry(f + '.geojsonl');
+			if (!fs.existsSync(full)) throw Error('file is missing: ' + full);
 			if (fs.statSync(full).size === 0) return;
 			vrt += `\t\t<OGRVRTLayer name="${f}"><SrcDataSource>${full}</SrcDataSource></OGRVRTLayer>\n`
 		});
 		vrt += `\t</OGRVRTUnionLayer>\n</OGRVRTDataSource>`;
-		fs.writeFileSync(filename+'.vrt', vrt);
+		fs.writeFileSync(filename + '.vrt', vrt);
 
-		console.log('generate', layerName+'.gpkg')
+		console.log('generate', layerName + '.gpkg')
 
 		await new Promise(res => {
-			if (fs.existsSync(filename+'.gpkg')) fs.rmSync(filename+'.gpkg');
-			
-			let cp = child_process.spawn('ogr2ogr', ['-progress', filename+'.gpkg', filename+'.vrt'])
+			if (fs.existsSync(filename + '.gpkg')) fs.rmSync(filename + '.gpkg');
+
+			let cp = child_process.spawn('ogr2ogr', ['-progress', filename + '.gpkg', filename + '.vrt'])
 			cp.on('close', res);
 			cp.stderr.pipe(process.stderr);
 			if (progress) cp.stdout.pipe(process.stdout);
@@ -115,8 +115,8 @@ simpleCluster(async function (runWorker) {
 }, async item => {
 	const { bundesland, ruleType, windTurbine, filenameIn, filenameOut, filenameTmp } = item;
 
-	console.log('processing '+[bundesland.properties.name, ruleType.slug, 'level '+windTurbine.level].join(' - '));
-	
+	console.log('processing ' + [bundesland.properties.name, ruleType.slug, 'level ' + windTurbine.level].join(' - '));
+
 	const fs = require('fs');
 	const Havel = require('havel');
 	const turf = require('@turf/turf');
@@ -125,7 +125,7 @@ simpleCluster(async function (runWorker) {
 
 	let bbox = bundesland.bbox;
 	bbox = turf.bboxPolygon(bbox);
-	bbox = turf.buffer(bbox, windTurbine.dist/1000, { steps:18 });
+	bbox = turf.buffer(bbox, windTurbine.dist / 1000, { steps: 18 });
 	bbox = turf.bbox(bbox);
 
 	let fd = fs.openSync(filenameTmp, 'w');
@@ -140,11 +140,11 @@ simpleCluster(async function (runWorker) {
 		features.forEach(f => polygonClipping.intersection([f], b).forEach(f => result.push(f)))
 		result = coords2Feature(result);
 		result = turf.flatten(result);
-		
+
 		result = result.features.map(f => {
 			f.properties.rule = ruleType.slug;
 			f.properties.level = windTurbine.level;
-			return JSON.stringify(f)+'\n'
+			return JSON.stringify(f) + '\n'
 		}).join('');
 		fs.writeSync(fd, result);
 	})
@@ -165,12 +165,12 @@ simpleCluster(async function (runWorker) {
 
 				if (!doBboxOverlap(bbox, feature.bbox)) return;
 
-				feature = turf.buffer(feature, windTurbine.dist/1000);
+				feature = turf.buffer(feature, windTurbine.dist / 1000);
 
 				features2Coords([feature]).forEach(f => {
 					f.forEach(r => r.forEach(p => {
-						p[0] = Math.round(p[0]*1e7);
-						p[1] = Math.round(p[1]*1e7);
+						p[0] = Math.round(p[0] * 1e7);
+						p[1] = Math.round(p[1] * 1e7);
 					}))
 					featureMerger.add(f);
 				})
@@ -243,8 +243,8 @@ simpleCluster(async function (runWorker) {
 						result = splitAndMerge(coordinates);
 						function splitAndMerge(c) {
 							if (c.length > 2) {
-								let i = Math.floor(c.length/2);
-								let t = splitAndMerge(c.slice(0,i));
+								let i = Math.floor(c.length / 2);
+								let t = splitAndMerge(c.slice(0, i));
 								splitAndMerge(c.slice(i)).forEach(f => t.push(f));
 								return t;
 							} else if (c.length < 2) {
@@ -295,7 +295,7 @@ simpleCluster(async function (runWorker) {
 		function log() {
 			console.log('tree:')
 			featureTree.forEach(m => {
-				console.log('   '+m.map(f => {
+				console.log('   ' + m.map(f => {
 					let size = 0;
 					f.forEach(r => size += r.length);
 					return size;

@@ -28,7 +28,7 @@ async function start() {
 	let windEntries = [];
 	for (let zipEntry of zipEntries) {
 		if (!zipEntry.entryName.startsWith('EinheitenWind')) continue;
-		console.log('   - '+zipEntry.entryName)
+		console.log('   - ' + zipEntry.entryName)
 		windEntries = windEntries.concat(loadZipEntry(zipEntry));
 	}
 
@@ -44,20 +44,20 @@ async function start() {
 		if (floatyEnough(windEntry.Laengengrad) && floatyEnough(windEntry.Breitengrad)) return;
 
 		let bundesland = findBundesland(windEntry.Laengengrad, windEntry.Breitengrad)?.properties;
-		
+
 		// add to debug
 		debugGeoJSON.push(turf.point([windEntry.Laengengrad, windEntry.Breitengrad], bundesland));
 
 		if (!bundesland) return; // only in germany
 		windEntry.bundeslandName = bundesland.name;
-		windEntry.bundeslandAGS  = parseInt(bundesland.ags, 10);
+		windEntry.bundeslandAGS = parseInt(bundesland.ags, 10);
 
-		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser/2)*100)/100;
+		windEntry.hoehe = Math.round((windEntry.Nabenhoehe + windEntry.Rotordurchmesser / 2) * 100) / 100;
 		if (!windEntry.hoehe) return;
 
-		let geoHash = windEntry.Laengengrad+','+windEntry.Breitengrad;
+		let geoHash = windEntry.Laengengrad + ',' + windEntry.Breitengrad;
 		if (map.has(geoHash) && (map.get(geoHash).Inbetriebnahmedatum > windEntry.Inbetriebnahmedatum)) return
-		
+
 		map.set(geoHash, windEntry);
 	})
 	console.log();
@@ -97,7 +97,7 @@ function KeyTranslator(zipEntry) {
 		line = line.split('\t');
 		switch (line[1]) {
 			case 'ignore': keys.set(line[0], false); break;
-			case 'value':  keys.set(line[0], true); break;
+			case 'value': keys.set(line[0], true); break;
 			case 'lookup': keys.set(line[0], valueLookup); break;
 		}
 	})
@@ -116,7 +116,7 @@ function KeyTranslator(zipEntry) {
 
 			if (result) {
 				let v = result.get(obj[key]);
-				if (!v) console.log(`obj.${key} = `+JSON.stringify(obj[key]))
+				if (!v) console.log(`obj.${key} = ` + JSON.stringify(obj[key]))
 				obj[key] = v;
 				return
 			}
@@ -129,7 +129,7 @@ function KeyTranslator(zipEntry) {
 }
 
 function floatyEnough(value) {
-	value = value*100;
+	value = value * 100;
 	value = Math.abs(Math.round(value) - value);
 	return value < 1e-8
 }
@@ -139,10 +139,10 @@ async function tspSort(entries) {
 
 	const Delaunator = (await import('delaunator')).default;
 
-	const c = Math.cos(51*Math.PI/180);
-	const points0 = entries.map((entry,index) => {
-		let point = [ entry.Laengengrad*c, entry.Breitengrad ];
-		return Object.assign(point, { index, group:index, count:0, entry, neighbours:[] });
+	const c = Math.cos(51 * Math.PI / 180);
+	const points0 = entries.map((entry, index) => {
+		let point = [entry.Laengengrad * c, entry.Breitengrad];
+		return Object.assign(point, { index, group: index, count: 0, entry, neighbours: [] });
 	});
 
 	let points = points0.slice();
@@ -160,8 +160,8 @@ async function tspSort(entries) {
 			const j = halfedges[i];
 			if (j > i) addEdge(triangles[i], triangles[j]);
 		}
-		for (let i = 1; i < hull.length; i++) addEdge(hull[i-1], hull[i]);
-		addEdge(hull[hull.length-1], hull[0]);
+		for (let i = 1; i < hull.length; i++) addEdge(hull[i - 1], hull[i]);
+		addEdge(hull[hull.length - 1], hull[0]);
 
 		function addEdge(i0, i1) {
 			if (i0 === i1) return;
@@ -169,16 +169,16 @@ async function tspSort(entries) {
 			let p1 = points[i1];
 			let dx = p0[0] - p1[0];
 			let dy = p0[1] - p1[1];
-			let d = dx*dx + dy*dy;
-			edges.push({p0, p1, d});
+			let d = dx * dx + dy * dy;
+			edges.push({ p0, p1, d });
 		}
 
-		edges.sort((a,b) => a.d - b.d);
+		edges.sort((a, b) => a.d - b.d);
 
-		let maxIndex = Math.round(edges.length/5+2);
+		let maxIndex = Math.round(edges.length / 5 + 2);
 
 		edges.slice(0, maxIndex).forEach(edge => {
-			let {p0, p1} = edge;
+			let { p0, p1 } = edge;
 
 			if (!groupsSaved && (edge.d > maxDInGroup)) {
 				let knownGroups = new Map();
@@ -192,7 +192,7 @@ async function tspSort(entries) {
 					}
 					p.entry.groupIndex = groupIndex;
 				})
-				console.log('   found',knownGroups.size,'groups');
+				console.log('   found', knownGroups.size, 'groups');
 				groupsSaved = true;
 			}
 
@@ -201,7 +201,7 @@ async function tspSort(entries) {
 			if (p0.group === p1.group) return;
 			let i0 = p0.index;
 			let i1 = p1.index;
-			let key = (i0 < i1) ? i0+'_'+i1 : i1+'_'+i0;
+			let key = (i0 < i1) ? i0 + '_' + i1 : i1 + '_' + i0;
 			if (segmentKeys.has(key)) return;
 			segmentKeys.add(key);
 
@@ -224,8 +224,8 @@ async function tspSort(entries) {
 	if (!groupsSaved) throw Error();
 
 	let pStart = points[0];
-	let pEnd   = points[1];
-	
+	let pEnd = points[1];
+
 	let p0 = pEnd, p1 = pStart, p2, path = [pStart];
 	while (true) {
 		p2 = (p1.neighbours[0] === p0) ? p1.neighbours[1] : p1.neighbours[0];
@@ -236,7 +236,7 @@ async function tspSort(entries) {
 	}
 
 	path = path.map(p => p.entry);
-	path.forEach((e,i) => e.index = i);
+	path.forEach((e, i) => e.index = i);
 
 	return path;
 }
