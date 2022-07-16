@@ -4,7 +4,7 @@
 const fs = require('fs');
 const turf = require('@turf/turf');
 const { fetchCached } = require('../lib/helper.js');
-const { coords2GeoJSON } = require('../lib/geohelper.js');
+const { coords2Feature } = require('../lib/geohelper.js');
 const polygonClipping = require('polygon-clipping');
 const config = require('../config.js');
 
@@ -146,7 +146,7 @@ async function getPolygons(cx, cy, r, layerId) {
 		if (polygon.length === 0) return;
 		polygon = polygonClipping.union(polygon.map(p => ([p])));
 
-		const feature = coords2GeoJSON(polygon);
+		const feature = coords2Feature(polygon);
 		const center = turf.center(feature).geometry.coordinates;
 
 		if (center[0] < bboxInner[0]) return;

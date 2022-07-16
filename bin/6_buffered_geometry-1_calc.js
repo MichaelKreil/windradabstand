@@ -121,7 +121,7 @@ simpleCluster(async function (runWorker) {
 	const Havel = require('havel');
 	const turf = require('@turf/turf');
 	const polygonClipping = require('polygon-clipping');
-	const { doBboxOverlap, features2Coords, coords2GeoJSON } = require('../lib/geohelper.js');
+	const { doBboxOverlap, features2Coords, coords2Feature } = require('../lib/geohelper.js');
 
 	let bbox = bundesland.bbox;
 	bbox = turf.bboxPolygon(bbox);
@@ -138,7 +138,7 @@ simpleCluster(async function (runWorker) {
 		let b = features2Coords([bundesland]);
 		let result = [];
 		features.forEach(f => polygonClipping.intersection([f], b).forEach(f => result.push(f)))
-		result = coords2GeoJSON(result);
+		result = coords2Feature(result);
 		result = turf.flatten(result);
 		
 		result = result.features.map(f => {
