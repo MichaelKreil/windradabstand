@@ -215,11 +215,12 @@
 							values = values.map(v => v / 1e5);
 						break;
 						case 'Bruttoleistung':
+						case 'bundeslandAGS':
+						case 'groupIndex':
+						case 'hoehe':
+						case 'Inbetriebnahmedatum':
 						case 'Nabenhoehe':
 						case 'Rotordurchmesser':
-						case 'bundeslandAGS':
-						case 'hoehe':
-						case 'groupIndex':
 							values = runLengthDecoding(values);
 							break;
 						default:
@@ -227,7 +228,7 @@
 								values = runLengthDecoding(values);
 								break;
 							}
-							console.log('what should we do with', key);
+							console.log('what should we do with', key, 'early in the morning');
 					}
 
 					values.forEach((v,i) => {
