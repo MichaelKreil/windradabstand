@@ -22,11 +22,11 @@ const users = {
 	'privat': 'omnibus',
 	'swr': 'hafermilch',
 }
-const productionMode = process.argv[2];
-if (productionMode) console.log(`run server in production mode "${productionMode}"`)
+const serverMode = process.argv[2];
+if (serverMode) console.log(`run server in mode "${serverMode}"`)
 
 
-if (productionMode === 'main') {
+if (serverMode === 'main') {
 	app.use('/files', express.static(resolve(__dirname, '../docs/tiles')))
 
 	// add login
@@ -67,7 +67,7 @@ function serveStatic(source, recursive = true) {
 	source = resolve(folder, source);
 	let files = new Map();
 	scanFiles(source);
-	if (productionMode) {
+	if (serverMode) {
 		files.forEach((f, key) => {
 			if (key.endsWith('.png')) return;
 			if (!f.br) {
@@ -121,7 +121,7 @@ function serveStatic(source, recursive = true) {
 	function addFile(urlName, filename, encoding) {
 		let file = files.get(urlName);
 		if (!file) files.set(urlName, file = { mime: mime.lookup(filename) });
-		if (productionMode) {
+		if (serverMode) {
 			let buffer = fs.readFileSync(filename);
 			file[encoding] = () => buffer;
 		} else {
@@ -138,7 +138,7 @@ function serveStatic(source, recursive = true) {
 		let file = files.get(req.url);
 
 		if (!file) {
-			if (!productionMode) console.log(`can not find file "${req.url}"`)
+			if (!serverMode) console.log(`can not find file "${req.url}"`)
 			return next();
 		}
 
