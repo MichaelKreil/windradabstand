@@ -2,9 +2,9 @@
 cd "$(dirname "$0")"
 
 folder="../docs/tiles"
-myip="$(hostname -I | cut -d' ' -f1)"
-mainip="168.119.98.135"
-mainurl="http://${mainip}:8080/files"
+myname="$(hostname)"
+mainname="debian-8gb-fsn1-1"
+mainurl="http://168.119.98.135:8080/files"
 
 
 
@@ -13,7 +13,7 @@ echo -n "check germany.mbtiles … "
 if [[ ! -f "${folder}/germany.mbtiles" ]]
 then
 	echo -n "is missing … start download … "
-	if [ $myip == $mainip ]
+	if [ "$myname" == "$mainname" ]
 	then
 		wget -q "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	else
@@ -27,7 +27,7 @@ echo "✅"
 
 echo -n "check buffered.tar … "
 
-if [ $myip == $mainip ]
+if [ "$myname" == "$mainname" ]
 then
 	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
@@ -41,10 +41,10 @@ else
 		wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 	else
-		filesize1="$(stat --printf="%s" "${folder}/buffered.tar")"
-		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i Content-Length | awk '{printf "%i",$2}')"
+		filesize1="$(ls -l "${folder}/buffered.tar" | awk '{printf "%s",$5}')"
+		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i 'Content-Length' | awk '{printf "%i",$2}')"
 		echo -n "compare filesizes ${filesize1}/${filesize2} … "
-		if [ $filesize1 != $filesize2 ]
+		if [ "$filesize1" != "$filesize2" ]
 		then
 			echo -n "unequal … start download … "
 			wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
@@ -61,7 +61,7 @@ echo "start server"
 while true
 do
 	git pull
-	if [ $myip == $mainip ]
+	if [ "$myname" == "$mainname" ]
 	then
 		node 8_server.js main || true
 	else
