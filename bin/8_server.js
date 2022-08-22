@@ -42,7 +42,7 @@ app.use((req, res, next) => {
 })
 
 // add CORS
-app.use(cors())
+//app.use(cors())
 
 app.use('/data', serveStatic('data'));
 app.use('/scripts', serveStatic('scripts'));
@@ -89,6 +89,8 @@ function serveStatic(source, recursive = true) {
 
 	function scanFiles(folder) {
 		fs.readdirSync(folder).forEach(name => {
+			if (name === '.DS_Store') return;
+
 			let fullname = resolve(folder, name);
 			if (fs.statSync(fullname).isDirectory()) {
 				if (recursive) scanFiles(fullname);
