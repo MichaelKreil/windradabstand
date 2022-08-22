@@ -40,8 +40,8 @@ else
 		wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 	else
-		filesize1="$(stat --printf='%s' '${folder}/buffered.tar')"
-		filesize2="$(curl -sI '${mainurl}/buffered.tar' | grep -i Content-Length | awk '{printf "%i",$2}')"
+		filesize1="$(stat --printf="%s" "${folder}/buffered.tar")"
+		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i Content-Length | awk '{printf "%i",$2}')"
 		echo "   filesize1='${filesize1}', filesize2='${filesize2}'"
 		if [ $filesize1 != $filesize2 ]
 		then
