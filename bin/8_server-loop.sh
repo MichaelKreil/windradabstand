@@ -8,58 +8,51 @@ mainurl="http://${mainip}:8080/files"
 
 
 
-echo "check germany.mbtiles"
+echo -n "check germany.mbtiles … "
 
 if [[ ! -f "${folder}/germany.mbtiles" ]]
 then
-	echo "   germany.mbtiles is missing: starting download"
+	echo -n "is missing … start download … "
 	if [ $myip == $mainip ]
 	then
-		wget -q --show-progress "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
+		wget -q "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	else
-		wget -q --show-progress "${mainurl}/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
+		wget -q "${mainurl}/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	fi
 	mv "${folder}/germany.mbtiles.tmp" "${folder}/germany.mbtiles"
-	echo "   downloaded ✅"
-else
-	echo "   already there ✅"
 fi
+echo "✅"
 
 
 
-echo "check buffered.tar"
+echo -n "check buffered.tar … "
 
 if [ $myip == $mainip ]
 then
 	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
-		echo "   buffered.tar is missing: please generate one!"
+		echo -n "is missing: please generate one ❗️"
 		exit 1
-	else
-		echo "   already there ✅"
 	fi
 else
 	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
-		echo "   buffered.tar is missing: starting download"
-		wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
+		echo -n "is missing … start download … "
+		wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
-		echo "   downloaded ✅"
 	else
 		filesize1="$(stat --printf="%s" "${folder}/buffered.tar")"
 		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i Content-Length | awk '{printf "%i",$2}')"
-		echo "   filesize1='${filesize1}', filesize2='${filesize2}'"
+		echo -n "compare filesizes ${filesize1}/${filesize2} … "
 		if [ $filesize1 != $filesize2 ]
 		then
-			echo "   buffered.tar is different: starting download."
-			wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
+			echo -n "unequal … start download … "
+			wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 			mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
-			echo "   downloaded ✅"
-		else
-			echo "   already there ✅"
 		fi
 	fi
 fi
+echo "✅"
 
 
 
