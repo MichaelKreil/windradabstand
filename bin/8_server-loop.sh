@@ -12,7 +12,7 @@ echo "check germany.mbtiles"
 
 if [[ ! -f "${folder}/germany.mbtiles" ]]
 then
-	echo "   germany.mbtiles is missing. download."
+	echo "   germany.mbtiles is missing: starting download"
 	if [ $myip == $mainip ]
 	then
 		wget -q --show-progress "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
@@ -30,13 +30,13 @@ if [ $myip == $mainip ]
 then
 	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
-		echo "   buffered.tar is missing. generate one please."
+		echo "   buffered.tar is missing: please generate one!"
 		exit 1
 	fi
 else
 	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
-		echo "   buffered.tar is missing. download."
+		echo "   buffered.tar is missing: starting download"
 		wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 	else
@@ -45,7 +45,7 @@ else
 		echo "   filesize1='${filesize1}', filesize2='${filesize2}'"
 		if [ $filesize1 != $filesize2 ]
 		then
-			echo "   buffered.tar is different. download again."
+			echo "   buffered.tar is different: starting download."
 			wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 			mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 		fi
