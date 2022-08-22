@@ -20,6 +20,9 @@ then
 		wget -q --show-progress "${mainurl}/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	fi
 	mv "${folder}/germany.mbtiles.tmp" "${folder}/germany.mbtiles"
+	echo "   downloaded ✅"
+else
+	echo "   already there ✅"
 fi
 
 
@@ -32,6 +35,8 @@ then
 	then
 		echo "   buffered.tar is missing: please generate one!"
 		exit 1
+	else
+		echo "   already there ✅"
 	fi
 else
 	if [[ ! -f "${folder}/buffered.tar" ]]
@@ -39,6 +44,7 @@ else
 		echo "   buffered.tar is missing: starting download"
 		wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
+		echo "   downloaded ✅"
 	else
 		filesize1="$(stat --printf="%s" "${folder}/buffered.tar")"
 		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i Content-Length | awk '{printf "%i",$2}')"
@@ -48,6 +54,9 @@ else
 			echo "   buffered.tar is different: starting download."
 			wget -q --show-progress "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
 			mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
+			echo "   downloaded ✅"
+		else
+			echo "   already there ✅"
 		fi
 	fi
 fi
