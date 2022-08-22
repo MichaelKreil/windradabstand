@@ -13,10 +13,11 @@ if [[ ! -f "${folder}/germany.mbtiles" ]]
 then
 	if [ $myip == $mainip ]
 	then
-		wget --show-progress "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles"
+		wget -q --show-progress "https://storage.googleapis.com/datenhub-net-static/tiles/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	else
-		wget --show-progress "http://${mainip}:8080/files/germany.mbtiles" -O "${folder}/germany.mbtiles"
+		wget -q --show-progress "http://${mainip}:8080/files/germany.mbtiles" -O "${folder}/germany.mbtiles.tmp"
 	fi
+	mv "${folder}/germany.mbtiles.tmp" "${folder}/germany.mbtiles"
 fi
 
 
@@ -31,15 +32,17 @@ then
 		exit 1
 	fi
 else
-	if [[ ! -f "${folder}/germany.mbtiles" ]]
+	if [[ ! -f "${folder}/buffered.tar" ]]
 	then
-		wget --show-progress "http://${mainip}:8080/files/buffered.tar" -O "${folder}/buffered.tar"
+		wget -q --show-progress "http://${mainip}:8080/files/buffered.tar" -O "${folder}/buffered.tar.tmp"
+		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 	else
 		filesize1="$(stat --printf='%s' '${folder}/buffered.tar')"
 		filesize2="$(curl -sI 'http://${mainip}:8080/files/buffered.tar') | grep -i Content-Length | awk '{print $2}'"
 		if [ $filesize1 != $filesize2 ]
 		then
-			wget --show-progress "http://${mainip}:8080/files/buffered.tar" -O "${folder}/buffered.tar"
+			wget -q --show-progress "http://${mainip}:8080/files/buffered.tar" -O "${folder}/buffered.tar.tmp"
+			mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
 		fi
 	fi
 fi
