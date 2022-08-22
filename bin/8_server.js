@@ -22,24 +22,27 @@ const users = {
 	'privat': 'omnibus',
 	'swr': 'hafermilch',
 }
-const productionMode = process.argv.includes('production');
-if (productionMode) console.log('run server in production mode')
+const productionMode = process.argv[2];
+if (productionMode) console.log(`run server in production mode "${productionMode}"`)
 
 
+if (productionMode === 'main') {
+	app.use('/files', express.static(resolve(__dirname, '../docs/tiles')))
 
-// add login
-app.use((req, res, next) => {
-	const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
-	const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+	// add login
+	app.use((req, res, next) => {
+		const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
+		const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
 
-	if (req.url === '/') console.log({ time: (new Date()).toLocaleString('de'), login, password });
+		if (req.url === '/') console.log({ time: (new Date()).toLocaleString('de'), login, password });
 
-	if (login && password && (users[login] === password)) return next()
+		if (login && password && (users[login] === password)) return next()
 
-	// Access denied...
-	res.set('WWW-Authenticate', 'Basic realm="401"')
-	res.status(401).send('Authentication required.')
-})
+		// Access denied...
+		res.set('WWW-Authenticate', 'Basic realm="401"')
+		res.status(401).send('Authentication required.')
+	})
+}
 
 // add CORS
 //app.use(cors())
