@@ -54,12 +54,12 @@ function initLookup() {
 		'Wasserschutzgebiet',
 	].forEach(label => lookup.set(label, false))
 	lookup.set('Naturdenkmal', 'naturdenkmal');
-	//lookup.set('Biosphärenreservat', 'biosphaere');
-	//lookup.set('Flora-Fauna-Habitat-Gebiet', 'ffhabitat');
-	//lookup.set('Landschaftsschutzgebiet', 'landschaftsschutz');
-	//lookup.set('Naturpark', 'naturpark');
-	//lookup.set('Nationalpark', 'nationalpark');
-	//lookup.set('Naturschutzgebiet', 'naturschutz');
-	//lookup.set('Vogelschutzgebiet', 'vogelschutz');
+	lookup.set('Biosphärenreservat', 'biosphaere');
+	lookup.set('Flora-Fauna-Habitat-Gebiet', 'ffhabitat');
+	lookup.set('Landschaftsschutzgebiet', 'landschaftsschutz');
+	lookup.set('Naturpark', 'naturpark');
+	lookup.set('Nationalpark', 'nationalpark');
+	lookup.set('Naturschutzgebiet', 'naturschutz');
+	lookup.set('Vogelschutzgebiet', 'vogelschutz');
 	return lookup
 }
