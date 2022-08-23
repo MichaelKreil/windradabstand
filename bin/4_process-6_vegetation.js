@@ -3,41 +3,21 @@
 
 
 
-const config = require('../config.js');
 const { processAlkis } = require('../lib/geohelper.js');
 
 
-start()
 
-async function start() {
-	let lookup = initLookup();
+let getType = initLookup();
 
-	await processAlkis({
-		slug: 'vegetation',
-		ruleTypes: 'wald'.split(','),
-		cbFeature: feature => {
-			feature.properties.type = lookup.get(feature.properties.klasse);
-			if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
-			return feature.properties.type;
-		}
-	})
-
-	let types = 'wald'.split(',');
-	for (let type of types) {
-		await processAlkis({
-			slug: 'vegetation',
-			slugOut: type,
-			ruleTypes: [type],
-			filenameIn: config.getFilename.andereGebiete(type + '.geojsonl'),
-			cbFeature: feature => {
-				feature.properties.type = type;
-				return true;
-			}
-		})
+processAlkis({
+	slug: 'vegetationflaeche',
+	ruleTypes: 'wald'.split(','),
+	cbFeature: feature => {
+		feature.properties.type = getType.get(feature.properties.klasse);
+		if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
+		return feature.properties.type;
 	}
-}
-
-
+})
 
 function initLookup() {
 	let lookup = new Map();

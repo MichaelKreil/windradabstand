@@ -299,7 +299,10 @@ const config = {
 		{ slug:'bahnlinie', name:'Bahnlinien' },
 
 		// versorgungslinie
-		{ slug:'freileitung', name:'Freileitungen' },
+		{ slug: 'freileitung', name: 'Freileitungen' },
+
+		// vegetation
+		{ slug: 'wald', name: 'Wald' },
 
 		// todos
 		//{ slug:'denkmal', name:'Kulturdenkmale und geschützte Ensembles' },
