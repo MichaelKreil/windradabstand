@@ -196,7 +196,7 @@ const config = {
 			// https://www.revosax.sachsen.de/vorschrift_gesamt/1779/44172.html (nicht mehr erreichbar)
 
 			// https://www.mdr.de/nachrichten/deutschland/politik/windkraft-abstandsregel-laender-oeffnungsklausel-100.html
-			wohngebaeude:(h + r) <= 150 ? 750 : 1000,
+			wohngebaeude: (h, r) => (h + r <= 150) ? 750 : 1000,
 			wohngebiet: 0,
 			naturschutz: 0,
 			naturpark: 0,
