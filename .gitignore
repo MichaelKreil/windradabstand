@@ -1,6 +1,7 @@
 
 *.code-workspace
 *.tar
+~*
 /_documents
 /data/1_*
 /data/2_*
