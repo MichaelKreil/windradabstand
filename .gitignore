@@ -1,16 +1,14 @@
 
 *.code-workspace
-*.mp4
-*.pdf
 *.tar
-/_trash
+/_documents
 /data/1_*
 /data/2_*
 /data/3_*
 /data/4_*
 /data/6_*
-/data/cache
-/data/helper
+/data/cache/
+/data/helper/
 /docs/data/
 /docs/tiles/
 /node_modules/
