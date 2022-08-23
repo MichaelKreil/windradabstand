@@ -52,7 +52,7 @@ start()
 
 async function start() {
 	await generateWindEntries()
-	await generateGroups()
+	//await generateGroups() // we don't need that anymore
 	console.log('Finished')
 }
 
