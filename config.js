@@ -74,7 +74,7 @@ const config = {
 		},
 		{ ags: 11, name: 'Berlin',
 			wohngebiet: 0, // Lärmschutz
-			wohngebaeude: 0,
+			wohngebaeude: 400,
 		},
 		{ ags: 12, name: 'Brandenburg',
 			// Quelle: https://www.parlamentsdokumentation.brandenburg.de/parladoku/w7/drs/ab_4500/4559.pdf
@@ -206,6 +206,7 @@ const config = {
 		},
 		{ ags: 15, name: 'Sachsen-Anhalt',
 			wohngebiet: 1000,
+			wohngebaeude: 400,
 			camping: (h, r) => Math.max(1000, 10 * (h + r)),
 			gewerbe: 500,
 			erholung: 1000,
