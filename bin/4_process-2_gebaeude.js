@@ -26,7 +26,9 @@ processAlkis({
 		feature.properties.type = 'wohngebaeude';
 
 		let p = turf.pointOnFeature(feature).geometry.coordinates;
-		return pecker(p);
+		if (!pecker(p)) return;
+		
+		return feature.properties.type;
 	},
 	cbWindEntries: windEntries => windEntries.every(({ wind, distance }) => distance > 10),
 })
