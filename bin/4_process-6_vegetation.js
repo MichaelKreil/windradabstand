@@ -13,9 +13,9 @@ processAlkis({
 	slug: 'vegetationsflaeche',
 	ruleTypes: 'wald'.split(','),
 	cbFeature: feature => {
-		feature.properties.type = getType.get(feature.properties.klasse);
-		if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
-		return feature.properties.type;
+		let type = getType.get(feature.properties.klasse);
+		if (type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
+		return type;
 	}
 })
 

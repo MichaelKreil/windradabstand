@@ -16,9 +16,9 @@ async function start() {
 		slug: 'grenze_flaeche',
 		ruleTypes: 'naturdenkmal'.split(','),
 		cbFeature: feature => {
-			feature.properties.type = lookup.get(feature.properties.klasse);
-			if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
-			return feature.properties.type;
+			let type = lookup.get(feature.properties.klasse);
+			if (type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
+			return type;
 		}
 	})
 
@@ -29,10 +29,7 @@ async function start() {
 			slugOut: type,
 			ruleTypes: [type],
 			filenameIn: config.getFilename.andereGebiete(type + '.geojsonl'),
-			cbFeature: feature => {
-				feature.properties.type = type;
-				return feature.properties.type = type;
-			}
+			cbFeature: feature => type,
 		})
 	}
 }
