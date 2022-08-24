@@ -10,7 +10,7 @@ const { processAlkis } = require('../lib/geohelper.js');
 let getType = initLookup();
 
 processAlkis({
-	slug: 'vegetationflaeche',
+	slug: 'vegetationsflaeche',
 	ruleTypes: 'wald'.split(','),
 	cbFeature: feature => {
 		feature.properties.type = getType.get(feature.properties.klasse);
