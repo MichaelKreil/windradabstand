@@ -7,4 +7,6 @@ node 4_process-2_gebaeude.js
 node 4_process-3_grenze_flaeche.js
 node 4_process-4_verkehrslinie.js
 node 4_process-5_versorgungslinie.js
-# node 4_process-6_vegetation.js
+node 4_process-6_vegetation.js
+node 4_process-7_gewaesserflaeche.js
+node 4_process-8_verkehrsflaeche.js

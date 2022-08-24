@@ -304,6 +304,15 @@ const config = {
 		// vegetation
 		{ slug: 'wald', name: 'Wald' },
 
+		// gewaesser
+		{ slug: 'gewaesser', name: 'Gewässer' },
+		{ slug: 'gewaesser_1ha', name: 'stehende Gewässer größer 1 ha' },
+
+		// verkehrsflaeche
+		{ slug: 'verkehrsflaeche', name: 'Verkehrsfläche' },
+		{ slug: 'militaerisch', name: 'Militärische Nutzung' },
+		{ slug: 'flugplaetze', name: 'Flughäfen, Flugplätze, Landeplätze, Segelfluggelände, ...' },
+
 		// todos
 		//{ slug:'denkmal', name:'Kulturdenkmale und geschützte Ensembles' },
 		/*{ slug:'gesundheit', name:'Kur und Klinikgebiete' },*/
