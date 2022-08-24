@@ -84,7 +84,10 @@ simpleCluster(async function (runWorker) {
 
 		for (let layer = 2; layer >= 0; layer--) {
 			let features = layers[layer];
-			ctxBig.fillStyle = config.typicalWindTurbines.find(w => w.level === layer).color;
+
+			let typicalWindTurbine = config.typicalWindTurbines.find(w => w.level === layer);
+			if (!typicalWindTurbine) continue
+			ctxBig.fillStyle = typicalWindTurbine.color;
 
 			features.forEach(feature => {
 
