@@ -14,7 +14,7 @@ async function start() {
 
 	await processAlkis({
 		slug: 'grenze_flaeche',
-		ruleTypes: 'naturdenkmal,biosphaere,ffhabitat,landschaftsschutz,nationalpark,naturpark,naturschutz,vogelschutz'.split(','),
+		ruleTypes: 'naturdenkmal'.split(','),
 		cbFeature: feature => {
 			feature.properties.type = lookup.get(feature.properties.klasse);
 			if (feature.properties.type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
@@ -31,7 +31,7 @@ async function start() {
 			filenameIn: config.getFilename.andereGebiete(type + '.geojsonl'),
 			cbFeature: feature => {
 				feature.properties.type = type;
-				return true;
+				return feature.properties.type = type;
 			}
 		})
 	}
@@ -54,12 +54,5 @@ function initLookup() {
 		'Wasserschutzgebiet',
 	].forEach(label => lookup.set(label, false))
 	lookup.set('Naturdenkmal', 'naturdenkmal');
-	lookup.set('Biosphärenreservat', 'biosphaere');
-	lookup.set('Flora-Fauna-Habitat-Gebiet', 'ffhabitat');
-	lookup.set('Landschaftsschutzgebiet', 'landschaftsschutz');
-	lookup.set('Naturpark', 'naturpark');
-	lookup.set('Nationalpark', 'nationalpark');
-	lookup.set('Naturschutzgebiet', 'naturschutz');
-	lookup.set('Vogelschutzgebiet', 'vogelschutz');
 	return lookup
 }
