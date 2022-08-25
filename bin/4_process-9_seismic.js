@@ -7,17 +7,17 @@ const zlib = require('zlib');
 const helper = require('../lib/helper.js');
 const config = require('../config.js');
 const turf = require('@turf/turf');
-const { convertGeoJSON2Anything } = require('../lib/geohelper.js');
+const { convertGzippedGeoJSONSeq4GeoBasis } = require('../lib/geohelper.js');
 
 start()
 
 async function start(opt) {
 	const filenameIn = config.getFilename.static('seismessstationen.tsv');
-	const ruleTypes = ['seismess'];
-	const filenameGeoJSON = config.getFilename.rulesGeoBasis('seismess.geojsonl.gz');
-	const filenameFGB = config.getFilename.rulesGeoBasis('seismess.fgb');
+	const ruleTypes = ['seismisch'];
+	const filenameGeoJSON = config.getFilename.rulesGeoBasis('seismisch.geojsonl.gz');
+	const filenameFGB = config.getFilename.rulesGeoBasis('seismisch');
 
-	console.log('process seismess');
+	console.log('process seismisch');
 
 	if (!fs.existsSync(filenameIn)) throw Error(filenameIn + ' is missing');
 	
@@ -34,7 +34,7 @@ async function start(opt) {
 
 		let feature = turf.buffer(turf.point([station.lng, station.lat]), station.radius / 1000);
 		feature.properties = station;
-		feature.properties.type = 'seismess';
+		feature.properties.type = 'seismisch';
 		feature.bbox = turf.bbox(feature);
 
 		result.push(JSON.stringify(feature)+'\n');
@@ -42,5 +42,5 @@ async function start(opt) {
 	result = zlib.gzipSync(Buffer.from(result.join('')));
 	fs.writeFileSync(filenameGeoJSON, result);
 	
-	convertGeoJSON2Anything(filenameGeoJSON, filenameFGB);
+	convertGzippedGeoJSONSeq4GeoBasis(filenameGeoJSON, filenameFGB);
 }

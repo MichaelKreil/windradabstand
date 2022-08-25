@@ -23,6 +23,7 @@ const config = {
 		webData: 'docs/data',
 		webAssets: 'docs/assets',
 		tiles: 'docs/tiles',
+		temporary: 'data/tmp',
 	},
 	getFilename: {},
 	/*
@@ -277,7 +278,7 @@ const config = {
 		{ slug: 'flugplaetze', name: 'Flughäfen, Flugplätze, Landeplätze, Segelfluggelände, ...' },
 		
 		// sonstiges
-		{ slug: 'seismess', name: 'seismische Messstationen', default: 0 },
+		{ slug: 'seismisch', name: 'seismische Messstationen', default: 0 },
 		{ slug: 'dvor', name: 'Drehfunkfeuer' },
 	],
 	typicalWindTurbines: [
@@ -292,8 +293,12 @@ const config = {
 for (let name in config.folders) {
 	let path = resolve(__dirname, config.folders[name]);
 	config.folders[name] = path
-	config.getFilename[name] = filename => resolve(path, filename);
-	fs.mkdirSync(path, { recursive:true });
+	config.getFilename[name] = filename => resolve(path, filename || randomName());
+	fs.mkdirSync(path, { recursive: true });
+	
+	function randomName() {
+		return 'tmp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2) + '.tmp';
+	}
 }
 
 // prepare laws
