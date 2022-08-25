@@ -14,19 +14,19 @@ let pecker = GeoPecker(config.getFilename.mapFeature('wohngebiet.gpkg'));
 
 processAlkis({
 	slug: 'gebaeudeflaeche',
-	ruleTypes: 'wohngebaeude'.split(','),
+	ruleTypes: 'wohngebaeude,gebaeude'.split(','),
 	filenameIn: config.getFilename.alkisGeo('gebaeudeflaeche.fgb'),
 	cbFeature: feature => {
 		let residential = isResidential.get(feature.properties.gebaeudefunktion)
 		if (residential === undefined) throw Error(`Gebäudefunktion "${feature.properties.gebaeudefunktion}" unbekannt`);
-		if (!residential) return;
-
 		if (turf.area(feature) > 1e6) return;
 
-		let p = turf.pointOnFeature(feature).geometry.coordinates;
-		if (!pecker(p)) return;
-		
-		return 'wohngebaeude';
+		if (residential) {
+			let p = turf.pointOnFeature(feature).geometry.coordinates;
+			if (pecker(p)) return 'wohngebaeude';
+		}
+
+		return 'gebaeude';
 	},
 	cbWindEntries: windEntries => windEntries.every(({ wind, distance }) => distance > 10),
 })
