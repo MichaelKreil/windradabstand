@@ -12,6 +12,7 @@ let getType = initLookup();
 processAlkis({
 	slug: 'siedlungsflaeche',
 	ruleTypes: 'wohngebiet,camping,erholung,gewerbe'.split(','),
+	generateGPKG: true,
 	cbFeature: feature => {
 		let type = getType.get(feature.properties.klasse);
 		if (type === undefined) throw Error(`Klasse "${feature.properties.klasse}" unbekannt`);
