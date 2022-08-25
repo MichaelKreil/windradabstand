@@ -37,6 +37,7 @@ processAlkis({
 
 		types = Array.from(types.values());
 		if (types.length === 0) return;
+
 		return types;
 	}
 })
