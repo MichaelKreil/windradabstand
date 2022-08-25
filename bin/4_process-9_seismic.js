@@ -14,8 +14,8 @@ start()
 async function start(opt) {
 	const filenameIn = config.getFilename.static('seismessstationen.tsv');
 	const ruleTypes = ['seismess'];
-	const filenameGeoJSON = config.getFilename.mapFeature('seismess.geojsonl.gz');
-	const filenameFGB = config.getFilename.mapFeature('seismess.fgb');
+	const filenameGeoJSON = config.getFilename.rulesGeoBasis('seismess.geojsonl.gz');
+	const filenameFGB = config.getFilename.rulesGeoBasis('seismess.fgb');
 
 	console.log('process seismess');
 

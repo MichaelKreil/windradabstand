@@ -21,7 +21,7 @@ simpleCluster(async function (runWorker) {
 			let func = rules[ruleType.slug];
 			if (!func) continue;
 
-			let filenameIn = config.getFilename.mapFeature(ruleType.slug + '.fgb');
+			let filenameIn = config.getFilename.rulesGeoBasis(ruleType.slug + '.fgb');
 			if (!fs.existsSync(filenameIn)) {
 				console.log('File ' + filenameIn + ' is missing');
 				process.exit();

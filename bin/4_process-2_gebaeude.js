@@ -10,7 +10,7 @@ const { processAlkis, GeoPecker } = require('../lib/geohelper.js');
 
 
 let isResidential = initLookup();
-let pecker = GeoPecker(config.getFilename.mapFeature('wohngebiet.gpkg'));
+let pecker = GeoPecker(config.getFilename.rulesGeoBasis('wohngebiet.gpkg'));
 
 processAlkis({
 	slug: 'gebaeudeflaeche',

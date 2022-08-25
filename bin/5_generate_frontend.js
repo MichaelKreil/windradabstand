@@ -52,7 +52,6 @@ start()
 
 async function start() {
 	await generateWindEntries()
-	//await generateGroups() // we don't need that anymore
 	console.log('Finished')
 }
 
@@ -76,7 +75,7 @@ async function generateWindEntries() {
 	// add min distances
 	slugs.forEach(slug => {
 		console.log('   read', slug)
-		JSON.parse(fs.readFileSync(config.getFilename.mapFeature(slug + '.json'))).forEach(link => {
+		JSON.parse(fs.readFileSync(config.getFilename.rulesGeoBasis(slug + '.json'))).forEach(link => {
 			let windEntry = windEntries[link.index];
 			Object.entries(link.minDistance).forEach(([key, val]) => {
 				key = 'min_' + key;
@@ -134,36 +133,6 @@ async function generateWindEntries() {
 	})
 	result = JSON.stringify(result);
 	await writeWebData('wind.json', result);
-}
-
-async function generateGroups() {
-	console.log('generate groups');
-	const windEntries = JSON.parse(fs.readFileSync(config.getFilename.wind('wind.json')));
-	const maxGroupIndex = windEntries.reduce((m, w) => Math.max(m, w.groupIndex), 0);
-	const todos = []
-	for (let i = 0; i <= maxGroupIndex; i++) todos.push(i);
-
-	await todos.forEachParallel(async i => {
-		process.stdout.write('\r   ' + (100 * i / maxGroupIndex).toFixed(1) + '% ');
-		let group = [];
-		slugs.forEach(slug => {
-			let filename = config.getFilename.mapGroup(`${slug}-${i}.geojsonl`);
-			if (!fs.existsSync(filename)) return;
-			let data = fs.readFileSync(filename, 'utf8')
-				.split('\n')
-				.filter(l => l.length > 0)
-				.forEach(l => {
-					let e = JSON.parse(l);
-					e.properties = {
-						type: e.properties.type,
-						windEntr: e.properties.windEntr,
-						windDist: e.properties.windDist,
-					}
-					group.push(e);
-				})
-		})
-		await writeWebData(`group-${i}.json`, JSON.stringify(group));
-	})
 }
 
 async function writeWebData(filename, buffer) {
