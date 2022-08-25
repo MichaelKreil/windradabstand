@@ -8,8 +8,6 @@ const config = require('../config.js');
 const { gzip, brotli } = require('../lib/helper.js');
 require('big-data-tools');
 
-const slugs = 'biosphaere,ffhabitat,gebaeudeflaeche,grenze_flaeche,landschaftsschutz,nationalpark,naturpark,naturschutz,siedlungsflaeche,verkehrslinie,versorgungslinie,vogelschutz'.split(',');
-
 const KEYS = {
 	'Bundesland': false,
 	'bundeslandName': false,
@@ -28,7 +26,7 @@ const KEYS = {
 	'NameStromerzeugungseinheit': false,
 	'Nettonennleistung': false,
 	'Postleitzahl': false,
-	'Registrierungsdatum': false,
+	'Registrierungsdatum': true,
 
 	'index': false,
 
@@ -37,7 +35,7 @@ const KEYS = {
 	'Laengengrad': true,
 	'Breitengrad': true,
 	'Bruttoleistung': true,
-	'bundeslandAGS': true,
+	'bundeslandAGS': false,
 	'hoehe': true,
 	'Inbetriebnahmedatum': true,
 	'DatumBeginnVoruebergehendeStilllegung': false,
@@ -72,21 +70,6 @@ async function generateWindEntries() {
 		return result;
 	})
 
-	// add min distances
-	slugs.forEach(slug => {
-		console.log('   read', slug)
-		JSON.parse(fs.readFileSync(config.getFilename.rulesGeoBasis(slug + '.json'))).forEach(link => {
-			let windEntry = windEntries[link.index];
-			Object.entries(link.minDistance).forEach(([key, val]) => {
-				key = 'min_' + key;
-				val = Math.floor(val);
-				if ((windEntry[key] === undefined) || (windEntry[key] > val)) {
-					windEntry[key] = val;
-				}
-			})
-		})
-	})
-
 	// convert from "array of objects" to "object of arrays"
 	let result = {};
 	windEntries.forEach((w, i) => {
@@ -104,6 +87,7 @@ async function generateWindEntries() {
 				values = runLengthEncoding(values);
 				break;
 			case 'Inbetriebnahmedatum':
+			case 'Registrierungsdatum':
 				values = diffEncoding(values.map(v => {
 					if (v === null) return v;
 					v = v.split('-').map(s => parseInt(s, 10));
