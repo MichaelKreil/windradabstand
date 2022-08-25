@@ -342,6 +342,8 @@ config.rules.forEach(rule => {
 			}
 		}
 
+		if (rule[key] === undefined) return;
+
 		Object.defineProperty(rule[key], 'name', { value: key, writable: false });
 	})
 
