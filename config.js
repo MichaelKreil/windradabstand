@@ -52,7 +52,7 @@ const config = {
 
 			autobahn: 100,
 			bundesstr: 40,
-			landesstr: 40,
+			landstr: 40,
 			kreisstr: 30,
 
 			bahnlinie: 50,
@@ -66,42 +66,24 @@ const config = {
 			nationalpark: 1000,
 			vogelschutz: (h, r) => Math.max(1200, 10 * (h + r)),
 			biosphaere: 1000,
-
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 15,
-			freileitung: (h, r) => r,
 		},
 		{ ags: 11, name: 'Berlin',
-			wohngebiet: 0, // Lärmschutz
-			wohngebaeude: 400,
-			freileitung: (h, r) => r,
 			autobahn: 40,
 			bundesstr: 20,
 		},
 		{ ags: 12, name: 'Brandenburg',
 			// Quelle: https://www.parlamentsdokumentation.brandenburg.de/parladoku/w7/drs/ab_4500/4559.pdf
 			wohngebaeude: 1000,
-			wohngebiet: 0,
+			
 			vogelschutz: 0,
 			ffhabitat: 0,
-
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 20,
-			freileitung: (h, r) => r,
 		},
 		{ ags: 4, name: 'Bremen',
 			wohngebiet: 450,
 			wohngebaeude: 450,
 
-			autobahn: 40,
-			bundesstr: 40,
-			landesstr: 40,
+			landstr: 40,
 			kreisstr: 40,
-			freileitung: (h, r) => r,
 			// 2000m Abstand zur Flughafen-Landebahn?
 		},
 		{ ags: 2, name: 'Hamburg',
@@ -110,12 +92,11 @@ const config = {
 			naturschutz: 300,
 			vogelschutz: 300,
 			ffhabitat: 200,
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 100,
+			
+			landstr: 100,
 			kreisstr: 100,
 			bahnlinie: 50,
-			freileitung: (h, r) => Math.max(100, r),
+			freileitung: 100,
 		},
 		{ ags: 6, name: 'Hessen',
 			wohngebiet: 1000,
@@ -124,12 +105,14 @@ const config = {
 			naturdenkmal: 0,
 			naturschutz: 0,
 			nationalpark: 0,
+
 			autobahn: 150,
 			bundesstr: 100,
-			landesstr: 100,
+			landstr: 100,
 			kreisstr: 100,
+
 			bahnlinie: 100,
-			freileitung: (h, r) => Math.max(100, r),
+			freileitung: 100,
 		},
 		{ ags: 13, name: 'Mecklenburg-Vorpommern',
 			wohngebiet: 1000,
@@ -141,19 +124,14 @@ const config = {
 			vogelschutz: 500,
 			ffhabitat: 500,
 			biosphaere: 500,
-			freileitung: (h, r) => r,
-			autobahn: 40,
-			bundesstr: 20,
 		},
 		{ ags: 3, name: 'Niedersachsen',
 			// Quelle: https://www.stk.niedersachsen.de/download/174262/Windenergieerlass.pdf
+			
 			wohngebiet: (h, r) => Math.max(400, 2 * (h + r)),
 			wohngebaeude: (h, r) => Math.max(400, 2 * (h + r)),
 			camping: (h, r) => Math.max(400, 2 * (h + r)),
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 20,
+			
 			bahnlinie: (h, r) => 1.5 * (h + r),
 
 			naturschutz: 0,
@@ -161,7 +139,6 @@ const config = {
 			naturdenkmal: 0,
 			biosphaere: 0,
 			landschaftsschutz: 0,
-			freileitung: (h, r) => r,
 		},
 		{ ags: 5, name: 'Nordrhein-Westfalen',
 			wohngebiet: 1000,
@@ -170,18 +147,12 @@ const config = {
 			nationalpark: 300,
 			vogelschutz: 300,
 			ffhabitat: 300,
-			autobahn: 40,
-			bundesstr: 20,
-			freileitung: (h, r) => r,
 		},
 		{ ags: 7, name: 'Rheinland-Pfalz',
 			// Quelle: https://mdi.rlp.de/de/unsere-themen/landesplanung/landesentwicklungsprogramm/vierte-teilfortschreibung/
 			wohngebiet: 900,
 			wohngebaeude: 500,
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 15,
+			
 			freileitung: (h, r) => 3 * r,
 
 			nationalpark: 0,
@@ -195,19 +166,20 @@ const config = {
 			naturschutz: 200,
 			vogelschutz: 0,
 			ffhabitat: 200,
+
 			autobahn: 100,
 			bundesstr: 100,
-			landesstr: 100,
+			landstr: 100,
 			kreisstr: 50,
+			
 			bahnlinie: 100,
-			freileitung: (h, r) => Math.max(100, r),
+			freileitung: 100,
 		},
 		{ ags: 14, name: 'Sachsen',
 			// https://www.revosax.sachsen.de/vorschrift_gesamt/1779/44172.html (nicht mehr erreichbar)
 
 			// https://www.mdr.de/nachrichten/deutschland/politik/windkraft-abstandsregel-laender-oeffnungsklausel-100.html
 			wohngebaeude: (h, r) => (h + r <= 150) ? 750 : 1000,
-			wohngebiet: 0,
 			naturschutz: 0,
 			naturpark: 0,
 			nationalpark: 0,
@@ -215,10 +187,6 @@ const config = {
 			gewerbe: 0,
 			ffhabitat: 0,
 			
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 20,
 			bahnlinie: 40,
 			freileitung: (h, r) => 3 * r,
 		},
@@ -235,12 +203,14 @@ const config = {
 			vogelschutz: 1000,
 			ffhabitat: 1000,
 			biosphaere: 1000,
+			
 			autobahn: 200,
 			bundesstr: 200,
-			landesstr: 200,
+			landstr: 200,
 			kreisstr: 200,
+
 			bahnlinie: 200,
-			freileitung: (h, r) => Math.max(200, r),
+			freileitung: 200,
 		},
 		{ ags: 1, name: 'Schleswig-Holstein',
 			wohngebiet: 800,
@@ -251,72 +221,65 @@ const config = {
 			nationalpark: (h, r) => 300 + r,
 			vogelschutz: (h, r) => 300 + r,
 			ffhabitat: (h, r) => 200 + r,
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 15,
+			
 			bahnlinie: 100,
-			freileitung: (h, r) => r,
 		},
 		{ ags: 16, name: 'Thüringen',
 			wohngebiet: (h, r) => (h + r) < 150 ? 750 : 1000,
 			wohngebaeude: 600,
 			naturschutz: 300,
 			nationalpark: 600,
-			autobahn: 40,
-			bundesstr: 20,
-			landesstr: 20,
-			kreisstr: 20,
+			
 			bahnlinie: 40,
-			freileitung: (h, r) => Math.max(100, r),
+			freileitung: 100,
 		},
 	],
 	ruleTypes: [
 		// gebaeudeflaeche
-		{ slug:'wohngebaeude', name:'Einzelwohngebäude und Splittersiedlungen' },
+		{ slug: 'gebaeude', name: 'Gebäude', default: 0 },
+		{ slug: 'wohngebaeude', name: 'Einzelwohngebäude und Splittersiedlungen', default: 400 }, // Lärmschutz
 
 		// siedlungsflaeche
-		{ slug:'wohngebiet', name:'Allgemeine und reine Wohngebiete' },
-		{ slug:'camping', name:'Campingplätze' },
-		{ slug:'erholung', name:'Schwerpunkträume für Tourismus, Freizeit/Erholung' },
-		{ slug:'gewerbe', name:'Gewerbe und Industriegebiete' },
-		
+		{ slug: 'wohngebiet', name: 'Allgemeine und reine Wohngebiete', default: 0 }, // Lärmschutz
+		{ slug: 'camping', name: 'Campingplätze' },
+		{ slug: 'erholung', name: 'Schwerpunkträume für Tourismus, Freizeit/Erholung' },
+		{ slug: 'gewerbe', name: 'Gewerbe und Industriegebiete' },
+
 		// grenze_flaeche
-		{ slug:'biosphaere', name:'Biosphärenreservate (§ 25 BNatSchG)' },
-		{ slug:'ffhabitat', name:'FFH-Gebiete (Richtlinie 92/43 EWG)' },
-		{ slug:'landschaftsschutz', name:'Landschaftsschutzgebiete (§ 26 BNatSchG)' },
-		{ slug:'naturschutz', name:'Naturschutzgebiete (§ 23 BNatSchG)' },
-		{ slug:'nationalpark', name:'Nationalparke (§ 24 BNatSchG)' },
-		{ slug:'naturpark', name:'Naturpark' },
-		{ slug:'vogelschutz', name:'SPA-Gebiete (Richtlinie 79/409 EWG)' },
-		{ slug:'naturdenkmal', name:'Naturdenkmale' },
+		{ slug: 'biosphaere', name: 'Biosphärenreservate (§ 25 BNatSchG)' },
+		{ slug: 'ffhabitat', name: 'FFH-Gebiete (Richtlinie 92/43 EWG)' },
+		{ slug: 'landschaftsschutz', name: 'Landschaftsschutzgebiete (§ 26 BNatSchG)' },
+		{ slug: 'naturschutz', name: 'Naturschutzgebiete (§ 23 BNatSchG)' },
+		{ slug: 'nationalpark', name: 'Nationalparke (§ 24 BNatSchG)' },
+		{ slug: 'naturpark', name: 'Naturpark' },
+		{ slug: 'vogelschutz', name: 'SPA-Gebiete (Richtlinie 79/409 EWG)' },
+		{ slug: 'naturdenkmal', name: 'Naturdenkmale' },
 
 		// verkehrslinie
-		{ slug:'autobahn', name:'Bundesautobahnen' },
-		{ slug:'bundesstr', name:'Bundesstraßen' },
-		{ slug:'landesstr', name:'Landesstraßen' },
-		{ slug:'kreisstr', name:'Kreisstraßen' },
-		{ slug:'bahnlinie', name:'Bahnlinien' },
+		{ slug: 'autobahn', name: 'Bundesautobahnen', default: 40 }, // Quelle: https://www.gesetze-im-internet.de/fstrg/__9.html
+		{ slug: 'bundesstr', name: 'Bundesstraßen', default: 20 }, // Quelle: https://www.gesetze-im-internet.de/fstrg/__9.html
+		{ slug: 'landstr', name: 'Landesstraßen', default: 20 },
+		{ slug: 'kreisstr', name: 'Kreisstraßen', default: 20 },
+		{ slug: 'bahnlinie', name: 'Bahnlinien' },
 
 		// versorgungslinie
-		{ slug: 'freileitung', name: 'Freileitungen' },
+		{ slug: 'freileitung', name: 'Freileitungen', default: (h, r) => r },
 
 		// vegetation
 		{ slug: 'wald', name: 'Wald' },
 
 		// gewaesser
-		{ slug: 'gewaesser', name: 'Gewässer' },
+		{ slug: 'gewaesser', name: 'Gewässer', default: 0 },
 		{ slug: 'gewaesser_1ha', name: 'stehende Gewässer größer 1 ha' },
 
 		// verkehrsflaeche
-		{ slug: 'verkehrsflaeche', name: 'Verkehrsfläche' },
+		{ slug: 'verkehrsflaeche', name: 'Verkehrsfläche', default: 0 },
 		{ slug: 'militaerisch', name: 'Militärische Nutzung' },
 		{ slug: 'flugplaetze', name: 'Flughäfen, Flugplätze, Landeplätze, Segelfluggelände, ...' },
-
-		// todos
-		//{ slug:'denkmal', name:'Kulturdenkmale und geschützte Ensembles' },
-		/*{ slug:'gesundheit', name:'Kur und Klinikgebiete' },*/
-		/*{ slug:'schutzgebiet', name:'Freiraum mit bes. Schutzanspruch/Freiraumverbund/Vorrang Natur und Landschaft' },*/
+		
+		// sonstiges
+		{ slug: 'seismess', name: 'seismische Messstationen', default: 0 },
+		{ slug: 'dvor', name: 'Drehfunkfeuer' },
 	],
 	typicalWindTurbines: [
 		//{ level:0, color:'#e30613', hoehe:100, Nabenhoehe: 65, Rotordurchmesser: 70 },
@@ -337,18 +300,51 @@ for (let name in config.folders) {
 // prepare laws
 let ruleLookup = new Map();
 let ruleTypeLookup = new Set(config.ruleTypes.map(r => r.slug))
+
+// prepare ruleType defaults
+config.ruleTypes.forEach(ruleTypeDef => {
+	let def = ruleTypeDef.default;
+	switch (typeof def) {
+		case 'undefined': /*ok*/ break;
+		case 'number': ruleTypeDef.default = () => def; break;
+		case 'function': /*ok*/ break;
+		default: throw Error();
+	}
+})
+
+// prepare rules
 config.rules.forEach(rule => {
-	Object.keys(rule).forEach(type => {
-		if (type === 'ags') return // bundesland id
-		if (type === 'name') return // bundesland name
-		if (!ruleTypeLookup.has(type)) throw Error('unknown rule key '+type);
-		if (typeof rule[type] === 'number') {
-			let v = rule[type];
-			let f = function () { return v }
-			Object.defineProperty(f, 'name', {value: type, writable: false});
-			rule[type] = f;
+	Object.keys(rule).forEach(key => {
+		if (key === 'ags') return // bundesland id
+		if (key === 'name') return // bundesland name
+		if (!ruleTypeLookup.has(key)) throw Error('unknown rule type key: ' + key);
+
+		let def = rule[key];
+		switch (typeof def) {
+			case 'undefined': /*ok*/ break;
+			case 'number': rule[key] = () => def; break;
+			case 'function': /*ok*/ break;
+			default: throw Error();
 		}
 	})
+
+	config.ruleTypes.forEach(ruleTypeDef => {
+		let def0 = ruleTypeDef.default;
+		let key = ruleTypeDef.slug;
+
+		if (def0 !== undefined) {
+			let def1 = rule[key];
+			if (def1 === undefined) {
+				rule[key] = def0;
+			} else {
+				// if both are defined, take the maximum result
+				rule[key] = (h, r) => Math.max(def0(h, r), def1(h, r));
+			}
+		}
+
+		Object.defineProperty(rule[key], 'name', { value: key, writable: false });
+	})
+
 	ruleLookup.set(rule.ags, rule);
 })
 config.rules = ruleLookup;
