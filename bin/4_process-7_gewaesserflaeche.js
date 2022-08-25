@@ -38,6 +38,10 @@ processAlkis({
 		types = Array.from(types.values());
 		if (types.length === 0) return;
 
+		if (feature.properties.zweitname && Array.isArray(feature.properties.zweitname)) {
+			feature.properties.zweitname = feature.properties.zweitname.join('|')
+		}
+
 		return types;
 	}
 })
