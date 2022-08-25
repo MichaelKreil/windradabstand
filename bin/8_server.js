@@ -34,7 +34,9 @@ if (serverMode === 'main') {
 		const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 		const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
 
-		if (req.url === '/') console.log({ time: (new Date()).toLocaleString('de'), login, password });
+		if ((req.url === '/') && ((login !== '') || (password !== undefined))) {
+			console.log({ time: (new Date()).toLocaleString('de'), login, password });
+		}
 
 		if (login && password && (users[login] === password)) return next()
 
