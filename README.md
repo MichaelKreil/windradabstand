@@ -1,16 +1,16 @@
 # grundlegender Aufbau
 
 ## `bin` Verzeichnis
-1. Windräder aus dem [Marktstammdatenregister](https://www.marktstammdatenregister.de/MaStR/Datendownload)
-	- [1_wind-1_download.js](bin/1_wind-1_download.js) ZIP runterladen
-	- [1_wind-2_parse.js](bin/1_wind-2_parse.js) Windräder parsen, in welchem Bundesland stehen sie, Metadaten aufbereiten (Leistung, Höhen, IDs vergeben ...) und durch Clustererkennung in Gruppen sortieren.
-2. ALKIS von [AdV Smart Mapping](https://adv-smart.de)
-	- [2_alkis-1_scrape.js](bin/2_alkis-1_scrape.js) Scrapen
-	- [2_alkis-2_merge.js](bin/2_alkis-2_merge.js) Merge die Geometrien der Vektorkacheln und speichere sie als Layer
-	- [2_alkis-3_generate_fgb.sh](bin/2_alkis-3_generate_fgb.sh) Konvertiere die Daten in FlatGeoBuffers
-3. Schutzgebiete
-	- [3_download-1_schutzgebiete.sh](bin/3_download-1_schutzgebiete.sh) Lade die Schutzgebiete als einzelne Layer runter, wie Vogel-, Natur-, Landschaftsschutzgebiete, usw.
-	- [3_download-2_windvorranggebiete_bayern.js](bin/3_download-2_windvorranggebiete_bayern.js) Lade die Windvorranggebiete in Bayern runter
+1. Lade Windrad-Daten aus dem [Marktstammdatenregister](https://www.marktstammdatenregister.de/MaStR/Datendownload)
+	- [1_get_wind-1_download.js](bin/1_get_wind-1_download.js) ZIP runterladen
+	- [1_get_wind-2_parse.js](bin/1_get_wind-2_parse.js) Windräder parsen, in welchem Bundesland stehen sie, Metadaten aufbereiten (Leistung, Höhen, IDs vergeben ...) und durch Clustererkennung in Gruppen sortieren.
+2. Lade ALKIS von [AdV Smart Mapping](https://adv-smart.de)
+	- [2_get_alkis-1_scrape.js](bin/2_get_alkis-1_scrape.js) Scrapen
+	- [2_get_alkis-2_merge.js](bin/2_get_alkis-2_merge.js) Merge die Geometrien der Vektorkacheln und speichere sie als Layer
+	- [2_get_alkis-3_generate_fgb.sh](bin/2_get_alkis-3_generate_fgb.sh) Konvertiere die Daten in FlatGeoBuffers
+3. Lade weitere Geodaten
+	- [3_get_other-1_schutzgebiete.sh](bin/3_get_other-1_schutzgebiete.sh) Lade die Schutzgebiete als einzelne Layer runter, wie Vogel-, Natur-, Landschaftsschutzgebiete, usw.
+	- [3_get_other-2_windvorranggebiete_bayern.js](bin/3_get_other-2_windvorranggebiete_bayern.js) Lade die Windvorranggebiete in Bayern runter
 4. Verarbeite die Quelldaten
 	- Berechne Nähe zu Windrädern
 	- generiere GeoJSONs für alle Features
