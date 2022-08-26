@@ -281,12 +281,12 @@ const config = {
 		{ slug: 'seismisch', name: 'seismische Messstationen', default: 0 },
 		{ slug: 'dvor', name: 'Drehfunkfeuer' },
 	],
-	typicalWindTurbines: [
-		//{ level:0, color:'#e30613', hoehe:100, Nabenhoehe: 65, Rotordurchmesser: 70 },
-		//{ level:1, color:'#e74011', hoehe:150, Nabenhoehe:105, Rotordurchmesser: 90 },
-		//{ level:2, color:'#ec6608', hoehe:200, Nabenhoehe:142, Rotordurchmesser:116 },
-		{ level: 0, color: '#e30613', hoehe: 200, Nabenhoehe: 142, Rotordurchmesser: 116 },
-	]
+	typicalWindTurbine: {
+		color: '#e30613',
+		hoehe: 200,
+		nabenhoehe: 142,
+		rotordurchmesser: 116,
+	}
 }
 
 // prepare folders
