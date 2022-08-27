@@ -3,7 +3,6 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { resolve } = require('path');
 
 simpleCluster(async runWorker => {
 	const config = require('../config.js');
@@ -26,7 +25,7 @@ simpleCluster(async runWorker => {
 	process.exit();
 
 }, async todo => {
-	const { createWriteStream, rmSync } = require('fs');
+	const { createWriteStream, rmSync, statSync } = require('fs');
 	const { spawn } = require('child_process');
 	const turf = require('@turf/turf');
 	const miss = require('mississippi2');
@@ -55,9 +54,13 @@ simpleCluster(async runWorker => {
 	let stream = cp1.stdout;
 	if (radius > 0) {
 		stream = stream.pipe(miss.split());
-		stream = stream.pipe(miss.map(line => {
-			if (line.length === 0) return '';
-			return JSON.stringify(turf.buffer(JSON.parse(line), radius, { steps: 18 })) + '\n';
+		stream = stream.pipe(miss.through.obj(function (line, enc, next) {
+			if (line.length === 0) return next();
+			turf.flattenEach(JSON.parse(line), f => {
+				f = JSON.stringify(turf.buffer(f, radius, { steps: 18 })) + '\n';
+				this.push(f);
+			})
+			next();
 		}))
 	}
 
@@ -66,24 +69,26 @@ simpleCluster(async runWorker => {
 
 	await new Promise(res => stream.on('close', res))
 
-	let spawnArgs2 = [
-		//'--debug', 'ON',
-		'-skipfailures',
-		'-dialect', 'SQLite',
-		'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
-		'-clipdst', bundesland.filename,
-		'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-		'-f', 'GPKG',
-		'-nlt', 'MULTIPOLYGON',
-		'-nln', 'layer',
-		filename2, '/vsigzip/' + filename1,
-	]
-	//console.log(spawnArgs2);
-	let cp2 = spawn('ogr2ogr', spawnArgs2);
-	cp2.stderr.pipe(process.stderr);
-	stream.pipe(cp2.stdin);
+	if (statSync(filename1).size > 30) {
 
-	await new Promise(res => cp2.on('close', res))
+		let spawnArgs2 = [
+			//'--debug', 'ON',
+			'-skipfailures',
+			'-dialect', 'SQLite',
+			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
+			'-clipdst', bundesland.filename,
+			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+			'-f', 'GPKG',
+			'-nlt', 'POLYGON',
+			'-nln', 'layer',
+			filename2, 'GeoJSONSeq:/vsigzip/' + filename1,
+		]
+		let cp2 = spawn('ogr2ogr', spawnArgs2);
+		cp2.stderr.pipe(process.stderr);
+		stream.pipe(cp2.stdin);
+
+		await new Promise(res => cp2.on('close', res))
+	}
 
 	rmSync(filename1);
 
