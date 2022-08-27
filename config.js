@@ -52,7 +52,7 @@ const config = {
 
 			autobahn: 100,
 			bundesstr: 40,
-			landstr: 40,
+			landesstr: 40,
 			kreisstr: 30,
 
 			bahnlinie: 50,
@@ -82,7 +82,7 @@ const config = {
 			wohngebiet: 450,
 			wohngebaeude: 450,
 
-			landstr: 40,
+			landesstr: 40,
 			kreisstr: 40,
 			// 2000m Abstand zur Flughafen-Landebahn?
 		},
@@ -93,7 +93,7 @@ const config = {
 			vogelschutz: 300,
 			ffhabitat: 200,
 			
-			landstr: 100,
+			landesstr: 100,
 			kreisstr: 100,
 			bahnlinie: 50,
 			freileitung: 100,
@@ -108,7 +108,7 @@ const config = {
 
 			autobahn: 150,
 			bundesstr: 100,
-			landstr: 100,
+			landesstr: 100,
 			kreisstr: 100,
 
 			bahnlinie: 100,
@@ -169,7 +169,7 @@ const config = {
 
 			autobahn: 100,
 			bundesstr: 100,
-			landstr: 100,
+			landesstr: 100,
 			kreisstr: 50,
 			
 			bahnlinie: 100,
@@ -206,7 +206,7 @@ const config = {
 			
 			autobahn: 200,
 			bundesstr: 200,
-			landstr: 200,
+			landesstr: 200,
 			kreisstr: 200,
 
 			bahnlinie: 200,
@@ -258,7 +258,7 @@ const config = {
 		// verkehrslinie
 		{ slug: 'autobahn', name: 'Bundesautobahnen', default: 40 }, // Quelle: https://www.gesetze-im-internet.de/fstrg/__9.html
 		{ slug: 'bundesstr', name: 'Bundesstraßen', default: 20 }, // Quelle: https://www.gesetze-im-internet.de/fstrg/__9.html
-		{ slug: 'landstr', name: 'Landesstraßen', default: 20 },
+		{ slug: 'landesstr', name: 'Landesstraßen', default: 20 },
 		{ slug: 'kreisstr', name: 'Kreisstraßen', default: 20 },
 		{ slug: 'bahnlinie', name: 'Bahnlinien' },
 
