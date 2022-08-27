@@ -68,6 +68,7 @@ simpleCluster(async runWorker => {
 
 	let spawnArgs2 = [
 		//'--debug', 'ON',
+		'-skipfailures',
 		'-dialect', 'SQLite',
 		'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
 		'-clipdst', bundesland.filename,
