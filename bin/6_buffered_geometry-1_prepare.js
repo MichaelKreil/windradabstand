@@ -16,7 +16,7 @@ let folderBundeslaender = config.getFilename.bufferedGeometry('_bundeslaender');
 ensureFolder(folderBundeslaender);
 let bundeslaender = getBundeslaender().map(bundesland => {
 	let filename = resolve(folderBundeslaender, bundesland.properties.ags + '.geojson');
-	writeFileSync(filename, JSON.stringify(turf.featureCollection(bundesland)))
+	writeFileSync(filename, JSON.stringify(turf.featureCollection([bundesland])))
 
 	bundesland.properties.bbox = turf.bbox(bundesland);
 	bundesland.properties.filename = filename;
