@@ -41,32 +41,42 @@ simpleCluster(async runWorker => {
 	bbox = turf.buffer(bbox, radius, { steps: 18 });
 	bbox = turf.bbox(bbox);
 
-	let spawnArgs = ['-spat']
+	let spawnArgsIn = ['-spat']
 		.concat(bbox.map(v => v.toString()))
+		.concat(['-sql', 'SELECT geom FROM ' + ruleType.slug])
 		.concat(['-f', 'GeoJSONSeq', '/vsistdout/', ruleType.filenameIn]);
+	
+	let cpIn = spawn('ogr2ogr', spawnArgsIn);
+	cpIn.stderr.pipe(process.stderr);
 
-	if (radius <= 0) {
-		await new Promise(res => {
-			miss.pipeline(
-				spawn('ogr2ogr', spawnArgs).stdout,
-				createGzip(),
-				createWriteStream(fileGeoJSON)
-			).on('finish', res)
-		})
-	} else {
-		await new Promise(res => {
-			miss.pipeline(
-				spawn('ogr2ogr', spawnArgs).stdout,
-				miss.split(),
-				miss.map(line => {
-					if (line.length === 0) return;
-					return JSON.stringify(turf.buffer(JSON.parse(line), radius, { steps: 18 }));
-				}),
-				miss.filter(l => l),
-				createGzip(),
-				createWriteStream(fileGeoJSON)
-			).on('finish', res)
-		})
-
+	let stream = cpIn.stdout;
+	if (radius > 0) {
+		stream = stream.pipe(miss.split());
+		stream = stream.pipe(miss.map(line => {
+			if (line.length === 0) return '';
+			return JSON.stringify(turf.buffer(JSON.parse(line), radius, { steps: 18 })) + '\n';
+		}))
 	}
+
+	stream = stream.pipe(createGzip())
+	stream = stream.pipe(createWriteStream(fileGeoJSON))
+
+	await new Promise(res => stream.on('close', res))
+
+	/*
+	let spawnArgsOut = [
+		'--debug', 'ON',
+		'-dialect', 'SQLite',
+		'-sql', 'SELECT ST_Union(geometry) AS geometry FROM ""',
+		'-clipdst', bundesland.filename,
+		'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+		'-f', 'GeoJSONSeq',
+		'/vsigzip/' + fileGeoJSON, '/vsistdin/'
+	]
+	let cpOut = spawn('ogr2ogr', spawnArgsOut);
+	cpOut.stderr.pipe(process.stderr);
+	stream.pipe(cpOut.stdin);
+	*/
+
+	return
 })
