@@ -19,13 +19,14 @@ simpleCluster(async runWorker => {
 		})
 	})
 
-	await todos.forEachParallel(async todo => {
-		await runWorker(todo);
-	})
+	await todos.forEachParallel(runWorker);
+
+	console.log('Finished')
+
 	process.exit();
 
 }, async todo => {
-	const { createWriteStream } = require('fs');
+	const { createWriteStream, rmSync } = require('fs');
 	const { spawn } = require('child_process');
 	const turf = require('@turf/turf');
 	const miss = require('mississippi2');
@@ -33,7 +34,8 @@ simpleCluster(async runWorker => {
 
 	const { bundesland, ruleType, region } = todo;
 	const radius = region.radius / 1000;
-	const fileGeoJSON = region.filenameBase + '.1_buf.geojsonl.gz';
+	const filename1 = region.filenameBase + '.geojsonl.gz';
+	const filename2 = region.filenameBase + '.gpkg';
 
 	console.log(ruleType.slug, region.ags);
 
@@ -41,15 +43,16 @@ simpleCluster(async runWorker => {
 	bbox = turf.buffer(bbox, radius, { steps: 18 });
 	bbox = turf.bbox(bbox);
 
-	let spawnArgsIn = ['-spat']
+	let spawnArgs1 = ['-spat']
 		.concat(bbox.map(v => v.toString()))
-		.concat(['-sql', 'SELECT geom FROM ' + ruleType.slug])
-		.concat(['-f', 'GeoJSONSeq', '/vsistdout/', ruleType.filenameIn]);
+		.concat(['-sql', 'SELECT geom FROM ' + ruleType.slug]) // ignore all attributes
+		.concat(['-f', 'GeoJSONSeq'])
+		.concat(['/vsistdout/', ruleType.filenameIn]);
 	
-	let cpIn = spawn('ogr2ogr', spawnArgsIn);
-	cpIn.stderr.pipe(process.stderr);
+	let cp1 = spawn('ogr2ogr', spawnArgs1);
+	cp1.stderr.pipe(process.stderr);
 
-	let stream = cpIn.stdout;
+	let stream = cp1.stdout;
 	if (radius > 0) {
 		stream = stream.pipe(miss.split());
 		stream = stream.pipe(miss.map(line => {
@@ -59,24 +62,29 @@ simpleCluster(async runWorker => {
 	}
 
 	stream = stream.pipe(createGzip())
-	stream = stream.pipe(createWriteStream(fileGeoJSON))
+	stream = stream.pipe(createWriteStream(filename1))
 
 	await new Promise(res => stream.on('close', res))
 
-	/*
-	let spawnArgsOut = [
-		'--debug', 'ON',
+	let spawnArgs2 = [
+		//'--debug', 'ON',
 		'-dialect', 'SQLite',
-		'-sql', 'SELECT ST_Union(geometry) AS geometry FROM ""',
+		'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
 		'-clipdst', bundesland.filename,
 		'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-		'-f', 'GeoJSONSeq',
-		'/vsigzip/' + fileGeoJSON, '/vsistdin/'
+		'-f', 'GPKG',
+		'-nlt', 'MULTIPOLYGON',
+		'-nln', 'layer',
+		filename2, '/vsigzip/' + filename1,
 	]
-	let cpOut = spawn('ogr2ogr', spawnArgsOut);
-	cpOut.stderr.pipe(process.stderr);
-	stream.pipe(cpOut.stdin);
-	*/
+	//console.log(spawnArgs2);
+	let cp2 = spawn('ogr2ogr', spawnArgs2);
+	cp2.stderr.pipe(process.stderr);
+	stream.pipe(cp2.stdin);
+
+	await new Promise(res => cp2.on('close', res))
+
+	rmSync(filename1);
 
 	return
 })
