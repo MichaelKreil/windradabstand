@@ -33,8 +33,8 @@ simpleCluster(async runWorker => {
 
 	const { bundesland, ruleType, region } = todo;
 	const radius = region.radius / 1000;
-	const filename1 = region.filenameBase + '.geojsonl.gz';
-	const filename2 = region.filenameBase + '.gpkg';
+	const filename1 = region.filenameBase + '.1_buf.geojsonl.gz';
+	const filename2 = region.filenameBase + '.2_uni.geojsonl.gz';
 
 	console.log(ruleType.slug, region.ags);
 
@@ -69,6 +69,7 @@ simpleCluster(async runWorker => {
 
 	await new Promise(res => stream.on('close', res))
 
+	rmSync(filename2, { force: true });
 	if (statSync(filename1).size > 30) {
 
 		let spawnArgs2 = [
@@ -78,10 +79,9 @@ simpleCluster(async runWorker => {
 			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
 			'-clipdst', bundesland.filename,
 			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-			'-f', 'GPKG',
-			'-nlt', 'POLYGON',
-			'-nln', 'layer',
-			filename2, 'GeoJSONSeq:/vsigzip/' + filename1,
+			'-f', 'GeoJSONSeq',
+			'-nlt', 'MULTIPOLYGON',
+			'/vsigzip/' + filename2, 'GeoJSONSeq:/vsigzip/' + filename1,
 		]
 		let cp2 = spawn('ogr2ogr', spawnArgs2);
 		cp2.stderr.pipe(process.stderr);
