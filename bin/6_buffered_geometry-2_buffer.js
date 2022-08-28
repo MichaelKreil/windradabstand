@@ -25,16 +25,17 @@ simpleCluster(async runWorker => {
 	process.exit();
 
 }, async todo => {
-	const { createWriteStream, rmSync, statSync } = require('fs');
+	const { createWriteStream, rmSync, statSync, createReadStream } = require('fs');
 	const { spawn } = require('child_process');
 	const turf = require('@turf/turf');
 	const miss = require('mississippi2');
-	const { createGzip } = require('zlib');
+	const { createGzip, createGunzip } = require('zlib');
 
 	const { bundesland, ruleType, region } = todo;
 	const radius = region.radius / 1000;
 	const filename1 = region.filenameBase + '.1_buf.geojsonl.gz';
 	const filename2 = region.filenameBase + '.2_uni.geojsonl.gz';
+	const filename3 = region.filenameBase + '.3_pol.geojsonl.gz';
 
 	console.log(ruleType.slug, region.ags);
 
@@ -51,10 +52,10 @@ simpleCluster(async runWorker => {
 	let cp1 = spawn('ogr2ogr', spawnArgs1);
 	cp1.stderr.pipe(process.stderr);
 
-	let stream = cp1.stdout;
+	let stream1 = cp1.stdout;
 	if (radius > 0) {
-		stream = stream.pipe(miss.split());
-		stream = stream.pipe(miss.through.obj(function (line, enc, next) {
+		stream1 = stream1.pipe(miss.split());
+		stream1 = stream1.pipe(miss.through.obj(function (line, enc, next) {
 			if (line.length === 0) return next();
 			turf.flattenEach(JSON.parse(line), f => {
 				f = JSON.stringify(turf.buffer(f, radius, { steps: 18 })) + '\n';
@@ -64,10 +65,10 @@ simpleCluster(async runWorker => {
 		}))
 	}
 
-	stream = stream.pipe(createGzip())
-	stream = stream.pipe(createWriteStream(filename1))
+	stream1 = stream1.pipe(createGzip())
+	stream1 = stream1.pipe(createWriteStream(filename1))
 
-	await new Promise(res => stream.on('close', res))
+	await new Promise(res => stream1.on('close', res))
 
 	rmSync(filename2, { force: true });
 	if (statSync(filename1).size > 30) {
@@ -76,7 +77,7 @@ simpleCluster(async runWorker => {
 			//'--debug', 'ON',
 			'-skipfailures',
 			'-dialect', 'SQLite',
-			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.geojsonl"`,
+			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${region.ags}.1_buf.geojsonl"`,
 			'-clipdst', bundesland.filename,
 			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
 			'-f', 'GeoJSONSeq',
@@ -85,12 +86,30 @@ simpleCluster(async runWorker => {
 		]
 		let cp2 = spawn('ogr2ogr', spawnArgs2);
 		cp2.stderr.pipe(process.stderr);
-		stream.pipe(cp2.stdin);
 
 		await new Promise(res => cp2.on('close', res))
+
+
+
+		let spawnArgs3 = [
+			'-cr',
+			'.geometry | if .type != "MultiPolygon" then error("wrong type "+.type) else .coordinates[] | {type:"Feature",geometry:{type:"Polygon",coordinates:.}} | @json end'
+		]
+		let cp3 = spawn('jq', spawnArgs3);
+		cp3.stderr.pipe(process.stderr);
+
+		let stream3 = createReadStream(filename2);
+		stream3 = stream3.pipe(createGunzip());
+		stream3.pipe(cp3.stdin);
+		stream3 = cp3.stdout;
+		stream3 = stream3.pipe(createGzip());
+		stream3 = stream3.pipe(createWriteStream(filename3));
+
+		await new Promise(res => stream3.on('close', res))
 	}
 
-	rmSync(filename1);
+	//rmSync(filename1);
+	//rmSync(filename2);
 
 	return
 })
