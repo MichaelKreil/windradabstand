@@ -63,16 +63,16 @@ simpleCluster(async runWorker => {
 		if (!filenameOut.endsWith('.geojsonl.gz')) throw Error('file extension must be .geojsonl.gz');
 
 		bbox = turf.bboxPolygon(bbox);
-	bbox = turf.buffer(bbox, radius, { steps: 18 });
-	bbox = turf.bbox(bbox);
+		bbox = turf.buffer(bbox, radius, { steps: 18 });
+		bbox = turf.bbox(bbox);
 
 		let spawnArgs = ['-spat']
-		.concat(bbox.map(v => v.toString()))
-		.concat(['-dialect', 'SQLite'])
+			.concat(bbox.map(v => v.toString()))
+			.concat(['-dialect', 'SQLite'])
 			.concat(['-sql', 'SELECT geom as geometry FROM ' + layerName]) // ignore all attributes
-		.concat(['-f', 'GeoJSONSeq'])
+			.concat(['-f', 'GeoJSONSeq'])
 			.concat(['/vsistdout/', filenameIn]);
-	
+
 		let cp = spawn('ogr2ogr', spawnArgs);
 		cp.stderr.pipe(process.stderr);
 		cp.on('exit', code => {
@@ -83,17 +83,29 @@ simpleCluster(async runWorker => {
 		})
 
 		let stream = cp.stdout;
-	if (radius > 0) {
+		if (radius > 0) {
 			stream = stream.pipe(miss.split());
 			stream = stream.pipe(miss.through.obj(function (line, enc, next) {
-			if (line.length === 0) return next();
-			turf.flattenEach(JSON.parse(line), f => {
-				f = JSON.stringify(turf.buffer(f, radius, { steps: 18 })) + '\n';
-				this.push(f);
-			})
-			next();
-		}))
-	}
+				if (line.length === 0) return next();
+				let f0 = JSON.parse(line);
+				turf.flattenEach(f0, f1 => {
+					f1 = turf.buffer(f1, radius, { steps: 18 });
+					turf.flattenEach(f1, f2 => {
+						cleanupFeature(f2);
+						try {
+							f2 = turf.unkinkPolygon(f2);
+						} catch (e) {
+							console.dir(f2, { depth: 10 });
+							throw e;
+						}
+						f2.features.forEach(f3 => {
+							this.push(JSON.stringify(f3) + '\n');
+						})
+					})
+				})
+				next();
+			}))
+		}
 
 		stream = stream.pipe(createGzip())
 		stream = stream.pipe(createWriteStream(filenameTmp))
@@ -114,7 +126,7 @@ simpleCluster(async runWorker => {
 			//'--debug', 'ON',
 			'-skipfailures',
 			'-dialect', 'SQLite',
-			'-sql', `SELECT ST_Union(ST_MakeValid(geometry)) AS geometry FROM "${layerName}"`,
+			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${layerName}"`,
 			'-clipdst', bundeslandFilename,
 			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
 			'-f', 'GeoJSONSeq',
@@ -178,7 +190,7 @@ simpleCluster(async runWorker => {
 			if (code > 0) {
 				console.log({ todo, spawnArgs1 });
 				throw Error();
-	}
+			}
 		})
 
 		await new Promise(res => cp1.on('close', res))
@@ -195,4 +207,15 @@ simpleCluster(async runWorker => {
 	}
 })
 
-
+function cleanupFeature(feature) {
+	if (feature.geometry.type !== 'Polygon') throw Error(feature.geometry.type);
+	feature.geometry.coordinates = feature.geometry.coordinates.map(ring => {
+		let lastp = [];
+		return ring.filter(p => {
+			p = p.map(v => Math.round(v * 1e8) / 1e8);
+			if ((p[0] === lastp[0]) && (p[1] === lastp[1])) return false;
+			lastp = p;
+			return true;
+		})
+	})
+}
