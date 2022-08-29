@@ -10,5 +10,6 @@
 /data/6_*
 /data/cache/
 /data/helper/
+/data/tmp/
 /docs/tiles/
 /node_modules/
