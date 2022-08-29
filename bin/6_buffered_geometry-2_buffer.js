@@ -45,7 +45,8 @@ simpleCluster(async runWorker => {
 
 	let spawnArgs1 = ['-spat']
 		.concat(bbox.map(v => v.toString()))
-		.concat(['-sql', 'SELECT geom FROM ' + ruleType.slug]) // ignore all attributes
+		.concat(['-dialect', 'SQLite'])
+		.concat(['-sql', 'SELECT geom as geometry FROM ' + ruleType.slug]) // ignore all attributes
 		.concat(['-f', 'GeoJSONSeq'])
 		.concat(['/vsistdout/', ruleType.filenameIn]);
 	
