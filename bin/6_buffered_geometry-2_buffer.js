@@ -2,11 +2,17 @@
 'use strict'
 
 
+
 const { simpleCluster } = require('big-data-tools');
+const { resolve, dirname, extname, basename } = require('path');
+const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, statSync, createReadStream } = require('fs');
+const { createGzip, createGunzip } = require('zlib');
+const { spawn } = require('child_process');
+
+
 
 simpleCluster(async runWorker => {
 	const config = require('../config.js');
-	const { readFileSync } = require('fs');
 
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
