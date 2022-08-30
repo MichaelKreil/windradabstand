@@ -7,7 +7,7 @@ const zlib = require('zlib');
 const helper = require('../lib/helper.js');
 const config = require('../config.js');
 const turf = require('@turf/turf');
-const { convertGzippedGeoJSONSeq4GeoBasis } = require('../lib/geohelper.js');
+const { convertGzippedGeoJSONSeq2Anything } = require('../lib/geohelper.js');
 
 start()
 
@@ -15,7 +15,7 @@ async function start(opt) {
 	const filenameIn = config.getFilename.static('seismessstationen.tsv');
 	const ruleTypes = ['seismisch'];
 	const filenameGeoJSON = config.getFilename.rulesGeoBasis('seismisch.geojsonl.gz');
-	const filenameFGB = config.getFilename.rulesGeoBasis('seismisch');
+	const filenameFGB = config.getFilename.rulesGeoBasis('seismisch')+'.fgb';
 
 	console.log('process seismisch');
 
@@ -42,5 +42,5 @@ async function start(opt) {
 	result = zlib.gzipSync(Buffer.from(result.join('')));
 	fs.writeFileSync(filenameGeoJSON, result);
 	
-	convertGzippedGeoJSONSeq4GeoBasis(filenameGeoJSON, filenameFGB);
+	convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameFGB);
 }
