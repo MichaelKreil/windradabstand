@@ -4,7 +4,7 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { resolve, dirname, basename } = require('path');
+const { resolve, dirname, basename, extname } = require('path');
 const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, statSync, createReadStream, fstat, writeFileSync } = require('fs');
 const { createGzip, createGunzip } = require('zlib');
 const { spawn } = require('child_process');
@@ -14,7 +14,7 @@ const config = require('../config.js');
 
 
 
-simpleCluster(async runWorker => {
+simpleCluster(true, async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -32,9 +32,11 @@ simpleCluster(async runWorker => {
 		})
 	})
 
+	todos = todos.slice(19);
+
 	todos = todos.filter(t => !existsSync(t.filenameOut));
 
-	await todos.forEachParallel(runWorker);
+	await todos.forEachParallel(1, runWorker);
 
 	console.log('finished')
 
@@ -42,7 +44,7 @@ simpleCluster(async runWorker => {
 
 }, async todo => {
 
-	console.log('buffer', todo.ruleType.slug, todo.region.ags);
+	console.log('buffer', todo.ruleType.slug, todo.region.ags, `(${todo.bundesland.name})`);
 
 	let bbox = turf.bboxPolygon(todo.bundesland.bbox);
 	bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
@@ -64,8 +66,13 @@ simpleCluster(async runWorker => {
 		console.log('files', files);
 
 		if (files.length > 1) {
-			const filenameVRT = generateUnionVRT(files, todo.region.filenameBase + '.vrt');
+			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
+			await generateUnionVRT(files, filenameVRT);
 			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
+			
+			rmSync(filenameVRT);
+			files.forEach(file => rmSync(file));
+
 		} else {
 			renameSync(files[0], todo.filenameOut);
 		}
@@ -140,7 +147,7 @@ simpleCluster(async runWorker => {
 					await file.finish();
 					index++;
 					size = 0;
-					file = File();
+					file = await File();
 				}
 				await file.write(line + '\n');
 				cbWrite();
@@ -197,7 +204,7 @@ simpleCluster(async runWorker => {
 			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-f', 'GeoJSONSeq',
 			'-nlt', 'MultiPolygon',
-			'/vsistdout/', 'GeoJSONSeq:/vsigzip/' + filenameIn,
+			'/vsistdout/', wrapFileDriver(filenameIn),
 		]
 
 
@@ -243,6 +250,24 @@ simpleCluster(async runWorker => {
 		return filenameTmp;
 	}
 
+	function wrapFileDriver(filename) {
+		let gzip = false;
+		if (filename.endsWith('.gz')) {
+			gzip = true;
+			filename = filename.slice(0, -3);
+		}
+
+		let driver;
+		switch (extname(filename)) {
+			case '.geojsonl': driver = 'GeoJSONSeq:'; break;
+			case '.geojson': driver = 'GeoJSON:'; break;
+			case '.vrt': driver = ''; break;
+			default: throw Error(extname(filename))
+		}
+
+		return driver + (gzip ? '/vsigzip/' : '') + filename;
+	}
+
 	function cleanupFeature(feature) {
 		if (feature.geometry.type !== 'Polygon') throw Error(feature.geometry.type);
 		feature.geometry.coordinates = feature.geometry.coordinates.map(ring => {
@@ -259,9 +284,9 @@ simpleCluster(async runWorker => {
 	function generateUnionVRT(filenamesIn, filenameOut) {
 		let result = [];
 		result.push(`<OGRVRTDataSource>`);
-		result.push(`   <OGRVRTUnionLayer name="layer">`);
+		result.push(`   <OGRVRTUnionLayer name="${calcLayername(filename)}">`);
 		filenamesIn.forEach(filename => {
-			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}"><SrcDataSource>${filename}</SrcDataSource></OGRVRTLayer>`);
+			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}"><SrcDataSource>${wrapFileDriver(filename)}</SrcDataSource></OGRVRTLayer>`);
 		})
 		result.push(`   </OGRVRTUnionLayer>`);
 		result.push(`</OGRVRTDataSource>`);
