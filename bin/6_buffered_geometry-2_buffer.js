@@ -183,7 +183,7 @@ simpleCluster(true, async runWorker => {
 	}
 
 	function calcLayername(filename) {
-		return basename(filename).split('.').slice(0,-1).join('.');
+		return basename(filename).split('.').slice(0, -1).join('.');
 	}
 
 	async function unionAndClipFeatures(filenameIn, filenameOut) {
@@ -250,7 +250,8 @@ simpleCluster(true, async runWorker => {
 		return filenameTmp;
 	}
 
-	function wrapFileDriver(filename) {
+	function wrapFileDriver(filenameOriginal) {
+		let filename = filenameOriginal;
 		let gzip = false;
 		if (filename.endsWith('.gz')) {
 			gzip = true;
@@ -265,7 +266,7 @@ simpleCluster(true, async runWorker => {
 			default: throw Error(extname(filename))
 		}
 
-		return driver + (gzip ? '/vsigzip/' : '') + filename;
+		return driver + (gzip ? '/vsigzip/' : '') + filenameOriginal;
 	}
 
 	function cleanupFeature(feature) {
@@ -284,9 +285,11 @@ simpleCluster(true, async runWorker => {
 	function generateUnionVRT(filenamesIn, filenameOut) {
 		let result = [];
 		result.push(`<OGRVRTDataSource>`);
-		result.push(`   <OGRVRTUnionLayer name="${calcLayername(filename)}">`);
+		result.push(`   <OGRVRTUnionLayer name="${calcLayername(filenameOut)}">`);
 		filenamesIn.forEach(filename => {
-			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}"><SrcDataSource>${wrapFileDriver(filename)}</SrcDataSource></OGRVRTLayer>`);
+			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}">`)
+			result.push(`         <SrcDataSource>${wrapFileDriver(filename)}</SrcDataSource>`)
+			result.push(`      </OGRVRTLayer>`);
 		})
 		result.push(`   </OGRVRTUnionLayer>`);
 		result.push(`</OGRVRTDataSource>`);
