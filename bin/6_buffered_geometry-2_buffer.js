@@ -64,7 +64,7 @@ simpleCluster(async runWorker => {
 		console.log('files', files);
 
 		if (files.length > 1) {
-			const filenameVRT = generateUnionVRT(todo.region.filenameBase + '.vrt', files);
+			const filenameVRT = generateUnionVRT(files, todo.region.filenameBase + '.vrt');
 			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
 		} else {
 			renameSync(files[0], todo.filenameOut);
@@ -256,16 +256,16 @@ simpleCluster(async runWorker => {
 		})
 	}
 	
-	function generateUnionVRT(filenames) {
+	function generateUnionVRT(filenamesIn, filenameOut) {
 		let result = [];
 		result.push(`<OGRVRTDataSource>`);
 		result.push(`   <OGRVRTUnionLayer name="layer">`);
-		filenames.forEach(filename => {
+		filenamesIn.forEach(filename => {
 			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}"><SrcDataSource>${filename}</SrcDataSource></OGRVRTLayer>`);
 		})
 		result.push(`   </OGRVRTUnionLayer>`);
 		result.push(`</OGRVRTDataSource>`);
-		writeFileSync(filename, result.join('\n'));
+		writeFileSync(filenameOut, result.join('\n'));
 	}
 })
 
