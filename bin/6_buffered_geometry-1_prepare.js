@@ -26,7 +26,7 @@ let bundeslaender = getBundeslaender().map(bundesland => {
 
 
 let ruleTypes = config.ruleTypes.filter(ruleType => {
-	ruleType.filenameIn = config.getFilename.rulesGeoBasis(ruleType.slug + '.gpkg');
+	ruleType.filenameIn = config.getFilename.rulesGeoBasis(ruleType.slug + '.fgb');
 	ruleType.folderOut = config.getFilename.bufferedGeometry(ruleType.slug);
 	ruleType.regions = [];
 
