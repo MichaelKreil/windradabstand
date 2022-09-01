@@ -53,26 +53,26 @@ simpleCluster(async runWorker => {
 	if (todo.radius > 0) {
 		stream = stream.pipe(calcBuffer(todo.radius));
 		
-		const files = [];
+		const blockFilenames = [];
 		stream = stream.pipe(cutIntoBlocks(todo.region.filenameBase, async filename => {
 			await unionAndClipFeatures(filename);
-			files.push(filename);
+			blockFilenames.push(filename);
 		}))
 
 		await new Promise(res => stream.on('close', res))
 		
-		console.log('files', files);
+		console.log('files', blockFilenames);
 
-		if (files.length > 1) {
+		if (blockFilenames.length > 1) {
 			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
-			await generateUnionVRT(files, filenameVRT);
+			await generateUnionVRT(blockFilenames, filenameVRT);
 			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
 			
 			rmSync(filenameVRT);
-			files.forEach(file => rmSync(file));
+			blockFilenames.forEach(file => rmSync(file));
 
 		} else {
-			renameSync(files[0], todo.filenameOut);
+			renameSync(blockFilenames[0], todo.filenameOut);
 		}
 	} else {
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
