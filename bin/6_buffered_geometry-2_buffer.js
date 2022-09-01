@@ -5,7 +5,7 @@
 
 const { simpleCluster } = require('big-data-tools');
 const { resolve, dirname, basename, extname } = require('path');
-const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, writeFileSync } = require('fs');
+const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, writeFileSync, statSync } = require('fs');
 const { createGzip } = require('zlib');
 const { spawn } = require('child_process');
 const turf = require('@turf/turf');
@@ -285,9 +285,10 @@ simpleCluster(async runWorker => {
 		let result = [];
 		result.push(`<OGRVRTDataSource>`);
 		result.push(`   <OGRVRTUnionLayer name="${calcLayername(filenameOut)}">`);
-		filenamesIn.forEach(filename => {
-			result.push(`      <OGRVRTLayer name="${calcLayername(filename)}">`)
-			result.push(`         <SrcDataSource>${wrapFileDriver(filename)}</SrcDataSource>`)
+		filenamesIn.forEach(filenameIn => {
+			if (statSync(filenameIn).size <= 20) return; // ignore empty files
+			result.push(`      <OGRVRTLayer name="${calcLayername(filenameIn)}">`)
+			result.push(`         <SrcDataSource>${wrapFileDriver(filenameIn)}</SrcDataSource>`)
 			result.push(`      </OGRVRTLayer>`);
 		})
 		result.push(`   </OGRVRTUnionLayer>`);
