@@ -61,7 +61,7 @@ simpleCluster(true, async runWorker => {
 			files.push(filename);
 		}))
 
-		await new Promise(res => stream.on('finish', res))
+		await new Promise(res => stream.on('close', res))
 		
 		console.log('files', files);
 
@@ -155,6 +155,7 @@ simpleCluster(true, async runWorker => {
 			async function flush(cbFlush) {
 				await file.finish();
 				cbFlush();
+				setTimeout(() => stream.emit('close'), 1000);
 			}
 		)
 		return stream;
