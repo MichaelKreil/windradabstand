@@ -60,8 +60,6 @@ simpleCluster(async runWorker => {
 		}))
 
 		await new Promise(res => stream.on('close', res))
-		
-		console.log('files', blockFilenames);
 
 		if (blockFilenames.length > 1) {
 			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
@@ -296,88 +294,3 @@ simpleCluster(async runWorker => {
 		writeFileSync(filenameOut, result.join('\n'));
 	}
 })
-
-/*
-
-
-async function extractAndBuffer(bbox, radius, layerName, filenameIn, filenameOut) {
-	let filenameTmp = calcTemporaryFilename(filenameOut);
-	if (!filenameOut.endsWith('.geojsonl.gz')) throw Error('file extension must be .geojsonl.gz');
-
-
-	let spawnArgs = ['-spat']
-		.concat(bbox.map(v => v.toString()))
-		.concat(['-dialect', 'SQLite'])
-		.concat(['-sql', 'SELECT geom as geometry FROM ' + layerName]) // ignore all attributes
-		.concat(['-f', 'GeoJSONSeq'])
-		.concat(['/vsistdout/', filenameIn]);
-
-	let cp = spawn('ogr2ogr', spawnArgs);
-	cp.stderr.pipe(process.stderr);
-	cp.on('exit', code => {
-		if (code > 0) {
-			console.log({ spawnArgs });
-			throw Error();
-		}
-	})
-
-	let stream = cp.stdout;
-	if (radius > 0) {
-		stream = stream.pipe(miss.split());
-		stream = stream.pipe(miss.through.obj(function (line, enc, next) {
-			if (line.length === 0) return next();
-			let f0 = JSON.parse(line);
-			turf.flattenEach(f0, f1 => {
-				f1 = turf.buffer(f1, radius, { steps: 18 });
-				turf.flattenEach(f1, f2 => {
-					cleanupFeature(f2);
-					try {
-						f2 = turf.unkinkPolygon(f2);
-					} catch (e) {
-						console.dir(f2, { depth: 10 });
-						throw e;
-					}
-					f2.features.forEach(f3 => {
-						this.push(JSON.stringify(f3) + '\n');
-					})
-				})
-			})
-			next();
-		}))
-	}
-
-	stream = stream.pipe(createGzip())
-	stream = stream.pipe(createWriteStream(filenameTmp))
-
-	await new Promise(res => stream.on('close', res))
-
-	renameSync(filenameTmp, filenameOut);
-}
-
-async function clip(bundeslandFilename, filenameIn, filenameOut) {
-	if (!filenameOut.endsWith('.geojsonl.gz')) throw Error('file extension must be .geojsonl.gz');
-
-	let filenameTmp1 = calcTemporaryFilename(filenameOut);
-
-	let spawnArgs1 = [
-		//'--debug', 'ON',
-		'-clipdst', bundeslandFilename,
-		'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-		'--config', 'ATTRIBUTES_SKIP', 'YES',
-		'-f', 'GeoJSONSeq',
-		'/vsigzip/' + filenameTmp1, 'GeoJSONSeq:/vsigzip/' + filenameIn,
-	]
-	let cp1 = spawn('ogr2ogr', spawnArgs1);
-	cp1.stderr.pipe(process.stderr);
-	cp1.on('exit', code => {
-		if (code > 0) {
-			console.log({ todo, spawnArgs1 });
-			throw Error();
-		}
-	})
-
-	await new Promise(res => cp1.on('close', res))
-
-	renameSync(filenameTmp1, filenameOut);
-}
-*/
