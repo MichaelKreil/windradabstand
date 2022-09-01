@@ -89,21 +89,14 @@ simpleCluster(async runWorker => {
 
 		const layerName = calcLayername(filenameIn);
 
-		const spawnArgs = ['-spat']
-			.concat(bbox.map(v => v.toString()))
-			.concat(['-dialect', 'SQLite'])
-			.concat(['-sql', 'SELECT geometry FROM ' + layerName]) // ignore all attributes
-			.concat(['-f', 'GeoJSONSeq'])
-			.concat(['/vsistdout/', filenameIn]);
-
-		const cp = spawn('ogr2ogr', spawnArgs);
-		cp.stderr.pipe(process.stderr);
-		cp.on('exit', code => {
-			if (code > 0) {
-				console.log({ spawnArgs });
-				throw Error();
-			}
-		})
+		const cp = getOgr([
+			'-spat',
+			...(bbox.map(v => v.toString())),
+			'-dialect', 'SQLite',
+			'-sql', 'SELECT geometry FROM ' + layerName, // ignore all attributes
+			'-f', 'GeoJSONSeq',
+			'/vsistdout/', filenameIn,
+		]);
 
 		return cp.stdout.pipe(miss.split());
 	}
@@ -191,7 +184,7 @@ simpleCluster(async runWorker => {
 
 		let layerName = calcLayername(filenameIn);
 
-		let spawnArgsOGR = [
+		let cpOGR = getOgr([
 			//'--debug', 'ON',
 			'-skipfailures',
 			'-dialect', 'SQLite',
@@ -202,18 +195,7 @@ simpleCluster(async runWorker => {
 			'-f', 'GeoJSONSeq',
 			'-nlt', 'MultiPolygon',
 			'/vsistdout/', wrapFileDriver(filenameIn),
-		]
-
-
-		//console.log({ spawnArgs1, layerName, bundeslandFilename, filenameIn, filenameTmp1 });
-		let cpOGR = spawn('ogr2ogr', spawnArgsOGR);
-		cpOGR.stderr.pipe(process.stderr);
-		cpOGR.on('exit', code => {
-			if (code > 0) {
-				console.log({ spawnArgsOGR });
-				throw Error();
-			}
-		})
+		]);
 
 		let spawnArgsJQ = [
 			'-cr',
@@ -292,5 +274,20 @@ simpleCluster(async runWorker => {
 		result.push(`   </OGRVRTUnionLayer>`);
 		result.push(`</OGRVRTDataSource>`);
 		writeFileSync(filenameOut, result.join('\n'));
+	}
+
+	function getOgr(args) {
+		const ogr = spawn('ogr2ogr', args);
+		ogr.stderr.on('data', line => {
+			if (line.includes('Warning 1: VSIFSeekL(xxx, SEEK_END) may be really slow')) return;
+			process.stderr.write(line);
+		})
+		ogr.on('exit', code => {
+			if (code > 0) {
+				console.log({ args });
+				throw Error();
+			}
+		})
+		return ogr;
 	}
 })
