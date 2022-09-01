@@ -5,8 +5,8 @@
 
 const { simpleCluster } = require('big-data-tools');
 const { resolve, dirname, basename, extname } = require('path');
-const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, statSync, createReadStream, fstat, writeFileSync } = require('fs');
-const { createGzip, createGunzip } = require('zlib');
+const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, writeFileSync } = require('fs');
+const { createGzip } = require('zlib');
 const { spawn } = require('child_process');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
@@ -14,7 +14,7 @@ const config = require('../config.js');
 
 
 
-simpleCluster(true, async runWorker => {
+simpleCluster(async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -32,11 +32,9 @@ simpleCluster(true, async runWorker => {
 		})
 	})
 
-	todos = todos.slice(19);
-
 	todos = todos.filter(t => !existsSync(t.filenameOut));
 
-	await todos.forEachParallel(1, runWorker);
+	await todos.forEachParallel(runWorker);
 
 	console.log('finished')
 
