@@ -45,7 +45,7 @@ simpleCluster(true, async runWorker => {
 	console.log('buffer', todo.ruleType.slug, todo.region.ags, `(${todo.bundesland.name})`);
 
 	if (todo.radius > 0) {
-		let filenameIn = todo.filenameIn+'.fgb';
+		let filenameIn = todo.filenameIn + '.fgb';
 
 		let bbox = turf.bboxPolygon(todo.bundesland.bbox);
 		bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
@@ -63,7 +63,7 @@ simpleCluster(true, async runWorker => {
 		let stream = cp.stdout
 			.pipe(miss.split())
 			.pipe(calcBuffer(todo.radius));
-		
+
 		const blockFilenames = [];
 		stream = stream.pipe(cutIntoBlocks(
 			index => todo.region.filenameBase + '.block_' + index + '.geojsonl.gz',
@@ -80,7 +80,7 @@ simpleCluster(true, async runWorker => {
 			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
 			await generateUnionVRT(blockFilenames, filenameVRT);
 			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
-			
+
 			rmSync(filenameVRT);
 			blockFilenames.forEach(file => rmSync(file));
 
@@ -88,7 +88,7 @@ simpleCluster(true, async runWorker => {
 			renameSync(blockFilenames[0], todo.filenameOut);
 		}
 	} else {
-		let filenameIn = todo.filenameIn+'.gpkg';
+		let filenameIn = todo.filenameIn + '.gpkg';
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
 
 		const cp = getSpawn('ogr2ogr', [
@@ -221,9 +221,9 @@ simpleCluster(true, async runWorker => {
 		stream.pipe(cpJQ.stdin);
 		stream = cpJQ.stdout;
 
-		let filenameTmp = calcTemporaryFilename(filenameOut)+'.geojsonl.gz';
+		let filenameTmp = calcTemporaryFilename(filenameOut) + '.geojsonl.gz';
 		stream = stream.pipe(createGzip()).pipe(createWriteStream(filenameTmp));
-		
+
 		await new Promise(res => stream.on('close', res));
 
 		let cpOgrOut = getSpawn('ogr2ogr', [
