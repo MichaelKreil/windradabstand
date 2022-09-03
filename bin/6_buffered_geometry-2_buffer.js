@@ -6,11 +6,11 @@
 const { simpleCluster } = require('big-data-tools');
 const { resolve, dirname, basename, extname } = require('path');
 const { readFileSync, renameSync, rmSync, existsSync, writeFileSync, statSync, createWriteStream } = require('fs');
-const { spawn } = require('child_process');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
+const { getSpawn } = require('../lib/helper.js');
 
 
 
@@ -278,21 +278,5 @@ simpleCluster(true, async runWorker => {
 		result.push(`   </OGRVRTUnionLayer>`);
 		result.push(`</OGRVRTDataSource>`);
 		writeFileSync(filenameOut, result.join('\n'));
-	}
-
-	function getSpawn(command, args) {
-		const ogr = spawn(command, args);
-		ogr.stderr.on('data', line => {
-			line = line.toString();
-			if (line.includes('Warning 1: VSIFSeekL(xxx, SEEK_END) may be really slow')) return;
-			process.stderr.write(line);
-		})
-		ogr.on('exit', code => {
-			if (code > 0) {
-				console.log({ args });
-				throw Error();
-			}
-		})
-		return ogr;
 	}
 })
