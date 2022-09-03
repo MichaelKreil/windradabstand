@@ -5,16 +5,16 @@
 
 const { simpleCluster } = require('big-data-tools');
 const { resolve, dirname, basename, extname } = require('path');
-const { readFileSync, renameSync, createWriteStream, rmSync, existsSync, writeFileSync, statSync } = require('fs');
-const { createGzip } = require('zlib');
+const { readFileSync, renameSync, rmSync, existsSync, writeFileSync, statSync, createWriteStream } = require('fs');
 const { spawn } = require('child_process');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
+const { createGzip } = require('zlib');
 
 
 
-simpleCluster(async runWorker => {
+simpleCluster(true, async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -27,14 +27,15 @@ simpleCluster(async runWorker => {
 				region,
 				radius: region.radius / 1000,
 				filenameIn: ruleType.filenameIn,
-				filenameOut: region.filenameBase + '.geojsonl.gz',
+				filenameOut: region.filenameBase + '.gpkg',
 			})
 		})
 	})
 
 	todos = todos.filter(t => !existsSync(t.filenameOut));
+	todos = todos.slice(3);
 
-	await todos.forEachParallel(runWorker);
+	await todos.forEachParallel(1, runWorker);
 
 	console.log('finished')
 
@@ -44,20 +45,35 @@ simpleCluster(async runWorker => {
 
 	console.log('buffer', todo.ruleType.slug, todo.region.ags, `(${todo.bundesland.name})`);
 
-	let bbox = turf.bboxPolygon(todo.bundesland.bbox);
-	bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
-	bbox = turf.bbox(bbox);
-
-	let stream = readSource(todo.filenameIn, bbox); // read and split into lines
-	
 	if (todo.radius > 0) {
-		stream = stream.pipe(calcBuffer(todo.radius));
+		let filenameIn = todo.filenameIn+'.fgb';
+
+		let bbox = turf.bboxPolygon(todo.bundesland.bbox);
+		bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
+		bbox = turf.bbox(bbox);
+
+		const cp = getSpawn('ogr2ogr', [
+			'-spat',
+			...(bbox.map(v => v.toString())),
+			'-dialect', 'SQLite',
+			'-sql', 'SELECT geometry FROM ' + calcLayername(filenameIn),
+			'-f', 'GeoJSONSeq',
+			'/vsistdout/', filenameIn,
+		]);
+
+		let stream = cp.stdout
+			.pipe(miss.split())
+			.pipe(calcBuffer(todo.radius));
 		
 		const blockFilenames = [];
-		stream = stream.pipe(cutIntoBlocks(todo.region.filenameBase, async filename => {
-			await unionAndClipFeatures(filename);
-			blockFilenames.push(filename);
-		}))
+		stream = stream.pipe(cutIntoBlocks(
+			index => todo.region.filenameBase + '.block_' + index + '.geojsonl.gz',
+			async filenameIn => {
+				let filenameOut = todo.region.filenameBase + '.block_' + index + '.gpkg';
+				await unionAndClipFeatures(filenameIn, filenameOut);
+				blockFilenames.push(filenameOut);
+			}
+		))
 
 		await new Promise(res => stream.on('close', res))
 
@@ -73,32 +89,21 @@ simpleCluster(async runWorker => {
 			renameSync(blockFilenames[0], todo.filenameOut);
 		}
 	} else {
+		let filenameIn = todo.filenameIn+'.gpkg';
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
-		stream = stream
-			.pipe(miss.map(chunk => chunk + '\n'))
-			.pipe(createGzip())
-			.pipe(createWriteStream(filenameTmp));
 
-		await new Promise(res => stream.on('close', res))
-		renameSync(filenameTmp, todo.filenameOut);
-	}
-
-
-
-	function readSource(filenameIn, bbox) {
-
-		const layerName = calcLayername(filenameIn);
-
-		const cp = getOgr([
+		const cp = getSpawn('ogr2ogr', [
 			'-spat',
-			...(bbox.map(v => v.toString())),
+			...(todo.bundesland.bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + layerName, // ignore all attributes
-			'-f', 'GeoJSONSeq',
-			'/vsistdout/', filenameIn,
+			'-sql', 'SELECT geometry FROM ' + calcLayername(filenameIn),
+			'-clipsrc', todo.bundesland.filename,
+			filenameTmp, filenameIn,
 		]);
 
-		return cp.stdout.pipe(miss.split());
+		await new Promise(res => cp.on('close', res))
+
+		renameSync(filenameTmp, todo.filenameOut);
 	}
 
 	function calcBuffer(radius) {
@@ -124,7 +129,7 @@ simpleCluster(async runWorker => {
 		})
 	}
 
-	function cutIntoBlocks(templateFilename, asyncCb) {
+	function cutIntoBlocks(cbFilename, asyncCb) {
 		const maxSize = 1024 ** 3;
 		let size = 0;
 		let index = 0;
@@ -136,7 +141,7 @@ simpleCluster(async runWorker => {
 					await file.finish();
 					index++;
 					size = 0;
-					file = await File();
+					file = File();
 				}
 				await file.write(line + '\n');
 				cbWrite();
@@ -150,7 +155,7 @@ simpleCluster(async runWorker => {
 		return stream;
 
 		function File() {
-			const filename = templateFilename + '.block_' + index + '.geojsonl.gz';
+			const filename = cbFilename(index);
 			const gzipStream = createGzip();
 			const fileStream = createWriteStream(filename);
 			gzipStream.pipe(fileStream);
@@ -178,30 +183,26 @@ simpleCluster(async runWorker => {
 
 	async function unionAndClipFeatures(filenameIn, filenameOut) {
 		if (!filenameOut) filenameOut = filenameIn;
-		const filenameTmp = calcTemporaryFilename(filenameOut);
-
-		if (!filenameOut.endsWith('.geojsonl.gz')) throw Error('file extension must be .geojsonl.gz');
 
 		let layerName = calcLayername(filenameIn);
 
-		let cpOGR = getOgr([
-			//'--debug', 'ON',
+		let cpOgrIn = getSpawn('ogr2ogr', [
 			'-skipfailures',
 			'-dialect', 'SQLite',
 			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${layerName}"`,
 			'-clipdst', todo.bundesland.filename,
-			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
 			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-f', 'GeoJSONSeq',
 			'-nlt', 'MultiPolygon',
 			'/vsistdout/', wrapFileDriver(filenameIn),
 		]);
+		let stream = cpOgrIn.stdout;
 
 		let spawnArgsJQ = [
 			'-cr',
 			'.geometry | if .type != "MultiPolygon" then error("wrong type "+.type) else .coordinates[] | {type:"Feature",geometry:{type:"Polygon",coordinates:.}} | @json end'
 		]
-		let cpJQ = spawn('jq', spawnArgsJQ);
+		let cpJQ = getSpawn('jq', spawnArgsJQ);
 		cpJQ.stderr.pipe(process.stderr);
 		cpJQ.on('exit', code => {
 			if (code > 0) {
@@ -209,16 +210,19 @@ simpleCluster(async runWorker => {
 				throw Error();
 			}
 		})
+		stream.pipe(cpJQ.stdin);
+		stream = cpJQ.stdout;
 
-		cpOGR.stdout.pipe(cpJQ.stdin);
+		let filenameTmp = calcTemporaryFilename(filenameOut)+'.geojsonl.gz';
+		stream = stream.pipe(createGzip()).pipe(createWriteStream(filenameTmp));
+		
+		await new Promise(res => stream.on('close', res));
 
-		let stream = cpJQ.stdout
-			.pipe(createGzip())
-			.pipe(createWriteStream(filenameTmp))
-
-		await new Promise(res => stream.on('close', res))
-
-		renameSync(filenameTmp, filenameOut);
+		let cpOgrOut = getSpawn('ogr2ogr', [
+			filenameOut,
+			filenameTmp,
+		])
+		await new Promise(res => cpOgrOut.on('close', res));
 	}
 
 	function calcTemporaryFilename(filename) {
@@ -276,9 +280,10 @@ simpleCluster(async runWorker => {
 		writeFileSync(filenameOut, result.join('\n'));
 	}
 
-	function getOgr(args) {
-		const ogr = spawn('ogr2ogr', args);
+	function getSpawn(command, args) {
+		const ogr = spawn(command, args);
 		ogr.stderr.on('data', line => {
+			line = line.toString();
 			if (line.includes('Warning 1: VSIFSeekL(xxx, SEEK_END) may be really slow')) return;
 			process.stderr.write(line);
 		})
