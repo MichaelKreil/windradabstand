@@ -4,13 +4,12 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { resolve, dirname, basename, extname } = require('path');
-const { readFileSync, renameSync, rmSync, existsSync, writeFileSync, statSync, createWriteStream } = require('fs');
+const { readFileSync, renameSync, rmSync, existsSync, createWriteStream } = require('fs');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
-const { getSpawn } = require('../lib/helper.js');
+const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
 
 
 
@@ -56,9 +55,9 @@ simpleCluster(true, async runWorker => {
 			'-spat',
 			...(bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + calcLayername(filenameIn),
+			'-sql', 'SELECT geometry FROM ' + ogrCalcLayername(filenameIn),
 			'-f', 'GeoJSONSeq',
-			'/vsistdout/', filenameIn,
+			'/vsistdout/', ogrWrapFileDriver(filenameIn),
 		]);
 
 		let stream = cp.stdout
@@ -96,9 +95,9 @@ simpleCluster(true, async runWorker => {
 			'-spat',
 			...(todo.bundesland.bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + calcLayername(filenameIn),
+			'-sql', 'SELECT geometry FROM ' + ogrCalcLayername(filenameIn),
 			'-clipsrc', todo.bundesland.filename,
-			filenameTmp, filenameIn,
+			filenameTmp, ogrWrapFileDriver(filenameIn),
 		]);
 
 		await new Promise(res => cp.on('close', res))
@@ -127,6 +126,19 @@ simpleCluster(true, async runWorker => {
 			})
 			cb();
 		})
+
+		function cleanupFeature(feature) {
+			if (feature.geometry.type !== 'Polygon') throw Error(feature.geometry.type);
+			feature.geometry.coordinates = feature.geometry.coordinates.map(ring => {
+				let lastp = [];
+				return ring.filter(p => {
+					p = p.map(v => Math.round(v * 1e8) / 1e8);
+					if ((p[0] === lastp[0]) && (p[1] === lastp[1])) return false;
+					lastp = p;
+					return true;
+				})
+			})
+		}
 	}
 
 	function cutIntoBlocks(cbFilename, asyncCb) {
@@ -177,14 +189,10 @@ simpleCluster(true, async runWorker => {
 
 	}
 
-	function calcLayername(filename) {
-		return basename(filename).split('.').slice(0, -1).join('.');
-	}
-
 	async function unionAndClipFeatures(filenameIn, filenameOut) {
 		if (!filenameOut) filenameOut = filenameIn;
 
-		let layerName = calcLayername(filenameIn);
+		let layerName = ogrCalcLayername(filenameIn);
 
 		let cpOgrIn = getSpawn('ogr2ogr', [
 			'-skipfailures',
@@ -194,7 +202,7 @@ simpleCluster(true, async runWorker => {
 			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-f', 'GeoJSONSeq',
 			'-nlt', 'MultiPolygon',
-			'/vsistdout/', wrapFileDriver(filenameIn),
+			'/vsistdout/', ogrWrapFileDriver(filenameIn),
 		]);
 		let stream = cpOgrIn.stdout;
 
@@ -223,60 +231,5 @@ simpleCluster(true, async runWorker => {
 			filenameTmp,
 		])
 		await new Promise(res => cpOgrOut.on('close', res));
-	}
-
-	function calcTemporaryFilename(filename) {
-		let dir = dirname(filename);
-		let name = basename(filename);
-		let filenameTmp = resolve(dir, 'tmp-' + name);
-		if (existsSync(filenameTmp)) rmSync(filenameTmp);
-		return filenameTmp;
-	}
-
-	function wrapFileDriver(filenameOriginal) {
-		let filename = filenameOriginal;
-		let gzip = false;
-		if (filename.endsWith('.gz')) {
-			gzip = true;
-			filename = filename.slice(0, -3);
-		}
-
-		let driver;
-		switch (extname(filename)) {
-			case '.geojsonl': driver = 'GeoJSONSeq:'; break;
-			case '.geojson': driver = 'GeoJSON:'; break;
-			case '.vrt': driver = ''; break;
-			default: throw Error(extname(filename))
-		}
-
-		return driver + (gzip ? '/vsigzip/' : '') + filenameOriginal;
-	}
-
-	function cleanupFeature(feature) {
-		if (feature.geometry.type !== 'Polygon') throw Error(feature.geometry.type);
-		feature.geometry.coordinates = feature.geometry.coordinates.map(ring => {
-			let lastp = [];
-			return ring.filter(p => {
-				p = p.map(v => Math.round(v * 1e8) / 1e8);
-				if ((p[0] === lastp[0]) && (p[1] === lastp[1])) return false;
-				lastp = p;
-				return true;
-			})
-		})
-	}
-	
-	function generateUnionVRT(filenamesIn, filenameOut) {
-		let result = [];
-		result.push(`<OGRVRTDataSource>`);
-		result.push(`   <OGRVRTUnionLayer name="${calcLayername(filenameOut)}">`);
-		filenamesIn.forEach(filenameIn => {
-			if (statSync(filenameIn).size <= 20) return; // ignore empty files
-			result.push(`      <OGRVRTLayer name="${calcLayername(filenameIn)}">`)
-			result.push(`         <SrcDataSource>${wrapFileDriver(filenameIn)}</SrcDataSource>`)
-			result.push(`      </OGRVRTLayer>`);
-		})
-		result.push(`   </OGRVRTUnionLayer>`);
-		result.push(`</OGRVRTDataSource>`);
-		writeFileSync(filenameOut, result.join('\n'));
 	}
 })
