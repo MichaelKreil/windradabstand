@@ -10,7 +10,7 @@ const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
 const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
-const { ogrCalcLayername, ogrWrapFileDriver, generateUnionVRT } = require('../lib/geohelper.js')
+const { ogrCalcLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
 
 
 
@@ -72,7 +72,7 @@ simpleCluster(async runWorker => {
 			index => todo.region.filenameBase + '.block_' + index + '.geojsonl.gz',
 			async (filenameTmp, index) => {
 				let filenameOut = todo.region.filenameBase + '.block_' + index + '.gpkg';
-				await unionAndClipFeatures(filenameTmp, filenameOut);
+				await unionAndClipFeatures(filenameTmp, todo.bundesland.filename, filenameOut);
 				rmSync(filenameTmp);
 
 				if (existsSync(filenameOut)) blockFilenames.push(filenameOut);
@@ -86,7 +86,7 @@ simpleCluster(async runWorker => {
 		} else if (blockFilenames.length > 1) {
 			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
 			await generateUnionVRT(blockFilenames, filenameVRT);
-			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
+			await unionAndClipFeatures(filenameVRT, todo.bundesland.filename, todo.filenameOut);
 
 			rmSync(filenameVRT);
 			blockFilenames.forEach(file => rmSync(file));
@@ -107,6 +107,7 @@ simpleCluster(async runWorker => {
 			'-sql', 'SELECT geom FROM ' + ogrCalcLayername(filenameIn),
 			'-clipsrc', todo.bundesland.filename,
 			'-nlt', 'MULTIPOLYGON',
+			'-nln', ogrCalcLayername(todo.filenameOut),
 			filenameTmp,
 			ogrWrapFileDriver(filenameIn),
 		]);
@@ -199,62 +200,5 @@ simpleCluster(async runWorker => {
 			return { write, finish }
 		}
 
-	}
-
-	async function unionAndClipFeatures(filenameIn, filenameOut) {
-		if (!filenameOut) filenameOut = filenameIn;
-
-		let layerName = ogrCalcLayername(filenameIn);
-
-		let cpOgrIn = getSpawn('ogr2ogr', [
-			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-			'--config', 'ATTRIBUTES_SKIP', 'YES',
-			'-skipfailures',
-			'-dialect', 'SQLite',
-			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${layerName}"`,
-			'-clipdst', todo.bundesland.filename,
-			'-f', 'GeoJSONSeq',
-			'-nlt', 'MultiPolygon',
-			'/vsistdout/',
-			ogrWrapFileDriver(filenameIn),
-		]);
-		let stream = cpOgrIn.stdout;
-
-		let spawnArgsJQ = [
-			'-cr',
-			'.geometry | if .type != "MultiPolygon" then error("wrong type "+.type) else .coordinates[] | {type:"Feature",geometry:{type:"Polygon",coordinates:.}} | @json end'
-		]
-		let cpJQ = getSpawn('jq', spawnArgsJQ);
-		cpJQ.stderr.pipe(process.stderr);
-		cpJQ.on('exit', code => {
-			if (code > 0) {
-				console.log({ spawnArgsJQ });
-				throw Error();
-			}
-		})
-		stream.pipe(cpJQ.stdin);
-		stream = cpJQ.stdout;
-
-		let filenameTmp = calcTemporaryFilename(filenameOut) + '.geojsonl.gz';
-		stream = stream.pipe(createGzip()).pipe(createWriteStream(filenameTmp));
-
-		await new Promise(res => stream.on('close', res));
-
-
-
-		if (statSync(filenameTmp).size > 20) {
-			let cpOgrOut = getSpawn('ogr2ogr', [
-				'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-				'--config', 'ATTRIBUTES_SKIP', 'YES',
-				'-nln', ogrCalcLayername(filenameOut),
-				'-lco', 'GEOMETRY_NAME=geometry',
-				filenameOut,
-				ogrWrapFileDriver(filenameTmp),
-			])
-
-			await new Promise(res => cpOgrOut.on('close', res));
-		}
-
-		rmSync(filenameTmp);
 	}
 })
