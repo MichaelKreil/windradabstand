@@ -15,7 +15,7 @@ async function start(opt) {
 	const filenameIn = config.getFilename.static('seismessstationen.tsv');
 	const ruleTypes = ['seismisch'];
 	const filenameGeoJSON = config.getFilename.rulesGeoBasis('seismisch.geojsonl.gz');
-	const filenameFGB = config.getFilename.rulesGeoBasis('seismisch')+'.fgb';
+	const filenameOut = config.getFilename.rulesGeoBasis('seismisch');
 
 	console.log('process seismisch');
 
@@ -42,5 +42,6 @@ async function start(opt) {
 	result = zlib.gzipSync(Buffer.from(result.join('')));
 	fs.writeFileSync(filenameGeoJSON, result);
 	
-	convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameFGB);
+	convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.fgb');
+	convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.gpkg');
 }

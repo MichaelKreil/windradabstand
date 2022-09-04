@@ -244,6 +244,7 @@ simpleCluster(async runWorker => {
 				'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
 				'--config', 'ATTRIBUTES_SKIP', 'YES',
 				'-nln', ogrCalcLayername(filenameOut),
+				'-lco', 'GEOMETRY_NAME=geometry',
 				filenameOut,
 				ogrWrapFileDriver(filenameTmp),
 			])
