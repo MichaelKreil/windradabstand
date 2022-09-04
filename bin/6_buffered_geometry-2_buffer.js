@@ -81,7 +81,9 @@ simpleCluster(async runWorker => {
 
 		await new Promise(res => stream.on('close', res))
 
-		if (blockFilenames.length > 1) {
+		if (blockFilenames.length === 0) {
+			// do nothing
+		} else if (blockFilenames.length > 1) {
 			const filenameVRT = calcTemporaryFilename(todo.region.filenameBase + '.vrt');
 			await generateUnionVRT(blockFilenames, filenameVRT);
 			await unionAndClipFeatures(filenameVRT, todo.filenameOut);
@@ -104,6 +106,7 @@ simpleCluster(async runWorker => {
 			'-dialect', 'SQLite',
 			'-sql', 'SELECT geom FROM ' + ogrCalcLayername(filenameIn),
 			'-clipsrc', todo.bundesland.filename,
+			'-nlt', 'MULTIPOLYGON',
 			filenameTmp,
 			ogrWrapFileDriver(filenameIn),
 		]);
