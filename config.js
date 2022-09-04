@@ -236,8 +236,8 @@ const config = {
 	],
 	ruleTypes: [
 		// gebaeudeflaeche
-		{ slug: 'gebaeude', name: 'sonstige Gebäude', default: 0 },
 		{ slug: 'wohngebaeude', name: 'Einzelwohngebäude und Splittersiedlungen', default: 400 }, // Lärmschutz
+		{ slug: 'gebaeude', name: 'sonstige Gebäude', default: 0 },
 
 		// siedlungsflaeche
 		{ slug: 'wohngebiet', name: 'Allgemeine und reine Wohngebiete', default: 0 }, // Lärmschutz

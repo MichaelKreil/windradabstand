@@ -4,16 +4,17 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { readFileSync, renameSync, rmSync, existsSync, createWriteStream } = require('fs');
+const { readFileSync, renameSync, rmSync, existsSync, createWriteStream, statSync } = require('fs');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
 const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
+const { ogrCalcLayername, ogrWrapFileDriver, generateUnionVRT } = require('../lib/geohelper.js')
 
 
 
-simpleCluster(true, async runWorker => {
+simpleCluster(async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -32,9 +33,8 @@ simpleCluster(true, async runWorker => {
 	})
 
 	todos = todos.filter(t => !existsSync(t.filenameOut));
-	todos = todos.slice(3);
 
-	await todos.forEachParallel(1, runWorker);
+	await todos.forEachParallel(runWorker);
 
 	console.log('finished')
 
@@ -52,12 +52,15 @@ simpleCluster(true, async runWorker => {
 		bbox = turf.bbox(bbox);
 
 		const cp = getSpawn('ogr2ogr', [
+			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-spat',
 			...(bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
 			'-sql', 'SELECT geometry FROM ' + ogrCalcLayername(filenameIn),
 			'-f', 'GeoJSONSeq',
-			'/vsistdout/', ogrWrapFileDriver(filenameIn),
+			'/vsistdout/',
+			ogrWrapFileDriver(filenameIn),
 		]);
 
 		let stream = cp.stdout
@@ -67,10 +70,12 @@ simpleCluster(true, async runWorker => {
 		const blockFilenames = [];
 		stream = stream.pipe(cutIntoBlocks(
 			index => todo.region.filenameBase + '.block_' + index + '.geojsonl.gz',
-			async filenameIn => {
+			async (filenameTmp, index) => {
 				let filenameOut = todo.region.filenameBase + '.block_' + index + '.gpkg';
-				await unionAndClipFeatures(filenameIn, filenameOut);
-				blockFilenames.push(filenameOut);
+				await unionAndClipFeatures(filenameTmp, filenameOut);
+				rmSync(filenameTmp);
+
+				if (existsSync(filenameOut)) blockFilenames.push(filenameOut);
 			}
 		))
 
@@ -92,12 +97,15 @@ simpleCluster(true, async runWorker => {
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
 
 		const cp = getSpawn('ogr2ogr', [
+			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-spat',
 			...(todo.bundesland.bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + ogrCalcLayername(filenameIn),
+			'-sql', 'SELECT geom FROM ' + ogrCalcLayername(filenameIn),
 			'-clipsrc', todo.bundesland.filename,
-			filenameTmp, ogrWrapFileDriver(filenameIn),
+			filenameTmp,
+			ogrWrapFileDriver(filenameIn),
 		]);
 
 		await new Promise(res => cp.on('close', res))
@@ -146,7 +154,8 @@ simpleCluster(true, async runWorker => {
 		let size = 0;
 		let index = 0;
 		let file = File();
-		stream = miss.to.obj(
+
+		let stream = miss.to.obj(
 			async function write(line, enc, cbWrite) {
 				size += line.length;
 				if (size >= maxSize) {
@@ -181,7 +190,7 @@ simpleCluster(true, async runWorker => {
 					fileStream.once('close', res);
 					gzipStream.end()
 				})
-				await asyncCb(filename);
+				await asyncCb(filename, index);
 			}
 
 			return { write, finish }
@@ -195,14 +204,16 @@ simpleCluster(true, async runWorker => {
 		let layerName = ogrCalcLayername(filenameIn);
 
 		let cpOgrIn = getSpawn('ogr2ogr', [
+			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-skipfailures',
 			'-dialect', 'SQLite',
 			'-sql', `SELECT ST_Union(geometry) AS geometry FROM "${layerName}"`,
 			'-clipdst', todo.bundesland.filename,
-			'--config', 'ATTRIBUTES_SKIP', 'YES',
 			'-f', 'GeoJSONSeq',
 			'-nlt', 'MultiPolygon',
-			'/vsistdout/', ogrWrapFileDriver(filenameIn),
+			'/vsistdout/',
+			ogrWrapFileDriver(filenameIn),
 		]);
 		let stream = cpOgrIn.stdout;
 
@@ -226,10 +237,20 @@ simpleCluster(true, async runWorker => {
 
 		await new Promise(res => stream.on('close', res));
 
-		let cpOgrOut = getSpawn('ogr2ogr', [
-			filenameOut,
-			filenameTmp,
-		])
-		await new Promise(res => cpOgrOut.on('close', res));
+
+
+		if (statSync(filenameTmp).size > 20) {
+			let cpOgrOut = getSpawn('ogr2ogr', [
+				'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+				'--config', 'ATTRIBUTES_SKIP', 'YES',
+				'-nln', ogrCalcLayername(filenameOut),
+				filenameOut,
+				ogrWrapFileDriver(filenameTmp),
+			])
+
+			await new Promise(res => cpOgrOut.on('close', res));
+		}
+
+		rmSync(filenameTmp);
 	}
 })
