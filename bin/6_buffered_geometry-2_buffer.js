@@ -10,7 +10,7 @@ const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
 const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
-const { ogrCalcLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
+const { ogrGuessLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
 
 
 
@@ -57,7 +57,7 @@ simpleCluster(async runWorker => {
 			'-spat',
 			...(bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + ogrCalcLayername(filenameIn),
+			'-sql', 'SELECT geometry FROM ' + ogrGuessLayername(filenameIn),
 			'-f', 'GeoJSONSeq',
 			'/vsistdout/',
 			ogrWrapFileDriver(filenameIn),
@@ -104,10 +104,11 @@ simpleCluster(async runWorker => {
 			'-spat',
 			...(todo.bundesland.bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geom FROM ' + ogrCalcLayername(filenameIn),
+			'-sql', 'SELECT geom FROM ' + ogrGuessLayername(filenameIn),
 			'-clipdst', todo.bundesland.filename,
 			'-nlt', 'MULTIPOLYGON',
-			'-nln', ogrCalcLayername(todo.filenameOut),
+			'-nln', 'layer',
+			'-lco', 'GEOMETRY_NAME=geometry',
 			filenameTmp,
 			ogrWrapFileDriver(filenameIn),
 		]);
