@@ -105,7 +105,7 @@ simpleCluster(async runWorker => {
 			...(todo.bundesland.bbox.map(v => v.toString())),
 			'-dialect', 'SQLite',
 			'-sql', 'SELECT geom FROM ' + ogrCalcLayername(filenameIn),
-			'-clipsrc', todo.bundesland.filename,
+			'-clipdst', todo.bundesland.filename,
 			'-nlt', 'MULTIPOLYGON',
 			'-nln', ogrCalcLayername(todo.filenameOut),
 			filenameTmp,
