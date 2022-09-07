@@ -9,7 +9,7 @@ const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { createGzip } = require('zlib');
-const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
+const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
 const { ogrGuessLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
 
 
@@ -45,7 +45,7 @@ simpleCluster(async runWorker => {
 	console.log('buffer', todo.ruleType.slug, todo.region.ags, `(${todo.bundesland.name})`);
 
 	if (todo.radius > 0) {
-		let filenameIn = todo.filenameIn + '.fgb';
+		let filenameIn = todo.filenameIn + '.gpkg';
 
 		let bbox = turf.bboxPolygon(todo.bundesland.bbox);
 		bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
@@ -158,48 +158,26 @@ simpleCluster(async runWorker => {
 		const maxSize = 1024 ** 3;
 		let size = 0;
 		let index = 0;
-		let file = File();
+		let file = GzipFileWriter(cbFilename(index));
 
 		let stream = miss.to.obj(
 			async function write(line, enc, cbWrite) {
 				size += line.length;
 				if (size >= maxSize) {
-					await file.finish();
+					await file.close();
 					index++;
 					size = 0;
-					file = File();
+					file = GzipFileWriter(cbFilename(index));
 				}
 				await file.write(line + '\n');
 				cbWrite();
 			},
 			async function flush(cbFlush) {
-				await file.finish();
+				await file.close();
 				cbFlush();
 				setTimeout(() => stream.emit('close'), 1000);
 			}
 		)
 		return stream;
-
-		function File() {
-			const filename = cbFilename(index);
-			const gzipStream = createGzip();
-			const fileStream = createWriteStream(filename);
-			gzipStream.pipe(fileStream);
-
-			const write = chunk => new Promise(res => {
-				if (gzipStream.write(chunk)) return res();
-				gzipStream.once('drain', res);
-			})
-			const finish = async () => {
-				await new Promise(res => {
-					fileStream.once('close', res);
-					gzipStream.end()
-				})
-				await asyncCb(filename, index);
-			}
-
-			return { write, finish }
-		}
-
 	}
 })

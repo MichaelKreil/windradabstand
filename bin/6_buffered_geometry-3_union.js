@@ -50,7 +50,7 @@ simpleCluster(async runWorker => {
 
 	const filenameVRT = todo.filenameBase + '.vrt';
 	await generateUnionVRT(todo.filesIn, filenameVRT);
-	await unionAndClipFeatures(filenameVRT, todo.filename, todo.filenameOut)
+	await unionAndClipFeaturesDC(filenameVRT, todo.filename, todo.filenameOut)
 	rmSync(filenameVRT);
 })
 
