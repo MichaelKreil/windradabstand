@@ -5,7 +5,6 @@ const { simpleCluster } = require('big-data-tools');
 const { readFileSync, existsSync, mkdirSync, rmSync } = require('fs');
 const config = require('../config.js');
 const { resolve } = require('path');
-const {  } = require('../lib/helper');
 const { generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper');
 
 
@@ -17,37 +16,41 @@ simpleCluster(async runWorker => {
 
 	let { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
-	bundeslaender = new Map(bundeslaender.map(b => {
+	bundeslaender.forEach(b => {
 		b.filenameBase = resolve(outputFolder, b.ags + '');
+		b.filenameOut = b.filenameBase + '.gpkg'
 		b.filesIn = [];
-		return [b.ags, b]
-	}));
+	});
+
+	bundeslaender = new Map(bundeslaender.map(b => [b.ags, b]));
+
 	ruleTypes.forEach(ruleType => {
 		ruleType.regions.forEach(region => {
 			let index = region.ags;
-			let filenameOut = region.filenameBase + '.gpkg';
+			let filenameIn = region.filenameBase + '.gpkg';
 
-			if (!existsSync(filenameOut)) return;
-			bundeslaender.get(index).filesIn.push(filenameOut);
+			if (!existsSync(filenameIn)) return;
+			bundeslaender.get(index).filesIn.push(filenameIn);
 		})
 	})
 
 	bundeslaender = Array.from(bundeslaender.values());
-
+	
+	bundeslaender = bundeslaender.filter(b => !existsSync(b.filenameOut));
 	//bundeslaender = bundeslaender.filter(b => b.ags === 4);
 
-	await bundeslaender.forEachParallel(runWorker);
+	await bundeslaender.forEachParallel(1, runWorker);
 
 	console.log('finished')
 
 	process.exit();
 
 }, async todo => {
-	console.log(todo);
+	console.log(todo.name);
 
 	const filenameVRT = todo.filenameBase + '.vrt';
 	await generateUnionVRT(todo.filesIn, filenameVRT);
-	await unionAndClipFeatures(filenameVRT, todo.filename, todo.filenameBase + '.gpkg')
+	await unionAndClipFeatures(filenameVRT, todo.filename, todo.filenameOut)
 	rmSync(filenameVRT);
 })
 
