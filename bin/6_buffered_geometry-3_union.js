@@ -5,7 +5,7 @@ const { simpleCluster } = require('big-data-tools');
 const { readFileSync, existsSync, mkdirSync, rmSync } = require('fs');
 const config = require('../config.js');
 const { resolve } = require('path');
-const { generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper');
+const { generateUnionVRT, unionAndClipFeaturesDC } = require('../lib/geohelper');
 
 
 // union geometry per bundesland
