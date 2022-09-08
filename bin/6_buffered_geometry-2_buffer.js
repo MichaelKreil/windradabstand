@@ -9,12 +9,12 @@ const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
-const { ogrGetLayername, ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js');
+const { ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, generateUnionVRT, unionAndClipFeatures, ogrGenerateSQL } = require('../lib/geohelper.js');
 const { createGzip } = require('zlib');
 
 
 
-simpleCluster(async runWorker => {
+simpleCluster(true, async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -34,7 +34,7 @@ simpleCluster(async runWorker => {
 
 	todos = todos.filter(t => !existsSync(t.filenameOut));
 
-	await todos.forEachParallel(runWorker);
+	await todos.forEachParallel(1, runWorker);
 
 	console.log('finished')
 
@@ -56,15 +56,16 @@ simpleCluster(async runWorker => {
 			let stream = ogrLoadGpkgAsGeojsonStream(filenameIn, {
 				dropProperties: true,
 				bbox,
-				layername: todo.ruleType.slug,
 			});
 			stream = stream
-			.pipe(miss.split())
+				.pipe(miss.split())
 				.pipe(calcBuffer(todo.radius))
 				.pipe(createGzip())
 				.pipe(createWriteStream(filenameTmp));
 			await new Promise(res => stream.once('close', () => res()));
 		}
+
+		return;
 
 		const blockFilenames = [];
 		stream = stream.pipe(cutIntoBlocks(
@@ -94,17 +95,35 @@ simpleCluster(async runWorker => {
 			renameSync(blockFilenames[0], todo.filenameOut);
 		}
 	} else {
+		throw Error();
 		let filenameIn = todo.filenameIn + '.gpkg';
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
 
-		const cp = getSpawn('ogr2ogr', [
+		let args = [
 			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
 			'--config', 'ATTRIBUTES_SKIP', 'YES',
-			'-spat',
-			...(todo.bundesland.bbox.map(v => v.toString())),
+			'-a_srs', 'EPSG:4326',
 			'-dialect', 'SQLite',
-			'-sql', 'SELECT geom FROM ' + ogrGetLayername(filenameIn),
-			'-clipdst', todo.bundesland.filename,
+			'-sql', ogrGenerateSQL(opt),
+		];
+		if (filenameClip) args.push('-clipdst', filenameClip);
+		args.push(
+			'-f', 'GeoJSONSeq',
+			'-nlt', 'MultiPolygon',
+			'/vsistdout/',
+			ogrWrapFileDriver(filenameIn),
+		)
+	
+		let cp = getSpawn('ogr2ogr', [
+			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
+			'--config', 'ATTRIBUTES_SKIP', 'YES',
+			'-a_srs', 'EPSG:4326',
+			'-dialect', 'SQLite',
+			'-sql', ogrGenerateSQL({
+				dropProperties:true,
+				bbox:todo.bundesland.bbox,
+				clipping:todo.bundesland.filename,
+			}),
 			'-nlt', 'MULTIPOLYGON',
 			'-nln', 'layer',
 			'-lco', 'GEOMETRY_NAME=geometry',
