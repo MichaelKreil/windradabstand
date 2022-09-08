@@ -79,7 +79,7 @@ simpleCluster(async runWorker => {
 			}
 		))
 
-		await new Promise(res => stream.on('close', res))
+		await new Promise(res => stream.once('close', res))
 
 		if (blockFilenames.length === 0) {
 			// do nothing
@@ -113,7 +113,7 @@ simpleCluster(async runWorker => {
 			ogrWrapFileDriver(filenameIn),
 		]);
 
-		await new Promise(res => cp.on('close', res))
+		await new Promise(res => cp.once('close', res))
 
 		renameSync(filenameTmp, todo.filenameOut);
 	}

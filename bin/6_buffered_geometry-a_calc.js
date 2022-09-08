@@ -100,7 +100,7 @@ simpleCluster(async function (runWorker) {
 			if (fs.existsSync(filename + '.gpkg')) fs.rmSync(filename + '.gpkg');
 
 			let cp = child_process.spawn('ogr2ogr', ['-progress', filename + '.gpkg', filename + '.vrt'])
-			cp.on('close', res);
+			cp.once('close', res);
 			cp.stderr.pipe(process.stderr);
 			if (progress) cp.stdout.pipe(process.stdout);
 		})
