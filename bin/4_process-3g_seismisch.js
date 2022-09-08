@@ -42,6 +42,6 @@ async function start(opt) {
 	result = zlib.gzipSync(Buffer.from(result.join('')));
 	fs.writeFileSync(filenameGeoJSON, result);
 	
-	//convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.fgb');
-	convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.gpkg');
+	//await convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.fgb');
+	await convertGzippedGeoJSONSeq2Anything(filenameGeoJSON, filenameOut+'.gpkg');
 }
