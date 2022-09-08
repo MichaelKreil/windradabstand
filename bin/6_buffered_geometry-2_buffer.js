@@ -4,12 +4,13 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { readFileSync, renameSync, rmSync, existsSync } = require('fs');
+const { readFileSync, renameSync, rmSync, existsSync, createWriteStream } = require('fs');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
-const { ogrGuessLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
+const { ogrGetLayername, ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js');
+const { createGzip } = require('zlib');
 
 
 
@@ -50,21 +51,20 @@ simpleCluster(async runWorker => {
 		bbox = turf.buffer(bbox, todo.radius, { steps: 18 });
 		bbox = turf.bbox(bbox);
 
-		const cp = getSpawn('ogr2ogr', [
-			'--config', 'CPL_VSIL_GZIP_WRITE_PROPERTIES', 'NO',
-			'--config', 'ATTRIBUTES_SKIP', 'YES',
-			'-spat',
-			...(bbox.map(v => v.toString())),
-			'-dialect', 'SQLite',
-			'-sql', 'SELECT geometry FROM ' + ogrGuessLayername(filenameIn),
-			'-f', 'GeoJSONSeq',
-			'/vsistdout/',
-			ogrWrapFileDriver(filenameIn),
-		]);
-
-		let stream = cp.stdout
+		let filenameTmp = todo.region.filenameBase + '.tmp.geojsonl.gz';
+		if (!existsSync(filenameTmp)) {
+			let stream = ogrLoadGpkgAsGeojsonStream(filenameIn, {
+				dropProperties: true,
+				bbox,
+				layername: todo.ruleType.slug,
+			});
+			stream = stream
 			.pipe(miss.split())
-			.pipe(calcBuffer(todo.radius));
+				.pipe(calcBuffer(todo.radius))
+				.pipe(createGzip())
+				.pipe(createWriteStream(filenameTmp));
+			await new Promise(res => stream.once('close', () => res()));
+		}
 
 		const blockFilenames = [];
 		stream = stream.pipe(cutIntoBlocks(
@@ -132,7 +132,7 @@ simpleCluster(async runWorker => {
 						throw e;
 					}
 					f2.features.forEach(f3 => {
-						this.push(JSON.stringify(f3));
+						this.push(JSON.stringify(f3)+'\n');
 					})
 				})
 			})
