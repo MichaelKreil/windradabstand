@@ -4,11 +4,10 @@
 
 
 const { simpleCluster } = require('big-data-tools');
-const { readFileSync, renameSync, rmSync, existsSync, createWriteStream, statSync } = require('fs');
+const { readFileSync, renameSync, rmSync, existsSync } = require('fs');
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
-const { createGzip } = require('zlib');
 const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
 const { ogrGuessLayername, ogrWrapFileDriver, generateUnionVRT, unionAndClipFeatures } = require('../lib/geohelper.js')
 
