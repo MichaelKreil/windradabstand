@@ -5,7 +5,7 @@ const { simpleCluster } = require('big-data-tools');
 const { readFileSync, existsSync, mkdirSync, rmSync } = require('fs');
 const config = require('../config.js');
 const { resolve } = require('path');
-const { generateUnionVRT, unionAndClipFeaturesDC } = require('../lib/geohelper');
+const { mergeFiles, unionAndClipFeaturesDC } = require('../lib/geohelper');
 
 
 // union geometry per bundesland
@@ -39,7 +39,7 @@ simpleCluster(async runWorker => {
 	bundeslaender = bundeslaender.filter(b => !existsSync(b.filenameOut));
 	//bundeslaender = bundeslaender.filter(b => b.ags === 4);
 
-	await bundeslaender.forEachParallel(1, runWorker);
+	await bundeslaender.forEachParallel(runWorker);
 
 	console.log('finished')
 
@@ -48,9 +48,9 @@ simpleCluster(async runWorker => {
 }, async todo => {
 	console.log(todo.name);
 
-	const filenameVRT = todo.filenameBase + '.vrt';
-	await generateUnionVRT(todo.filesIn, filenameVRT);
-	await unionAndClipFeaturesDC(filenameVRT, todo.filename, todo.filenameOut)
-	rmSync(filenameVRT);
+	const filenameJoin = todo.filenameBase + '.join.gpkg';
+	if (!existsSync(filenameJoin)) await mergeFiles(todo.filesIn, filenameJoin);
+	await unionAndClipFeaturesDC(filenameJoin, todo.filename, todo.filenameOut);
+	rmSync(filenameJoin);
 })
 
