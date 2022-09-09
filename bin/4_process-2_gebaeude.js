@@ -17,9 +17,11 @@ processAlkis({
 	ruleTypes: 'wohngebaeude,gebaeude'.split(','),
 	filenameIn: config.getFilename.alkisGeo('gebaeudeflaeche.fgb'),
 	cbFeature: feature => {
+		if (feature.properties.hoehe && (feature.properties.hoehe <= 2.5)) return;
+		if (turf.area(feature) > 1e6) return;
+
 		let residential = isResidential.get(feature.properties.gebaeudefunktion)
 		if (residential === undefined) throw Error(`Gebäudefunktion "${feature.properties.gebaeudefunktion}" unbekannt`);
-		if (turf.area(feature) > 1e6) return;
 
 		if (residential) {
 			let p = turf.pointOnFeature(feature).geometry.coordinates;
