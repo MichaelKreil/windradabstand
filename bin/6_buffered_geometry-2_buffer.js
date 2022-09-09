@@ -70,8 +70,8 @@ simpleCluster(true, async runWorker => {
 		}
 
 		let filenameTmp = todo.region.filenameBase + '.tmp.gpkg';
-		if (!filenameTmp) {}
-		await convertGzippedGeoJSONSeq2Anything(filenameGeoGz, filenameTmp, {dropProperties:true});
+		if (!filenameTmp) { }
+		await convertGzippedGeoJSONSeq2Anything(filenameGeoGz, filenameTmp, { dropProperties: true });
 
 		await unionAndClipFeaturesDC(filenameTmp, todo.bundesland.filename, todo.filenameOut);
 
@@ -79,13 +79,13 @@ simpleCluster(true, async runWorker => {
 		rmSync(filenameGeoGz);
 	} else {
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
-	
+
 		let cp = getSpawn('ogr2ogr', [
 			'-a_srs', 'EPSG:4326',
 			'-dialect', 'SQLite',
 			'-sql', ogrGenerateSQL({
-				dropProperties:true,
-				bbox:todo.bundesland.bbox,
+				dropProperties: true,
+				bbox: todo.bundesland.bbox,
 			}),
 			'-clipdst', todo.bundesland.filename,
 			'-nlt', 'MULTIPOLYGON',
@@ -115,7 +115,7 @@ simpleCluster(true, async runWorker => {
 						throw e;
 					}
 					f2.features.forEach(f3 => {
-						this.push(JSON.stringify(f3)+'\n');
+						this.push(JSON.stringify(f3) + '\n');
 					})
 				})
 			})
