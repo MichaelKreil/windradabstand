@@ -14,7 +14,7 @@ const { createGzip } = require('zlib');
 
 
 
-simpleCluster(true, async runWorker => {
+simpleCluster(async runWorker => {
 	const { ruleTypes, bundeslaender } = JSON.parse(readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let todos = [];
@@ -33,9 +33,10 @@ simpleCluster(true, async runWorker => {
 	})
 
 	todos = todos.filter(t => !existsSync(t.filenameOut));
-	todos = todos.filter(t => t.bundesland.ags === 4);
+	
+	todos = todos.filter(t => [2,4,6,11].includes(t.bundesland.ags));
 
-	await todos.forEachParallel(1, runWorker);
+	await todos.forEachParallel(4, runWorker);
 
 	console.log('finished')
 
@@ -43,7 +44,9 @@ simpleCluster(true, async runWorker => {
 
 }, async todo => {
 
-	console.log('buffer', todo.ruleType.slug, todo.region.ags, `(${todo.bundesland.name})`);
+	let name = '\x1b[90m'+todo.ruleType.slug+' '+todo.region.ags+'/'+todo.bundesland.name+'\x1b[0m';
+
+	console.log('process', name);
 
 	let filenameIn = todo.filenameIn + '.gpkg';
 
@@ -55,6 +58,7 @@ simpleCluster(true, async runWorker => {
 
 		let filenameGeoGz = todo.region.filenameBase + '.tmp.geojsonl.gz';
 		if (!existsSync(filenameGeoGz)) {
+			console.log('   1/3 extract and buffer', name);
 			let filenameTmp = calcTemporaryFilename(filenameGeoGz)
 			await new Promise(res => {
 				ogrLoadGpkgAsGeojsonStream(filenameIn, {
@@ -66,13 +70,16 @@ simpleCluster(true, async runWorker => {
 					.pipe(createWriteStream(filenameTmp))
 					.once('close', () => res())
 			});
-			renameSync(filenameTmp, filenameGeoGz)
+			renameSync(filenameTmp, filenameGeoGz);
+		}
+		
+		let filenameTmp = todo.region.filenameBase + '.tmp.gpkg';
+		if (!existsSync(filenameTmp)) {
+			console.log('   2/3 convert to gpkg', name);
+			await convertGzippedGeoJSONSeq2Anything(filenameGeoGz, filenameTmp, { dropProperties: true });
 		}
 
-		let filenameTmp = todo.region.filenameBase + '.tmp.gpkg';
-		if (!filenameTmp) { }
-		await convertGzippedGeoJSONSeq2Anything(filenameGeoGz, filenameTmp, { dropProperties: true });
-
+		console.log('   3/3 union', name);
 		await unionAndClipFeaturesDC(filenameTmp, todo.bundesland.filename, todo.filenameOut);
 
 		rmSync(filenameTmp);
@@ -80,6 +87,7 @@ simpleCluster(true, async runWorker => {
 	} else {
 		let filenameTmp = calcTemporaryFilename(todo.filenameOut);
 
+		console.log('   1/1 extract only', name);
 		let cp = getSpawn('ogr2ogr', [
 			'-a_srs', 'EPSG:4326',
 			'-dialect', 'SQLite',
