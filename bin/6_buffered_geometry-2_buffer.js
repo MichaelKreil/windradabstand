@@ -8,7 +8,7 @@ const { readFileSync, renameSync, rmSync, existsSync, createWriteStream } = requ
 const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
-const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
+const { getSpawn, calcTemporaryFilename } = require('../lib/helper.js');
 const { ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, ogrGenerateSQL, unionAndClipFeaturesDC, convertGzippedGeoJSONSeq2Anything } = require('../lib/geohelper.js');
 const { createGzip } = require('zlib');
 
@@ -134,32 +134,5 @@ simpleCluster(true, async runWorker => {
 				})
 			})
 		}
-	}
-
-	function cutIntoBlocks(cbFilename, asyncCb) {
-		const maxSize = 1024 ** 3;
-		let size = 0;
-		let index = 0;
-		let file = GzipFileWriter(cbFilename(index));
-
-		let stream = miss.to.obj(
-			async function write(line, enc, cbWrite) {
-				size += line.length;
-				if (size >= maxSize) {
-					await file.close();
-					index++;
-					size = 0;
-					file = GzipFileWriter(cbFilename(index));
-				}
-				await file.write(line + '\n');
-				cbWrite();
-			},
-			async function flush(cbFlush) {
-				await file.close();
-				cbFlush();
-				setTimeout(() => stream.emit('close'), 1000);
-			}
-		)
-		return stream;
 	}
 })
