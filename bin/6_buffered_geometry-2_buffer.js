@@ -9,7 +9,7 @@ const turf = require('@turf/turf');
 const miss = require('mississippi2');
 const config = require('../config.js');
 const { getSpawn, calcTemporaryFilename, GzipFileWriter } = require('../lib/helper.js');
-const { ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, generateUnionVRT, unionAndClipFeatures, ogrGenerateSQL, unionAndClipFeaturesDC, convertGzippedGeoJSONSeq2Anything } = require('../lib/geohelper.js');
+const { ogrWrapFileDriver, ogrLoadGpkgAsGeojsonStream, ogrGenerateSQL, unionAndClipFeaturesDC, convertGzippedGeoJSONSeq2Anything } = require('../lib/geohelper.js');
 const { createGzip } = require('zlib');
 
 
@@ -61,7 +61,6 @@ simpleCluster(true, async runWorker => {
 					dropProperties: true,
 					bbox,
 				})
-					.pipe(miss.split())
 					.pipe(calcBuffer(todo.radius))
 					.pipe(createGzip())
 					.pipe(createWriteStream(filenameTmp))
