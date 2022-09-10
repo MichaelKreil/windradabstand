@@ -36,7 +36,7 @@ simpleCluster(async runWorker => {
 	
 	//todos = todos.filter(t => [2,4,6,11].includes(t.bundesland.ags));
 
-	await todos.forEachParallel(4, runWorker);
+	await todos.forEachParallel(runWorker);
 
 	console.log('finished')
 
