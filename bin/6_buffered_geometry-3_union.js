@@ -10,7 +10,7 @@ const { mergeFiles, unionAndClipFeaturesDC } = require('../lib/geohelper');
 
 // union geometry per bundesland
 
-simpleCluster(async runWorker => {
+simpleCluster(true, async runWorker => {
 	const outputFolder = config.getFilename.bufferedGeometry('_results/');
 	mkdirSync(outputFolder, { recursive: true })
 
@@ -39,7 +39,7 @@ simpleCluster(async runWorker => {
 	bundeslaender = bundeslaender.filter(b => !existsSync(b.filenameOut));
 	//bundeslaender = bundeslaender.filter(b => b.ags === 4);
 
-	await bundeslaender.forEachParallel(runWorker);
+	await bundeslaender.forEachParallel(1, runWorker);
 
 	console.log('finished')
 
