@@ -286,7 +286,8 @@ const config = {
 		hoehe: 200,
 		nabenhoehe: 142,
 		rotordurchmesser: 116,
-	}
+	},
+	maxRadius: 3000,
 }
 
 // prepare folders
