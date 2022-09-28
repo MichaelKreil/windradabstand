@@ -1,5 +1,5 @@
 /*
-	GeoJSON to Signed Distance Field (SDF) as PNG Tiles:
+	GeoJSON to Signed Distance Field (Image) as PNG Tiles:
 	1. load GeoJSON
 	3. add segments to R-Tree
 	4. for every pixel:
@@ -15,22 +15,24 @@ use json;
 use json::JsonValue;
 use std::time::Instant;
 
+const PI:f64 = std::f64::consts::PI;
+
 #[derive(Debug)]
 struct Arguments {
 	filename: String,
-	z: u32,
-	y: u32,
-	x: u32,
+	zoom: u32,
+	x0: u32,
+	y0: u32,
 	n: u32,
-	size: u32,
+	tile_size: u32,
 }
 struct BBox {
 	min: Point,
 	max: Point,
 }
 struct Point {
-	x: f32,
-	y: f32,
+	x: f64,
+	y: f64,
 }
 struct Polyline {
 	points: Vec<Point>,
@@ -50,13 +52,20 @@ struct Segment{
 struct Segments {
 	segments: Vec<Segment>
 }
+struct Image {
+	size: u32,
+	x_offset: u32,
+	y_offset: u32,
+	scale: u32,
+	data: Vec<f64>,
+}
 
 
 impl BBox {
 	fn new() -> BBox {
 		BBox{
-			min: Point{x:f32::MAX, y:f32::MAX},
-			max: Point{x:f32::MIN, y:f32::MIN},
+			min: Point{x:f64::MAX, y:f64::MAX},
+			max: Point{x:f64::MIN, y:f64::MIN},
 		}
 	}
 	fn add_point(&mut self, point:&Point) {
@@ -74,10 +83,13 @@ impl BBox {
 }
 
 impl Point {
+	fn new() -> Point {
+		return Point{x:0.0,y:0.0}
+	}
 	fn import_from_json(coordinates_point: &JsonValue) -> Point {
 		return Point{
-			x: coordinates_point[0].as_f32().unwrap(),
-			y: coordinates_point[1].as_f32().unwrap(),
+			x: coordinates_point[0].as_f64().unwrap(),
+			y: coordinates_point[1].as_f64().unwrap(),
 		}
 	}
 	fn clone(&self) -> Point {
@@ -181,6 +193,27 @@ impl Segments {
 	}
 }
 
+impl Image {
+	fn new(size:u32, zoom:u32, x_offset:u32, y_offset:u32) -> Image {
+		let scale = 2^zoom;
+		let length:usize = (size*size).try_into().unwrap();
+
+		return Image{
+			size,
+			x_offset,
+			y_offset,
+			scale,
+			data: Vec::with_capacity(length),
+		}
+	}
+	fn get_pixel_as_point(&self, x:u32, y:u32) -> Point {
+		return Point{
+			x: demercator_x(f64::from(x-self.x_offset)/f64::from(self.scale)),
+			y: demercator_y(f64::from(y-self.y_offset)/f64::from(self.scale)),
+		}
+	}
+}
+
 fn main() {
 	let arguments = parse_arguments();
 	println!("{:?}", arguments);
@@ -194,6 +227,17 @@ fn main() {
 
 	let mut segments = Segments::new();
 	segments.fill_from_collection(&polygons);
+
+	let size = arguments.tile_size * arguments.n;
+	let mut image = Image::new(size, arguments.zoom, arguments.x0, arguments.y0);
+	
+	for y in 0..size-1 {
+		for x in 0..size-1 {
+			let point = image.get_pixel_as_point(x,y);
+			//let distance = segments.get_min_distance(point);
+			//image.set_pixel_value(x,y,distance);
+		}
+	}
 
 	//println!("{:?}", polygons);
 	/*
@@ -223,10 +267,18 @@ fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
 	return Arguments {
 		filename: args.get(2).unwrap_or(&"/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson".to_string()).to_string(),
-		z:        args.get(3).unwrap_or( &"14".to_string()).parse().unwrap(),
-		y:        args.get(4).unwrap_or(  &"0".to_string()).parse().unwrap(),
-		x:        args.get(5).unwrap_or(  &"0".to_string()).parse().unwrap(),
+		zoom:     args.get(3).unwrap_or( &"14".to_string()).parse().unwrap(),
+		x0:       args.get(4).unwrap_or(  &"0".to_string()).parse().unwrap(),
+		y0:       args.get(5).unwrap_or(  &"0".to_string()).parse().unwrap(),
 		n:        args.get(6).unwrap_or( &"16".to_string()).parse().unwrap(),
-		size:     args.get(7).unwrap_or(&"256".to_string()).parse().unwrap(),
+		tile_size:args.get(7).unwrap_or(&"256".to_string()).parse().unwrap(),
 	};
+}
+
+fn demercator_x(x:f64) -> f64 {
+	return x*360.0 - 180.0
+}
+
+fn demercator_y(y:f64) -> f64 {
+	return (((1.0 - y * 2.0) * PI).exp().atan() * 4.0 / PI - 1.0) * 90.0
 }
