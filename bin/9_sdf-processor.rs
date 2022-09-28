@@ -53,6 +53,18 @@ impl BBox {
 			max: Point{x:f32::MIN, y:f32::MIN},
 		}
 	}
+	fn add_point(&mut self, point:&Point) {
+		if self.min.x > point.x { self.min.x = point.x };
+		if self.min.y > point.y { self.min.y = point.y };
+		if self.max.x < point.x { self.max.x = point.x };
+		if self.max.y < point.y { self.max.y = point.y };
+	}
+	fn add_bbox(&mut self, bbox:&BBox) {
+		if self.min.x > bbox.min.x { self.min.x = bbox.min.x };
+		if self.min.y > bbox.min.y { self.min.y = bbox.min.y };
+		if self.max.x < bbox.max.x { self.max.x = bbox.max.x };
+		if self.max.y < bbox.max.y { self.max.y = bbox.max.y };
+	}
 }
 
 impl Point {
@@ -73,7 +85,14 @@ impl Polyline {
 		for coordinates_point in coordinates_line.members() {
 			polyline.points.push(Point::import_from_json(coordinates_point))
 		}
+		polyline.update_bbox();
 		return polyline;
+	}
+	fn update_bbox(&mut self) {
+		let bbox = &mut self.bbox;
+		for point in &self.points {
+			bbox.add_point(&point);
+		}
 	}
 }
 
@@ -86,7 +105,14 @@ impl Polygon {
 		for coordinates_ring in coordinates_polygon.members() {
 			polygon.rings.push(Polyline::import_from_json(coordinates_ring))
 		}
+		polygon.update_bbox();
 		return polygon;
+	}
+	fn update_bbox(&mut self) {
+		let bbox = &mut self.bbox;
+		for ring in &self.rings {
+			bbox.add_bbox(&ring.bbox);
+		}
 	}
 }
 
