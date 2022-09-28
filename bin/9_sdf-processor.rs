@@ -25,34 +25,30 @@ struct Arguments {
 	size: u32,
 }
 
-#[derive(Debug)]
 struct Point {
 	x: f64,
 	y: f64,
 }
-#[derive(Debug)]
-struct Ring {
+struct Polyline {
 	points: Vec<Point>
 }
-#[derive(Debug)]
 struct Polygon {
-	rings: Vec<Ring>
+	rings: Vec<Polyline>
 }
-#[derive(Debug)]
 struct Collection {
 	polygons: Vec<Polygon>
 }
 
-impl Ring {
-	fn new(coordRing: &JsonValue) -> Ring {
-		let mut ring = Ring{points: Vec::new()};
-		for coordPoint in coordRing.members() {
-			ring.points.push(Point{
+impl Polyline {
+	fn new(coordLine: &JsonValue) -> Polyline {
+		let mut polyline = Polyline{points: Vec::new()};
+		for coordPoint in coordLine.members() {
+			polyline.points.push(Point{
 				x: coordPoint[0].as_f64().unwrap(),
 				y: coordPoint[1].as_f64().unwrap(),
 			})
 		}
-		return ring;
+		return polyline;
 	}
 }
 
@@ -60,7 +56,7 @@ impl Polygon {
 	fn new(coordPolygon: &JsonValue) -> Polygon {
 		let mut polygon = Polygon{rings: Vec::new()};
 		for coordRing in coordPolygon.members() {
-			polygon.rings.push(Ring::new(coordRing))
+			polygon.rings.push(Polyline::new(coordRing))
 		}
 		return polygon;
 	}
@@ -100,6 +96,7 @@ fn main() {
 	let elapsed_time = now.elapsed();
 	println!("took {} ms.", elapsed_time.as_millis());
 
+	//let mut segments = 
 	//println!("{:?}", polygons);
 	/*
 	let segments = getSegments(polygons);
