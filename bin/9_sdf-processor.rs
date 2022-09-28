@@ -40,12 +40,12 @@ struct Collection {
 }
 
 impl Polyline {
-	fn new(coordLine: &JsonValue) -> Polyline {
+	fn new(coordinates_line: &JsonValue) -> Polyline {
 		let mut polyline = Polyline{points: Vec::new()};
-		for coordPoint in coordLine.members() {
+		for coordinates_point in coordinates_line.members() {
 			polyline.points.push(Point{
-				x: coordPoint[0].as_f64().unwrap(),
-				y: coordPoint[1].as_f64().unwrap(),
+				x: coordinates_point[0].as_f64().unwrap(),
+				y: coordinates_point[1].as_f64().unwrap(),
 			})
 		}
 		return polyline;
@@ -53,10 +53,10 @@ impl Polyline {
 }
 
 impl Polygon {
-	fn new(coordPolygon: &JsonValue) -> Polygon {
+	fn new(coordinates_polygon: &JsonValue) -> Polygon {
 		let mut polygon = Polygon{rings: Vec::new()};
-		for coordRing in coordPolygon.members() {
-			polygon.rings.push(Polyline::new(coordRing))
+		for coordinates_ring in coordinates_polygon.members() {
+			polygon.rings.push(Polyline::new(coordinates_ring))
 		}
 		return polygon;
 	}
