@@ -39,14 +39,20 @@ struct Collection {
 	polygons: Vec<Polygon>
 }
 
+impl Point {
+	fn new(coordinates_point: &JsonValue) -> Point {
+		return Point{
+			x: coordinates_point[0].as_f64().unwrap(),
+			y: coordinates_point[1].as_f64().unwrap(),
+		}
+	}
+}
+
 impl Polyline {
 	fn new(coordinates_line: &JsonValue) -> Polyline {
 		let mut polyline = Polyline{points: Vec::new()};
 		for coordinates_point in coordinates_line.members() {
-			polyline.points.push(Point{
-				x: coordinates_point[0].as_f64().unwrap(),
-				y: coordinates_point[1].as_f64().unwrap(),
-			})
+			polyline.points.push(Point::new(coordinates_point))
 		}
 		return polyline;
 	}
