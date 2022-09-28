@@ -25,44 +25,66 @@ struct Arguments {
 	size: u32,
 }
 
+struct BBox {
+	min: Point,
+	max: Point,
+}
 struct Point {
-	x: f64,
-	y: f64,
+	x: f32,
+	y: f32,
 }
 struct Polyline {
-	points: Vec<Point>
+	points: Vec<Point>,
+	bbox: BBox,
 }
 struct Polygon {
-	rings: Vec<Polyline>
+	rings: Vec<Polyline>,
+	bbox: BBox,
 }
 struct Collection {
 	polygons: Vec<Polygon>
 }
 
+
+impl BBox {
+	fn new() -> BBox {
+		BBox{
+			min: Point{x:f32::MAX, y:f32::MAX},
+			max: Point{x:f32::MIN, y:f32::MIN},
+		}
+	}
+}
+
 impl Point {
-	fn new(coordinates_point: &JsonValue) -> Point {
+	fn import_from_json(coordinates_point: &JsonValue) -> Point {
 		return Point{
-			x: coordinates_point[0].as_f64().unwrap(),
-			y: coordinates_point[1].as_f64().unwrap(),
+			x: coordinates_point[0].as_f32().unwrap(),
+			y: coordinates_point[1].as_f32().unwrap(),
 		}
 	}
 }
 
 impl Polyline {
-	fn new(coordinates_line: &JsonValue) -> Polyline {
-		let mut polyline = Polyline{points: Vec::new()};
+	fn new() -> Polyline {
+		return Polyline{points: Vec::new(), bbox:BBox::new()};
+	}
+	fn import_from_json(coordinates_line: &JsonValue) -> Polyline {
+		let mut polyline = Polyline::new();
 		for coordinates_point in coordinates_line.members() {
-			polyline.points.push(Point::new(coordinates_point))
+			polyline.points.push(Point::import_from_json(coordinates_point))
 		}
 		return polyline;
 	}
 }
 
 impl Polygon {
-	fn new(coordinates_polygon: &JsonValue) -> Polygon {
-		let mut polygon = Polygon{rings: Vec::new()};
+	fn new() -> Polygon {
+		return Polygon{rings: Vec::new(), bbox:BBox::new()};
+	}
+	fn import_from_json(coordinates_polygon: &JsonValue) -> Polygon {
+		let mut polygon = Polygon::new();
 		for coordinates_ring in coordinates_polygon.members() {
-			polygon.rings.push(Polyline::new(coordinates_ring))
+			polygon.rings.push(Polyline::import_from_json(coordinates_ring))
 		}
 		return polygon;
 	}
@@ -70,9 +92,9 @@ impl Polygon {
 
 impl Collection {
 	fn new() -> Collection {
-		Collection{polygons:Vec::new()}
+		return Collection{polygons:Vec::new()}
 	}
-	fn import(&mut self, filename:&String) {
+	fn fill_from_json(&mut self, filename:&String) {
 		println!("{:?}", filename);
 	
 		let contents:&str = &fs::read_to_string(filename).unwrap();
@@ -84,7 +106,7 @@ impl Collection {
 			let geometry_type = geometry["type"].as_str().unwrap();
 
 			match geometry_type {
-				"Polygon" => self.polygons.push(Polygon::new(coordinates)),
+				"Polygon" => self.polygons.push(Polygon::import_from_json(coordinates)),
 				_ => panic!("{}", geometry_type)
 			}
 		}
@@ -98,7 +120,7 @@ fn main() {
 	let mut polygons = Collection::new();
 
 	let now = Instant::now();
-	polygons.import(&arguments.filename);
+	polygons.fill_from_json(&arguments.filename);
 	let elapsed_time = now.elapsed();
 	println!("took {} ms.", elapsed_time.as_millis());
 
