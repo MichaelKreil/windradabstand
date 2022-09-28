@@ -12,3 +12,5 @@ json = "0.12.4"
 name = "processor"
 path = "bin/9_sdf-processor.rs"
 
+[profile.release]
+opt-level = 3
