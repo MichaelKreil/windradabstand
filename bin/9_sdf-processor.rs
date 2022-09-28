@@ -24,7 +24,6 @@ struct Arguments {
 	n: u32,
 	size: u32,
 }
-
 struct BBox {
 	min: Point,
 	max: Point,
@@ -43,6 +42,13 @@ struct Polygon {
 }
 struct Collection {
 	polygons: Vec<Polygon>
+}
+struct Segment{
+	p0: Point,
+	p1: Point,
+}
+struct Segments {
+	segments: Vec<Segment>
 }
 
 
@@ -74,6 +80,12 @@ impl Point {
 			y: coordinates_point[1].as_f32().unwrap(),
 		}
 	}
+	fn clone(&self) -> Point {
+		return Point{
+			x: self.x,
+			y: self.y,
+		}
+	}
 }
 
 impl Polyline {
@@ -94,6 +106,11 @@ impl Polyline {
 			bbox.add_point(&point);
 		}
 	}
+	fn extract_segments_to(&self, segments:&mut Segments) {
+		for i in 0..self.points.len()-2 {
+			segments.add(&self.points[i], &self.points[i+1])
+		}
+	}
 }
 
 impl Polygon {
@@ -112,6 +129,11 @@ impl Polygon {
 		let bbox = &mut self.bbox;
 		for ring in &self.rings {
 			bbox.add_bbox(&ring.bbox);
+		}
+	}
+	fn extract_segments_to(&self, segments:&mut Segments) {
+		for ring in &self.rings {
+			ring.extract_segments_to(segments);
 		}
 	}
 }
@@ -137,6 +159,26 @@ impl Collection {
 			}
 		}
 	}
+	fn extract_segments_to(&self, segments:&mut Segments) {
+		for polygon in &self.polygons {
+			polygon.extract_segments_to(segments);
+		}
+	}
+}
+
+impl Segments {
+	fn new() -> Segments {
+		return Segments{segments: Vec::new()}
+	}
+	fn fill_from_collection(&mut self, collection:&Collection) {
+		collection.extract_segments_to(self)
+	}
+	fn add(&mut self, p0:&Point, p1:&Point) {
+		self.segments.push(Segment{
+			p0:(*p0).clone(),
+			p1:(*p1).clone(),
+		});
+	}
 }
 
 fn main() {
@@ -145,12 +187,14 @@ fn main() {
 	
 	let mut polygons = Collection::new();
 
-	let now = Instant::now();
+	//let now = Instant::now();
 	polygons.fill_from_json(&arguments.filename);
-	let elapsed_time = now.elapsed();
-	println!("took {} ms.", elapsed_time.as_millis());
+	//let elapsed_time = now.elapsed();
+	//println!("took {} ms.", elapsed_time.as_millis());
 
-	//let mut segments = 
+	let mut segments = Segments::new();
+	segments.fill_from_collection(&polygons);
+
 	//println!("{:?}", polygons);
 	/*
 	let segments = getSegments(polygons);
