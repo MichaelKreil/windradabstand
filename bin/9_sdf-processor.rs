@@ -10,6 +10,10 @@
 */
 
 use std::env;
+use std::fs;
+use json;
+use json::JsonValue;
+use std::time::Instant;
 
 #[derive(Debug)]
 struct Arguments {
@@ -21,19 +25,82 @@ struct Arguments {
 	size: u32,
 }
 
+#[derive(Debug)]
 struct Point {
 	x: f64,
 	y: f64,
 }
-struct Ring(Vec<Point>);
-struct Polygon(Vec<Ring>);
-struct Collection(Vec<Polygon>);
+#[derive(Debug)]
+struct Ring {
+	points: Vec<Point>
+}
+#[derive(Debug)]
+struct Polygon {
+	rings: Vec<Ring>
+}
+#[derive(Debug)]
+struct Collection {
+	polygons: Vec<Polygon>
+}
+
+impl Ring {
+	fn new(coordRing: &JsonValue) -> Ring {
+		let mut ring = Ring{points: Vec::new()};
+		for coordPoint in coordRing.members() {
+			ring.points.push(Point{
+				x: coordPoint[0].as_f64().unwrap(),
+				y: coordPoint[1].as_f64().unwrap(),
+			})
+		}
+		return ring;
+	}
+}
+
+impl Polygon {
+	fn new(coordPolygon: &JsonValue) -> Polygon {
+		let mut polygon = Polygon{rings: Vec::new()};
+		for coordRing in coordPolygon.members() {
+			polygon.rings.push(Ring::new(coordRing))
+		}
+		return polygon;
+	}
+}
+
+impl Collection {
+	fn new() -> Collection {
+		Collection{polygons:Vec::new()}
+	}
+	fn import(&mut self, filename:&String) {
+		println!("{:?}", filename);
+	
+		let contents:&str = &fs::read_to_string(filename).unwrap();
+		let data = json::parse(contents).unwrap();
+		let features = &data["features"];
+		for feature in features.members() {
+			let geometry = &feature["geometry"];
+			let coordinates = &geometry["coordinates"];
+			let geometry_type = geometry["type"].as_str().unwrap();
+
+			match geometry_type {
+				"Polygon" => self.polygons.push(Polygon::new(coordinates)),
+				_ => panic!("{}", geometry_type)
+			}
+		}
+	}
+}
 
 fn main() {
 	let arguments = parse_arguments();
 	println!("{:?}", arguments);
 	
-	let polygons = load_geometry(arguments.filename);
+	let mut polygons = Collection::new();
+
+	let now = Instant::now();
+	polygons.import(&arguments.filename);
+	let elapsed_time = now.elapsed();
+	println!("took {} ms.", elapsed_time.as_millis());
+
+	//println!("{:?}", polygons);
 	/*
 	let segments = getSegments(polygons);
 	let rtreePolygons = generateRTree(polygons);
@@ -60,15 +127,11 @@ fn main() {
 fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
 	return Arguments {
-		filename: args.get(2).unwrap_or(&"../data/9_sdf/test.geojson".to_string()).to_string(),
+		filename: args.get(2).unwrap_or(&"/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson".to_string()).to_string(),
 		z:        args.get(3).unwrap_or( &"14".to_string()).parse().unwrap(),
 		y:        args.get(4).unwrap_or(  &"0".to_string()).parse().unwrap(),
 		x:        args.get(5).unwrap_or(  &"0".to_string()).parse().unwrap(),
 		n:        args.get(6).unwrap_or( &"16".to_string()).parse().unwrap(),
 		size:     args.get(7).unwrap_or(&"256".to_string()).parse().unwrap(),
 	};
-}
-
-fn load_geometry(filename:String) -> Collection {
-	return ();
 }

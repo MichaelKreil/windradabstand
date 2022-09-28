@@ -89,9 +89,8 @@ simpleCluster(true, async function (runWorker) {
 		const command1 = [
 			'ogr2ogr',
 			`-sql '${sql}'`,
-			'-t_srs "EPSG:3857"',
 			'-nln layer',
-			'tile.gpkg',
+			'tile.geojson',
 			'wohngebaeude.gpkg'
 		].join(' ')
 
