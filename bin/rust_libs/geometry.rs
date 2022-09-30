@@ -1,12 +1,14 @@
 
-use std::fs;
 use json;
 use json::JsonValue;
+use std::collections::BinaryHeap;
+use std::fs;
 use std::rc::Rc;
+use std::cmp::Ordering;
 
 
 
-
+#[derive(Debug)]
 struct BBox {
 	min: Point,
 	max: Point,
@@ -50,6 +52,11 @@ impl BBox {
 	}
 	fn height(&self) -> f64 {
 		return self.max.y-self.min.y
+	}
+	fn distance_to(&self, point:&Point) -> f64 {
+		let dx = (self.min.x - point.x).min(point.x - self.max.x).min(0.0);
+		let dy = (self.min.y - point.y).min(point.y - self.max.y).min(0.0);
+		return (dx*dx + dy*dy).sqrt()
 	}
 }
 
@@ -183,7 +190,7 @@ impl Collection {
 		self.segments.init_tree();
 	}
 	pub fn get_min_distance(&self, point:Point) -> f64 {
-		return self.segments.get_min_distance(point);
+		return self.segments.get_min_distance(&point);
 	}
 }
 
@@ -212,7 +219,7 @@ impl Segment {
 
 struct Segments {
 	segments: Vec<Rc<Segment>>,
-	tree_root: Option<SegmentTreeNode>
+	root: Option<Rc<SegmentTreeNode>>
 }
 
 impl Segments {
@@ -222,12 +229,12 @@ impl Segments {
 	pub fn new() -> Segments {
 		return Segments{
 			segments: Vec::new(),
-			tree_root: None
+			root: None
 		}
 	}
 	fn init_tree(&mut self) {
 		let node = self.create_node(&self.segments);
-		self.tree_root.insert(node);
+		self.root.insert(Rc::new(node));
 	}
 	fn create_node(&self, segments:&Vec<Rc<Segment>>) -> SegmentTreeNode {
 		let bbox = BBox::from_segments(segments);
@@ -252,9 +259,9 @@ impl Segments {
 			}
 		}
 
-		if (segments1.len() == 0) {
+		if segments1.len() == 0 {
 			return SegmentTreeNode{
-				bbox: None,
+				bbox,
 				is_leaf: true,
 				left: None,
 				right: None,
@@ -262,9 +269,9 @@ impl Segments {
 			};
 		}
 
-		if (segments2.len() == 0) {
+		if segments2.len() == 0 {
 			return SegmentTreeNode{
-				bbox: None,
+				bbox,
 				is_leaf: true,
 				left: None,
 				right: None,
@@ -273,24 +280,101 @@ impl Segments {
 		}
 
 		return SegmentTreeNode{
-			bbox: Some(bbox),
+			bbox,
 			is_leaf: false,
-			left: Some(Box::new(self.create_node(&segments1))),
-			right: Some(Box::new(self.create_node(&segments2))),
+			left: Some(Rc::new(self.create_node(&segments1))),
+			right: Some(Rc::new(self.create_node(&segments2))),
 			segments: None,
 		}
 	}
-	pub fn get_min_distance(&self, _point:Point) -> f64 {
-		return 0.0;
+	pub fn get_min_distance(&self, point:&Point) -> f64 {
+		let mut heap = BinaryHeap::new();
+		let root = (self.root).as_ref().unwrap().clone();
+		heap.push(HeapNode::new(root, point));
+
+		let mut min_distance = f64::MAX;
+
+		while !heap.is_empty() {
+			let heap_node = heap.pop().unwrap();
+			let tree_node = heap_node.tree_node;
+
+			let distance = heap_node.min_distance;
+			if distance < min_distance {
+				min_distance = distance;
+				
+				if !tree_node.is_leaf {
+					heap.push(HeapNode::new((tree_node.left).as_ref().unwrap().clone(),  point));
+					heap.push(HeapNode::new((tree_node.right).as_ref().unwrap().clone(), point));
+				}
+			}
+		}
+
+		return min_distance;
 	}
 }
 
 
 
+#[derive(Debug)]
 struct SegmentTreeNode {
-	bbox: Option<BBox>,
+	bbox: BBox,
 	is_leaf: bool,
-	left: Option<Box<SegmentTreeNode>>,
-	right: Option<Box<SegmentTreeNode>>,
+	left: Option<Rc<SegmentTreeNode>>,
+	right: Option<Rc<SegmentTreeNode>>,
 	segments: Option<Vec<Rc<Segment>>>,
+}
+
+#[derive(Debug)]
+struct HeapNode {
+	tree_node: Rc<SegmentTreeNode>,
+	min_distance: f64,
+}
+
+impl HeapNode {
+	fn new(tree_node:Rc<SegmentTreeNode>, point:&Point) -> HeapNode {
+		let mut min_distance;
+		if tree_node.is_leaf {
+			min_distance = min_segments_distance(&tree_node.segments.as_ref().unwrap().clone(), &point);
+		} else {
+			min_distance = tree_node.bbox.distance_to(&point);
+		}
+		return HeapNode{
+			tree_node,
+			min_distance,
+		}
+	}
+}
+
+fn min_segments_distance(segments:&Vec<Rc<Segment>>, point:&Point) -> f64 {
+	let mut min_distance = f64::MAX;
+	for segment in segments {
+		let distance = min_segment_distance(&segment, &point);
+		if distance < min_distance {
+			min_distance = distance;
+		}
+	}
+	return min_distance;
+}
+
+fn min_segment_distance(segment:&Segment, point:&Point) -> f64 {
+	println!("implement me");
+	return 0.0;
+}
+
+impl PartialEq for HeapNode {
+	fn eq(&self, other: &Self) -> bool {
+		return self.min_distance == other.min_distance;
+	}
+}
+
+impl Eq for HeapNode {}
+
+impl Ord for HeapNode {
+	fn cmp(&self, other: &Self) -> Ordering {
+		other.min_distance.total_cmp(&self.min_distance)
+	}
+}
+
+impl PartialOrd for HeapNode {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }

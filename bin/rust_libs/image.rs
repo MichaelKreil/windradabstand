@@ -45,9 +45,7 @@ impl Image {
 		)
 	}
 	pub fn set_pixel_value(&mut self, x:usize, y:usize, distance:f64) {
-		if x < 0 { panic!(); }
 		if x >= self.size { panic!(); }
-		if y < 0 { panic!(); }
 		if y >= self.size { panic!(); }
 		self.data[x + y*self.size] = distance;
 	}
