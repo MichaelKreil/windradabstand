@@ -8,7 +8,6 @@ use std::cmp::Ordering;
 
 
 
-#[derive(Debug)]
 struct BBox {
 	min: Point,
 	max: Point,
@@ -54,15 +53,18 @@ impl BBox {
 		return self.max.y-self.min.y
 	}
 	fn distance_to(&self, point:&Point) -> f64 {
-		let dx = (self.min.x - point.x).min(point.x - self.max.x).min(0.0);
-		let dy = (self.min.y - point.y).min(point.y - self.max.y).min(0.0);
+		let dx = (self.min.x - point.x).max(point.x - self.max.x).max(0.0);
+		let dy = (self.min.y - point.y).max(point.y - self.max.y).max(0.0);
+
+		//println!("distance_to {} {}", dx, dy);
+		//println!("{:?} {:?}", self, point);
 		return (dx*dx + dy*dy).sqrt()
 	}
 }
 
 
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Copy,Clone)]
 pub struct Point {
 	x: f64,
 	y: f64,
@@ -76,12 +78,6 @@ impl Point {
 		return Point{
 			x: coordinates_point[0].as_f64().unwrap(),
 			y: coordinates_point[1].as_f64().unwrap(),
-		}
-	}
-	fn clone(&self) -> Point {
-		return Point{
-			x: self.x,
-			y: self.y,
 		}
 	}
 }
@@ -195,7 +191,6 @@ impl Collection {
 }
 
 
-#[derive(Debug)]
 struct Segment {
 	p0: Point,
 	p1: Point,
@@ -300,14 +295,19 @@ impl Segments {
 
 			let distance = heap_node.min_distance;
 			if distance < min_distance {
-				min_distance = distance;
-				
-				if !tree_node.is_leaf {
+				if tree_node.is_leaf {
+					min_distance = distance;
+				} else {
 					heap.push(HeapNode::new((tree_node.left).as_ref().unwrap().clone(),  point));
 					heap.push(HeapNode::new((tree_node.right).as_ref().unwrap().clone(), point));
 				}
+			} else {
+				break;
 			}
+			//println!("min_distance {}", min_distance);
 		}
+
+		//panic!();
 
 		return min_distance;
 	}
@@ -315,7 +315,6 @@ impl Segments {
 
 
 
-#[derive(Debug)]
 struct SegmentTreeNode {
 	bbox: BBox,
 	is_leaf: bool,
@@ -324,7 +323,6 @@ struct SegmentTreeNode {
 	segments: Option<Vec<Rc<Segment>>>,
 }
 
-#[derive(Debug)]
 struct HeapNode {
 	tree_node: Rc<SegmentTreeNode>,
 	min_distance: f64,
@@ -332,7 +330,7 @@ struct HeapNode {
 
 impl HeapNode {
 	fn new(tree_node:Rc<SegmentTreeNode>, point:&Point) -> HeapNode {
-		let mut min_distance;
+		let min_distance;
 		if tree_node.is_leaf {
 			min_distance = min_segments_distance(&tree_node.segments.as_ref().unwrap().clone(), &point);
 		} else {
@@ -357,8 +355,25 @@ fn min_segments_distance(segments:&Vec<Rc<Segment>>, point:&Point) -> f64 {
 }
 
 fn min_segment_distance(segment:&Segment, point:&Point) -> f64 {
-	println!("implement me");
-	return 0.0;
+	let pv = segment.p0; // v
+	let pw = segment.p1; // w
+	
+	let dxwv = pw.x - pv.x;
+	let dywv = pw.y - pv.y;
+	let dxpv = point.x - pv.x;
+	let dypv = point.y - pv.y;
+	
+	let l2 = dxwv*dxwv + dywv*dywv;
+	if l2 == 0.0 {
+		return (dxpv*dxpv + dypv*dypv).sqrt();
+	}
+	
+	let t = ((dxpv*dxwv - dypv*dywv) / l2).max(0.0).min(1.0);
+
+	let dx = pv.x + t * dxwv - point.x;
+	let dy = pv.y + t * dywv - point.y;
+	
+	return (dx*dx + dy*dy).sqrt();
 }
 
 impl PartialEq for HeapNode {

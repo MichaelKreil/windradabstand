@@ -47,6 +47,8 @@ fn main() {
 	let size = arguments.tile_size * arguments.n;
 	let mut image = image::Image::new(size, arguments.zoom, arguments.x0, arguments.y0);
 	
+
+	let now = Instant::now();
 	for y in 0..size-1 {
 		for x in 0..size-1 {
 			let point = image.get_pixel_as_point(x,y);
@@ -54,6 +56,8 @@ fn main() {
 			image.set_pixel_value(x,y,distance);
 		}
 	}
+	let elapsed_time = now.elapsed();
+	println!("took {} ms.", elapsed_time.as_millis());
 
 	let now = Instant::now();
 	image.save(Path::new("test.png"));
@@ -88,10 +92,10 @@ fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
 	return Arguments {
 		filename: args.get(2).unwrap_or(&"/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson".to_string()).to_string(),
-		zoom:     args.get(3).unwrap_or( &"14".to_string()).parse().unwrap(),
-		x0:       args.get(4).unwrap_or(  &"0".to_string()).parse().unwrap(),
-		y0:       args.get(5).unwrap_or(  &"0".to_string()).parse().unwrap(),
-		n:        args.get(6).unwrap_or( &"16".to_string()).parse().unwrap(),
-		tile_size:args.get(7).unwrap_or(&"256".to_string()).parse().unwrap(),
+		zoom:     args.get(3).unwrap_or(  &"11".to_string()).parse().unwrap(),
+		x0:       args.get(4).unwrap_or(&"1069".to_string()).parse().unwrap(),
+		y0:       args.get(5).unwrap_or( &"697".to_string()).parse().unwrap(),
+		n:        args.get(6).unwrap_or(   &"8".to_string()).parse().unwrap(),
+		tile_size:args.get(7).unwrap_or( &"256".to_string()).parse().unwrap(),
 	};
 }

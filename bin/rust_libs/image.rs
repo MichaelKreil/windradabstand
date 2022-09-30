@@ -23,9 +23,10 @@ pub struct Image {
 
 impl Image {
 	pub fn new(size:usize, zoom:usize, x_offset:usize, y_offset:usize) -> Image {
-		let scale = (2^zoom) as f64;
+		let scale = (2.0_f64).powf(zoom as f64);
+		//println!("Image::new {} {}", zoom, scale);
 		let length:usize = (size*size).try_into().unwrap();
-		println!("size:{} length:{}", size, length);
+		//println!("size:{} length:{}", size, length);
 
 		let mut image = Image{
 			size,
@@ -39,9 +40,12 @@ impl Image {
 		return image;
 	}
 	pub fn get_pixel_as_point(&self, x:usize, y:usize) -> Point {
+		//println!("get_pixel_as_point {} {} {} {} {} {}", x, y, self.x_offset, self.y_offset, self.scale, self.size);
+		let size = self.size as f64;
+
 		return Point::new(
-			demercator_x(((x-self.x_offset) as f64)/self.scale),
-			demercator_y(((y-self.y_offset) as f64)/self.scale),
+			demercator_x(((x as f64)/size + (self.x_offset as f64))/self.scale),
+			demercator_y(((y as f64)/size + (self.y_offset as f64))/self.scale),
 		)
 	}
 	pub fn set_pixel_value(&mut self, x:usize, y:usize, distance:f64) {
@@ -51,14 +55,14 @@ impl Image {
 	}
 	pub fn save(&self, filename:&Path) {
 		let size = self.size as u32;
-		let mut img = image::RgbImage::from_fn(size, size, |x,y| {
-			let v = self.data[(x + y*size) as usize] as u8;
+		let img = image::RgbImage::from_fn(size, size, |x,y| {
+			let d = self.data[(x + y*size) as usize] * 11100.0;
+			let v = d as u8;
 			image::Rgb([v, v, v])
 		});
 		img.save(filename);
 	}
 }
-
 
 
 

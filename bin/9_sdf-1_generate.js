@@ -62,6 +62,7 @@ simpleCluster(true, async function (runWorker) {
 
 	async function renderTile(todo) {	
 		const { x, y, z } = todo;
+		console.log(todo);
 		const bboxInnerOrg = getTileBbox(x, y, z);
 		const bboxOuterOrg = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInnerOrg), config.maxRadius/1000));
 		
