@@ -3,6 +3,9 @@
 mod geometry;
 use crate::geometry::{Point};
 
+use std::path::Path;
+use image;
+
 
 
 const PI:f64 = std::f64::consts::PI;
@@ -47,6 +50,14 @@ impl Image {
 		if y < 0 { panic!(); }
 		if y >= self.size { panic!(); }
 		self.data[x + y*self.size] = distance;
+	}
+	pub fn save(&self, filename:&Path) {
+		let size = self.size as u32;
+		let mut img = image::RgbImage::from_fn(size, size, |x,y| {
+			let v = self.data[(x + y*size) as usize] as u8;
+			image::Rgb([v, v, v])
+		});
+		img.save(filename);
 	}
 }
 

@@ -11,6 +11,7 @@
 
 use std::env;
 use std::time::Instant;
+use std::path::Path;
 
 #[path = "rust_libs/geometry.rs"]
 mod geometry;
@@ -51,6 +52,11 @@ fn main() {
 			image.set_pixel_value(x,y,distance);
 		}
 	}
+
+	let now = Instant::now();
+	image.save(Path::new("test.png"));
+	let elapsed_time = now.elapsed();
+	println!("image.save: {} ms", elapsed_time.as_millis());
 
 	//println!("{:?}", polygons);
 	/*
