@@ -10,24 +10,22 @@
 */
 
 use std::env;
-//use std::time::Instant;
+use std::time::Instant;
 
 #[path = "rust_libs/geometry.rs"]
 mod geometry;
-//use crate::geometry;
 
 #[path = "rust_libs/image.rs"]
 mod image;
-//use crate::image;
 
 #[derive(Debug)]
 struct Arguments {
 	filename: String,
-	zoom: u32,
-	x0: u32,
-	y0: u32,
-	n: u32,
-	tile_size: u32,
+	zoom: usize,
+	x0: usize,
+	y0: usize,
+	n: usize,
+	tile_size: usize,
 }
 
 fn main() {
@@ -49,8 +47,8 @@ fn main() {
 	for y in 0..size-1 {
 		for x in 0..size-1 {
 			let point = image.get_pixel_as_point(x,y);
-			let _distance = collection.get_min_distance(point);
-			//image.set_pixel_value(x,y,distance);
+			let distance = collection.get_min_distance(point);
+			image.set_pixel_value(x,y,distance);
 		}
 	}
 

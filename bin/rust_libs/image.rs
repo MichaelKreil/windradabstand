@@ -11,31 +11,42 @@ const PI:f64 = std::f64::consts::PI;
 
 
 pub struct Image {
-	size: u32,
-	x_offset: u32,
-	y_offset: u32,
-	scale: u32,
+	size: usize,
+	x_offset: usize,
+	y_offset: usize,
+	scale: f64,
 	data: Vec<f64>,
 }
 
 impl Image {
-	pub fn new(size:u32, zoom:u32, x_offset:u32, y_offset:u32) -> Image {
-		let scale = 2^zoom;
+	pub fn new(size:usize, zoom:usize, x_offset:usize, y_offset:usize) -> Image {
+		let scale = (2^zoom) as f64;
 		let length:usize = (size*size).try_into().unwrap();
+		println!("size:{} length:{}", size, length);
 
-		return Image{
+		let mut image = Image{
 			size,
 			x_offset,
 			y_offset,
 			scale,
 			data: Vec::with_capacity(length),
-		}
+		};
+		image.data.resize(length, f64::MAX);
+
+		return image;
 	}
-	pub fn get_pixel_as_point(&self, x:u32, y:u32) -> Point {
+	pub fn get_pixel_as_point(&self, x:usize, y:usize) -> Point {
 		return Point::new(
-			demercator_x(f64::from(x-self.x_offset)/f64::from(self.scale)),
-			demercator_y(f64::from(y-self.y_offset)/f64::from(self.scale)),
+			demercator_x(((x-self.x_offset) as f64)/self.scale),
+			demercator_y(((y-self.y_offset) as f64)/self.scale),
 		)
+	}
+	pub fn set_pixel_value(&mut self, x:usize, y:usize, distance:f64) {
+		if x < 0 { panic!(); }
+		if x >= self.size { panic!(); }
+		if y < 0 { panic!(); }
+		if y >= self.size { panic!(); }
+		self.data[x + y*self.size] = distance;
 	}
 }
 
