@@ -30,6 +30,8 @@ struct Arguments {
 }
 
 fn main() {
+	env::set_var("RUST_BACKTRACE", "1");
+	
 	let arguments = parse_arguments();
 	println!("{:?}", arguments);
 	
