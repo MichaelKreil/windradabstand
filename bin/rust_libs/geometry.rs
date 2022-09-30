@@ -34,6 +34,7 @@ impl BBox {
 
 
 
+#[derive(Copy,Clone)]
 pub struct Point {
 	x: f64,
 	y: f64,
@@ -84,8 +85,8 @@ impl Polyline {
 	}
 	fn extract_segments_to(&self, segments:&mut Segments) {
 		for i in 0..(self.points.len()-2) {
-			let p0 = &self.points[i];
-			let p1 = &self.points[i+1];
+			let p0 = self.points[i];
+			let p1 = self.points[i+1];
 			segments.add(p0, p1);
 		}
 	}
@@ -125,13 +126,13 @@ impl Polygon {
 
 
 
-pub struct Collection<'a> {
+pub struct Collection {
 	polygons: Vec<Polygon>,
-	segments: Segments<'a>,
+	segments: Segments,
 }
 
-impl Collection<'_> {
-	pub fn new() -> Collection<'static> {
+impl Collection {
+	pub fn new() -> Collection {
 		return Collection{
 			polygons:Vec::new(),
 			segments:Segments::new(),
@@ -167,29 +168,29 @@ impl Collection<'_> {
 
 
 
-struct Segment<'a> {
-	p0: &'a Point,
-	p1: &'a Point,
+struct Segment {
+	p0: Point,
+	p1: Point,
 }
 
-impl Segment<'_> {
-	fn new<'a>(p0:&'a Point, p1:&'a Point) -> Segment<'a> {
+impl Segment {
+	fn new(p0:Point, p1:Point) -> Segment {
 		return Segment{p0, p1};
 	}
 }
 
 
 
-struct Segments<'a> {
-	segments: Vec<Segment<'a>>,
-	tree_root: Option<SegmentTreeNode<'a>>
+struct Segments {
+	segments: Vec<Segment>,
+	tree_root: Option<SegmentTreeNode>
 }
 
-impl Segments<'_> {
-	fn add<'a>(&mut self, p0:&'a Point, p1:&'a Point) {
+impl Segments {
+	fn add(&mut self, p0:Point, p1:Point) {
 		self.segments.push(Segment::new(p0, p1));
 	}
-	pub fn new() -> Segments<'static> {
+	pub fn new() -> Segments {
 		return Segments{
 			segments: Vec::new(),
 			tree_root: None
@@ -223,10 +224,10 @@ impl Segments<'_> {
 
 
 
-struct SegmentTreeNode<'a> {
+struct SegmentTreeNode {
 	bbox: BBox,
 	is_leaf: bool,
-	left: Option<&'a SegmentTreeNode<'a>>,
-	right: Option<&'a SegmentTreeNode<'a>>,
-	segment: Option<Segment<'a>>,
+	left: Option<Box<SegmentTreeNode>>,
+	right: Option<Box<SegmentTreeNode>>,
+	segment: Option<Segment>,
 }
