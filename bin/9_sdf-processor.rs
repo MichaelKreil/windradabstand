@@ -10,13 +10,15 @@
 */
 
 use std::env;
-use std::time::Instant;
+//use std::time::Instant;
 
 #[path = "rust_libs/geometry.rs"]
 mod geometry;
+//use crate::geometry;
 
 #[path = "rust_libs/image.rs"]
 mod image;
+//use crate::image;
 
 #[derive(Debug)]
 struct Arguments {
@@ -32,23 +34,22 @@ fn main() {
 	let arguments = parse_arguments();
 	println!("{:?}", arguments);
 	
-	let mut polygons = geometry::Collection::new();
+	let mut collection = geometry::Collection::new();
 
 	//let now = Instant::now();
-	polygons.fill_from_json(&arguments.filename);
+	collection.fill_from_json(&arguments.filename);
 	//let elapsed_time = now.elapsed();
 	//println!("took {} ms.", elapsed_time.as_millis());
 
-	let mut segments = geometry::Segments::new();
-	segments.fill_from_collection(&polygons);
+	collection.extract_segments();
 
 	let size = arguments.tile_size * arguments.n;
 	let mut image = image::Image::new(size, arguments.zoom, arguments.x0, arguments.y0);
 	
 	for y in 0..size-1 {
 		for x in 0..size-1 {
-			let _point = image.get_pixel_as_point(x,y);
-			//let distance = segments.get_min_distance(point);
+			let point = image.get_pixel_as_point(x,y);
+			let _distance = collection.get_min_distance(point);
 			//image.set_pixel_value(x,y,distance);
 		}
 	}

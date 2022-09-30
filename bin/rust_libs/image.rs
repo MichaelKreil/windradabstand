@@ -1,6 +1,7 @@
 
 #[path = "geometry.rs"]
 mod geometry;
+use crate::geometry::{Point};
 
 
 
@@ -30,8 +31,8 @@ impl Image {
 			data: Vec::with_capacity(length),
 		}
 	}
-	pub fn get_pixel_as_point(&self, x:u32, y:u32) -> geometry::Point {
-		return geometry::Point::new(
+	pub fn get_pixel_as_point(&self, x:u32, y:u32) -> Point {
+		return Point::new(
 			demercator_x(f64::from(x-self.x_offset)/f64::from(self.scale)),
 			demercator_y(f64::from(y-self.y_offset)/f64::from(self.scale)),
 		)

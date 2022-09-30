@@ -83,8 +83,10 @@ impl Polyline {
 		}
 	}
 	fn extract_segments_to(&self, segments:&mut Segments) {
-		for i in 0..self.points.len()-2 {
-			segments.add(&self.points[i], &self.points[i+1])
+		for i in 0..(self.points.len()-2) {
+			let p0 = &self.points[i];
+			let p1 = &self.points[i+1];
+			segments.add(p0, p1);
 		}
 	}
 }
@@ -123,13 +125,17 @@ impl Polygon {
 
 
 
-pub struct Collection {
-	polygons: Vec<Polygon>
+pub struct Collection<'a> {
+	polygons: Vec<Polygon>,
+	segments: Segments<'a>,
 }
 
-impl Collection {
-	pub fn new() -> Collection {
-		return Collection{polygons:Vec::new()}
+impl Collection<'_> {
+	pub fn new() -> Collection<'static> {
+		return Collection{
+			polygons:Vec::new(),
+			segments:Segments::new(),
+		}
 	}
 	pub fn fill_from_json(&mut self, filename:&String) {
 		println!("{:?}", filename);
@@ -148,37 +154,79 @@ impl Collection {
 			}
 		}
 	}
-	fn extract_segments_to(&self, segments:&mut Segments) {
+	pub fn extract_segments(&mut self) {
 		for polygon in &self.polygons {
-			polygon.extract_segments_to(segments);
+			polygon.extract_segments_to(&mut self.segments);
+		}
+		self.segments.init_tree();
+	}
+	pub fn get_min_distance(&self, point:Point) -> f64 {
+		return self.segments.get_min_distance(point);
+	}
+}
+
+
+
+struct Segment<'a> {
+	p0: &'a Point,
+	p1: &'a Point,
+}
+
+impl Segment<'_> {
+	fn new<'a>(p0:&'a Point, p1:&'a Point) -> Segment<'a> {
+		return Segment{p0, p1};
+	}
+}
+
+
+
+struct Segments<'a> {
+	segments: Vec<Segment<'a>>,
+	tree_root: Option<SegmentTreeNode<'a>>
+}
+
+impl Segments<'_> {
+	fn add<'a>(&mut self, p0:&'a Point, p1:&'a Point) {
+		self.segments.push(Segment::new(p0, p1));
+	}
+	pub fn new() -> Segments<'static> {
+		return Segments{
+			segments: Vec::new(),
+			tree_root: None
 		}
 	}
+	fn init_tree(&mut self) {
+		let node = self.create_node(0, self.segments.len());
+		self.tree_root.insert(node);
+	}
+	fn create_node(&mut self, _i0:usize, _i1:usize) -> SegmentTreeNode {
+		let mut bbox = BBox::new();
+		for segment in &self.segments {
+			bbox.add_point(&segment.p0);
+			bbox.add_point(&segment.p1);
+		}
+
+		let node = SegmentTreeNode{
+			bbox,
+			is_leaf: false,
+			left: None,
+			right: None,
+			segment: None,
+		};
+
+		return node;
+	}
+	pub fn get_min_distance(&self, _point:Point) -> f64 {
+		return 0.0;
+	}
 }
 
 
 
-struct Segment{
-	p0: Point,
-	p1: Point,
-}
-
-
-
-pub struct Segments {
-	segments: Vec<Segment>
-}
-
-impl Segments {
-	pub fn new() -> Segments {
-		return Segments{segments: Vec::new()}
-	}
-	pub fn fill_from_collection(&mut self, collection:&Collection) {
-		collection.extract_segments_to(self)
-	}
-	fn add(&mut self, p0:&Point, p1:&Point) {
-		self.segments.push(Segment{
-			p0:(*p0).clone(),
-			p1:(*p1).clone(),
-		});
-	}
+struct SegmentTreeNode<'a> {
+	bbox: BBox,
+	is_leaf: bool,
+	left: Option<&'a SegmentTreeNode<'a>>,
+	right: Option<&'a SegmentTreeNode<'a>>,
+	segment: Option<Segment<'a>>,
 }
