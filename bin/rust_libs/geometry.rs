@@ -3,7 +3,6 @@ use json;
 use json::JsonValue;
 use std::collections::BinaryHeap;
 use std::fs;
-use std::rc::Rc;
 use std::cmp::Ordering;
 
 
@@ -20,7 +19,7 @@ impl BBox {
 			max: Point{x:f64::MIN, y:f64::MIN},
 		}
 	}
-	fn from_segments(segments:&Vec<Rc<Segment>>) -> BBox {
+	fn from_segments(segments:&Vec<&Segment>) -> BBox {
 		let mut bbox = BBox::new();
 		for segment in segments {
 			bbox.add_point(&segment.p0);
@@ -107,13 +106,6 @@ impl Polyline {
 			bbox.add_point(&point);
 		}
 	}
-	fn extract_segments_to(&self, segments:&mut Segments) {
-		for i in 0..(self.points.len()-2) {
-			let p0 = self.points[i];
-			let p1 = self.points[i+1];
-			segments.add(p0, p1);
-		}
-	}
 }
 
 
@@ -141,22 +133,17 @@ impl Polygon {
 			bbox.add_bbox(&ring.bbox);
 		}
 	}
-	fn extract_segments_to(&self, segments:&mut Segments) {
-		for ring in &self.rings {
-			ring.extract_segments_to(segments);
-		}
-	}
 }
 
 
 
-pub struct Collection {
+pub struct Collection<'a> {
 	polygons: Vec<Polygon>,
-	segments: Segments,
+	segments: Segments<'a>,
 }
 
-impl Collection {
-	pub fn new() -> Collection {
+impl<'a> Collection<'a> {
+	pub fn new() -> Collection<'a> {
 		return Collection{
 			polygons:Vec::new(),
 			segments:Segments::new(),
@@ -179,13 +166,10 @@ impl Collection {
 			}
 		}
 	}
-	pub fn extract_segments(&mut self) {
-		for polygon in &self.polygons {
-			polygon.extract_segments_to(&mut self.segments);
-		}
-		self.segments.init_tree();
+	pub fn extract_segments<'b>(&'b mut self) {
+		self.segments.copy_from_collection(&self.polygons);
 	}
-	pub fn get_min_distance(&self, point:Point) -> f64 {
+	pub fn get_min_distance(&self, point:&Point) -> f64 {
 		return self.segments.get_min_distance(&point);
 	}
 }
@@ -212,74 +196,43 @@ impl Segment {
 
 
 
-struct Segments {
-	segments: Vec<Rc<Segment>>,
-	root: Option<Rc<SegmentTreeNode>>
+struct Segments<'a> {
+	segmentList: Vec<Segment>,
+	segments: Vec<&'a Segment>,
+	root: Option<SegmentTreeNode<'a>>
 }
 
-impl Segments {
+impl<'a> Segments<'a> {
+	/*
 	fn add(&mut self, p0:Point, p1:Point) {
-		self.segments.push(Rc::new(Segment::new(p0, p1)));
+		self.segmentList.push(Segment::new(p0, p1));
+	}*/
+
+	fn copy_from_collection(&'a mut self, polygons:&Vec<Polygon>) {
+		for polygon in polygons {
+			for ring in &polygon.rings {
+				let n = ring.points.len()-2;
+				for i in 0..n {
+					let p0 = ring.points[i];
+					let p1 = ring.points[i+1];
+					self.segmentList.push(Segment::new(p0, p1));
+				}
+			}
+		}
+
+		for segment in &self.segmentList {
+			self.segments.push(&segment);
+		}
+
+		let segments = &self.segments;
+		let node = SegmentTreeNode::new(segments);
+		self.root = Some(node);
 	}
-	pub fn new() -> Segments {
+	pub fn new() -> Segments<'a> {
 		return Segments{
+			segmentList: Vec::new(),
 			segments: Vec::new(),
 			root: None
-		}
-	}
-	fn init_tree(&mut self) {
-		let node = self.create_node(&self.segments);
-		self.root = Some(Rc::new(node));
-	}
-	fn create_node(&self, segments:&Vec<Rc<Segment>>) -> SegmentTreeNode {
-		let bbox = BBox::from_segments(segments);
-		let center = bbox.center();
-		let mut segments1:Vec<Rc<Segment>> = Vec::new();
-		let mut segments2:Vec<Rc<Segment>> = Vec::new();
-		if bbox.width() > bbox.height() {
-			for segment in segments.iter() {
-				if segment.center.x < center.x {
-					segments1.push(segment.clone());
-				} else {
-					segments2.push(segment.clone());
-				}
-			}
-		} else {
-			for segment in segments.iter() {
-				if segment.center.y < center.y {
-					segments1.push(segment.clone());
-				} else {
-					segments2.push(segment.clone());
-				}
-			}
-		}
-
-		if segments1.len() == 0 {
-			return SegmentTreeNode{
-				bbox,
-				is_leaf: true,
-				left: None,
-				right: None,
-				segments: Some(segments2),
-			};
-		}
-
-		if segments2.len() == 0 {
-			return SegmentTreeNode{
-				bbox,
-				is_leaf: true,
-				left: None,
-				right: None,
-				segments: Some(segments1),
-			};
-		}
-
-		return SegmentTreeNode{
-			bbox,
-			is_leaf: false,
-			left: Some(Rc::new(self.create_node(&segments1))),
-			right: Some(Rc::new(self.create_node(&segments2))),
-			segments: None,
 		}
 	}
 	pub fn get_min_distance(&self, point:&Point) -> f64 {
@@ -313,16 +266,70 @@ impl Segments {
 
 
 
-struct SegmentTreeNode {
+struct SegmentTreeNode<'a> {
 	bbox: BBox,
 	is_leaf: bool,
-	left: Option<Rc<SegmentTreeNode>>,
-	right: Option<Rc<SegmentTreeNode>>,
-	segments: Option<Vec<Rc<Segment>>>,
+	left:  Option<Box<SegmentTreeNode<'a>>>,
+	right: Option<Box<SegmentTreeNode<'a>>>,
+	segments: Option<Vec<&'a Segment>>,
+}
+
+impl<'a> SegmentTreeNode<'a> {
+	fn new(segments:&Vec<&'a Segment>) -> SegmentTreeNode<'a> {
+		let bbox = BBox::from_segments(segments);
+		let center = bbox.center();
+		let mut segments1:Vec<&Segment> = Vec::new();
+		let mut segments2:Vec<&Segment> = Vec::new();
+		if bbox.width() > bbox.height() {
+			for segment in segments.iter() {
+				if segment.center.x < center.x {
+					segments1.push(segment);
+				} else {
+					segments2.push(segment);
+				}
+			}
+		} else {
+			for segment in segments.iter() {
+				if segment.center.y < center.y {
+					segments1.push(segment);
+				} else {
+					segments2.push(segment);
+				}
+			}
+		}
+
+		if segments1.len() == 0 {
+			return SegmentTreeNode{
+				bbox,
+				is_leaf: true,
+				left:  None,
+				right: None,
+				segments: Some(segments2),
+			};
+		}
+
+		if segments2.len() == 0 {
+			return SegmentTreeNode{
+				bbox,
+				is_leaf: true,
+				left:  None,
+				right: None,
+				segments: Some(segments1),
+			};
+		}
+
+		return SegmentTreeNode{
+			bbox,
+			is_leaf: false,
+			left:  Some(Box::new(SegmentTreeNode::new(&segments1))),
+			right: Some(Box::new(SegmentTreeNode::new(&segments2))),
+			segments: None,
+		}
+	}
 }
 
 struct HeapNode<'a> {
-	tree_node: &'a SegmentTreeNode,
+	tree_node: &'a SegmentTreeNode<'a>,
 	min_distance: f64,
 }
 
@@ -359,7 +366,7 @@ impl PartialOrd for HeapNode<'_> {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
-fn min_segments_distance(segments:&Vec<Rc<Segment>>, point:&Point) -> f64 {
+fn min_segments_distance(segments:&Vec<&Segment>, point:&Point) -> f64 {
 	let mut min_distance = f64::MAX;
 	for segment in segments {
 		let distance = min_segment_distance(&segment, &point);

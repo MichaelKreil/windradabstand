@@ -35,7 +35,7 @@ fn main() {
 	let arguments = parse_arguments();
 	println!("{:?}", arguments);
 	
-	let mut collection = geometry::Collection::new();
+	let mut collection:geometry::Collection = geometry::Collection::new();
 
 	//let now = Instant::now();
 	collection.fill_from_json(&arguments.filename);
@@ -52,7 +52,7 @@ fn main() {
 	for y in 0..size-1 {
 		for x in 0..size-1 {
 			let point = image.get_pixel_as_point(x,y);
-			let distance = collection.get_min_distance(point);
+			let distance = collection.get_min_distance(&point);
 			image.set_pixel_value(x,y,distance);
 		}
 	}
