@@ -294,20 +294,18 @@ impl Segments {
 			let tree_node = heap_node.tree_node;
 
 			let distance = heap_node.min_distance;
-			if distance < min_distance {
-				if tree_node.is_leaf {
-					min_distance = distance;
-				} else {
-					heap.push(HeapNode::new((tree_node.left).as_ref().unwrap().clone(),  point));
-					heap.push(HeapNode::new((tree_node.right).as_ref().unwrap().clone(), point));
-				}
-			} else {
-				break;
+			
+			if distance > min_distance {
+				break
 			}
-			//println!("min_distance {}", min_distance);
-		}
 
-		//panic!();
+			if tree_node.is_leaf {
+				min_distance = distance;
+			} else {
+				heap.push(HeapNode::new((tree_node.left).as_ref().unwrap().clone(),  point));
+				heap.push(HeapNode::new((tree_node.right).as_ref().unwrap().clone(), point));
+			}
+		}
 
 		return min_distance;
 	}
