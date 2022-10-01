@@ -229,7 +229,7 @@ impl Segments {
 	}
 	fn init_tree(&mut self) {
 		let node = self.create_node(&self.segments);
-		self.root.insert(Rc::new(node));
+		self.root = Some(Rc::new(node));
 	}
 	fn create_node(&self, segments:&Vec<Rc<Segment>>) -> SegmentTreeNode {
 		let bbox = BBox::from_segments(segments);
