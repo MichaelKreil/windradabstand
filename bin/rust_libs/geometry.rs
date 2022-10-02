@@ -1,13 +1,19 @@
-
 use json;
 use json::JsonValue;
+use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::f64::consts::PI;
 use std::fs;
 use std::rc::Rc;
-use std::cmp::Ordering;
 
 
 
+const DEG2RAD: f64 = PI / 180.0;
+const DEG2METERS: f64 = 6378137.0 * DEG2RAD;
+
+
+
+#[derive(Debug)]
 struct BBox {
 	min: Point,
 	max: Point,
@@ -15,12 +21,12 @@ struct BBox {
 
 impl BBox {
 	fn new() -> BBox {
-		BBox{
-			min: Point{x:f64::MAX, y:f64::MAX},
-			max: Point{x:f64::MIN, y:f64::MIN},
+		BBox {
+			min: Point::new( 180.0,  90.0),
+			max: Point::new(-180.0, -90.0),
 		}
 	}
-	fn from_segments(segments:&Vec<Rc<Segment>>) -> BBox {
+	fn from_segments(segments: &Vec<Rc<Segment>>) -> BBox {
 		let mut bbox = BBox::new();
 		for segment in segments {
 			bbox.add_point(&segment.p0);
@@ -28,57 +34,78 @@ impl BBox {
 		}
 		return bbox;
 	}
-	fn add_point(&mut self, point:&Point) {
-		if self.min.x > point.x { self.min.x = point.x };
-		if self.min.y > point.y { self.min.y = point.y };
-		if self.max.x < point.x { self.max.x = point.x };
-		if self.max.y < point.y { self.max.y = point.y };
+	fn add_point(&mut self, point: &Point) {
+		if self.min.x > point.x {
+			self.min.x = point.x
+		};
+		if self.min.y > point.y {
+			self.min.y = point.y
+		};
+		if self.max.x < point.x {
+			self.max.x = point.x
+		};
+		if self.max.y < point.y {
+			self.max.y = point.y
+		};
 	}
-	fn add_bbox(&mut self, bbox:&BBox) {
-		if self.min.x > bbox.min.x { self.min.x = bbox.min.x };
-		if self.min.y > bbox.min.y { self.min.y = bbox.min.y };
-		if self.max.x < bbox.max.x { self.max.x = bbox.max.x };
-		if self.max.y < bbox.max.y { self.max.y = bbox.max.y };
+	fn add_bbox(&mut self, bbox: &BBox) {
+		if self.min.x > bbox.min.x {
+			self.min.x = bbox.min.x
+		};
+		if self.min.y > bbox.min.y {
+			self.min.y = bbox.min.y
+		};
+		if self.max.x < bbox.max.x {
+			self.max.x = bbox.max.x
+		};
+		if self.max.y < bbox.max.y {
+			self.max.y = bbox.max.y
+		};
 	}
 	fn center(&self) -> Point {
-		return Point{
-			x:(self.min.x+self.max.x)/2.0,
-			y:(self.min.y+self.max.y)/2.0,
-		}
+		return Point::new(
+			(self.min.x + self.max.x) / 2.0,
+			(self.min.y + self.max.y) / 2.0,
+		);
 	}
 	fn width(&self) -> f64 {
-		return self.max.x-self.min.x
+		return self.max.x - self.min.x;
 	}
 	fn height(&self) -> f64 {
-		return self.max.y-self.min.y
+		return self.max.y - self.min.y;
 	}
-	fn distance_to(&self, point:&Point) -> f64 {
+	fn distance_to(&self, point: &Point) -> f64 {
 		let dx = (self.min.x - point.x).max(point.x - self.max.x).max(0.0);
 		let dy = (self.min.y - point.y).max(point.y - self.max.y).max(0.0);
 
 		//println!("distance_to {} {}", dx, dy);
 		//println!("{:?} {:?}", self, point);
-		return (dx*dx + dy*dy).sqrt()
+		return (dx * dx * point.scale_x2 + dy * dy).sqrt() * DEG2METERS;
 	}
 }
 
 
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Point {
 	x: f64,
 	y: f64,
+	scale_x2: f64,
 }
 
 impl Point {
-	pub fn new(x:f64, y:f64) -> Point {
-		return Point{x,y}
+	pub fn new(x: f64, y: f64) -> Point {
+		return Point {
+			x,
+			y,
+			scale_x2: (y * DEG2RAD).cos().powi(2),
+		};
 	}
 	fn import_from_json(coordinates_point: &JsonValue) -> Point {
-		return Point{
-			x: coordinates_point[0].as_f64().unwrap(),
-			y: coordinates_point[1].as_f64().unwrap(),
-		}
+		return Point::new(
+			coordinates_point[0].as_f64().unwrap(),
+			coordinates_point[1].as_f64().unwrap(),
+		);
 	}
 }
 
@@ -91,12 +118,17 @@ struct Polyline {
 
 impl Polyline {
 	fn new() -> Polyline {
-		return Polyline{points: Vec::new(), bbox:BBox::new()};
+		return Polyline {
+			points: Vec::new(),
+			bbox: BBox::new(),
+		};
 	}
 	fn import_from_json(coordinates_line: &JsonValue) -> Polyline {
 		let mut polyline = Polyline::new();
 		for coordinates_point in coordinates_line.members() {
-			polyline.points.push(Point::import_from_json(coordinates_point))
+			polyline
+				.points
+				.push(Point::import_from_json(coordinates_point))
 		}
 		polyline.update_bbox();
 		return polyline;
@@ -107,10 +139,10 @@ impl Polyline {
 			bbox.add_point(&point);
 		}
 	}
-	fn extract_segments_to(&self, segments:&mut Segments) {
-		for i in 0..(self.points.len()-2) {
+	fn extract_segments_to(&self, segments: &mut Segments) {
+		for i in 0..(self.points.len() - 2) {
 			let p0 = self.points[i];
-			let p1 = self.points[i+1];
+			let p1 = self.points[i + 1];
 			segments.add(p0, p1);
 		}
 	}
@@ -125,12 +157,17 @@ struct Polygon {
 
 impl Polygon {
 	fn new() -> Polygon {
-		return Polygon{rings: Vec::new(), bbox:BBox::new()};
+		return Polygon {
+			rings: Vec::new(),
+			bbox: BBox::new(),
+		};
 	}
 	fn import_from_json(coordinates_polygon: &JsonValue) -> Polygon {
 		let mut polygon = Polygon::new();
 		for coordinates_ring in coordinates_polygon.members() {
-			polygon.rings.push(Polyline::import_from_json(coordinates_ring))
+			polygon
+				.rings
+				.push(Polyline::import_from_json(coordinates_ring))
 		}
 		polygon.update_bbox();
 		return polygon;
@@ -141,7 +178,7 @@ impl Polygon {
 			bbox.add_bbox(&ring.bbox);
 		}
 	}
-	fn extract_segments_to(&self, segments:&mut Segments) {
+	fn extract_segments_to(&self, segments: &mut Segments) {
 		for ring in &self.rings {
 			ring.extract_segments_to(segments);
 		}
@@ -157,15 +194,15 @@ pub struct Collection {
 
 impl Collection {
 	pub fn new() -> Collection {
-		return Collection{
-			polygons:Vec::new(),
-			segments:Segments::new(),
-		}
+		return Collection {
+			polygons: Vec::new(),
+			segments: Segments::new(),
+		};
 	}
-	pub fn fill_from_json(&mut self, filename:&String) {
+	pub fn fill_from_json(&mut self, filename: &String) {
 		println!("{:?}", filename);
-	
-		let contents:&str = &fs::read_to_string(filename).unwrap();
+
+		let contents: &str = &fs::read_to_string(filename).unwrap();
 		let data = json::parse(contents).unwrap();
 		let features = &data["features"];
 		for feature in features.members() {
@@ -175,7 +212,7 @@ impl Collection {
 
 			match geometry_type {
 				"Polygon" => self.polygons.push(Polygon::import_from_json(coordinates)),
-				_ => panic!("{}", geometry_type)
+				_ => panic!("{}", geometry_type),
 			}
 		}
 	}
@@ -185,10 +222,11 @@ impl Collection {
 		}
 		self.segments.init_tree();
 	}
-	pub fn get_min_distance(&self, point:Point) -> f64 {
+	pub fn get_min_distance(&self, point: Point) -> f64 {
 		return self.segments.get_min_distance(&point);
 	}
 }
+
 
 
 struct Segment {
@@ -198,14 +236,11 @@ struct Segment {
 }
 
 impl Segment {
-	fn new(p0:Point, p1:Point) -> Segment {
-		return Segment{
+	fn new(p0: Point, p1: Point) -> Segment {
+		return Segment {
 			p0,
 			p1,
-			center: Point{
-				x: (p0.x + p1.x) / 2.0,
-				y: (p0.y + p1.y) / 2.0,
-			}
+			center: Point::new((p0.x + p1.x) / 2.0, (p0.y + p1.y) / 2.0),
 		};
 	}
 }
@@ -214,28 +249,30 @@ impl Segment {
 
 struct Segments {
 	segments: Vec<Rc<Segment>>,
-	root: Option<Rc<SegmentTreeNode>>
+	root: Option<Rc<SegmentTreeNode>>,
 }
 
 impl Segments {
-	fn add(&mut self, p0:Point, p1:Point) {
+	fn add(&mut self, p0: Point, p1: Point) {
 		self.segments.push(Rc::new(Segment::new(p0, p1)));
 	}
 	pub fn new() -> Segments {
-		return Segments{
+		return Segments {
 			segments: Vec::new(),
-			root: None
-		}
+			root: None,
+		};
 	}
 	fn init_tree(&mut self) {
 		let node = self.create_node(&self.segments);
 		self.root = Some(Rc::new(node));
 	}
-	fn create_node(&self, segments:&Vec<Rc<Segment>>) -> SegmentTreeNode {
+	fn create_node(&self, segments: &Vec<Rc<Segment>>) -> SegmentTreeNode {
 		let bbox = BBox::from_segments(segments);
 		let center = bbox.center();
-		let mut segments1:Vec<Rc<Segment>> = Vec::new();
-		let mut segments2:Vec<Rc<Segment>> = Vec::new();
+
+		let mut segments1: Vec<Rc<Segment>> = Vec::new();
+		let mut segments2: Vec<Rc<Segment>> = Vec::new();
+
 		if bbox.width() > bbox.height() {
 			for segment in segments.iter() {
 				if segment.center.x < center.x {
@@ -255,7 +292,7 @@ impl Segments {
 		}
 
 		if segments1.len() == 0 {
-			return SegmentTreeNode{
+			return SegmentTreeNode {
 				bbox,
 				is_leaf: true,
 				left: None,
@@ -265,7 +302,7 @@ impl Segments {
 		}
 
 		if segments2.len() == 0 {
-			return SegmentTreeNode{
+			return SegmentTreeNode {
 				bbox,
 				is_leaf: true,
 				left: None,
@@ -274,20 +311,20 @@ impl Segments {
 			};
 		}
 
-		return SegmentTreeNode{
+		return SegmentTreeNode {
 			bbox,
 			is_leaf: false,
 			left: Some(Rc::new(self.create_node(&segments1))),
 			right: Some(Rc::new(self.create_node(&segments2))),
 			segments: None,
-		}
+		};
 	}
-	pub fn get_min_distance(&self, point:&Point) -> f64 {
+	pub fn get_min_distance(&self, point: &Point) -> f64 {
 		let mut heap = BinaryHeap::new();
 		let root = (self.root).as_ref().unwrap().clone();
 		heap.push(HeapNode::new(&root, point));
 
-		let mut min_distance = f64::MAX;
+		let mut min_distance: f64 = 1e20;
 
 		while !heap.is_empty() {
 			let heap_node = heap.pop().unwrap();
@@ -296,7 +333,7 @@ impl Segments {
 			let distance = heap_node.min_distance;
 
 			if distance > min_distance {
-				break
+				break;
 			}
 
 			if tree_node.is_leaf {
@@ -321,23 +358,25 @@ struct SegmentTreeNode {
 	segments: Option<Vec<Rc<Segment>>>,
 }
 
+
+
 struct HeapNode<'a> {
 	tree_node: &'a SegmentTreeNode,
 	min_distance: f64,
 }
 
 impl HeapNode<'_> {
-	fn new<'a>(tree_node:&'a SegmentTreeNode, point:&'a Point) -> HeapNode<'a> {
+	fn new<'a>(tree_node: &'a SegmentTreeNode, point: &'a Point) -> HeapNode<'a> {
 		let min_distance;
 		if tree_node.is_leaf {
 			min_distance = min_segments_distance(tree_node.segments.as_ref().unwrap(), &point);
 		} else {
 			min_distance = tree_node.bbox.distance_to(&point);
 		}
-		return HeapNode{
+		return HeapNode {
 			tree_node,
 			min_distance,
-		}
+		};
 	}
 }
 
@@ -356,10 +395,14 @@ impl Ord for HeapNode<'_> {
 }
 
 impl PartialOrd for HeapNode<'_> {
-	fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
 }
 
-fn min_segments_distance(segments:&Vec<Rc<Segment>>, point:&Point) -> f64 {
+
+
+fn min_segments_distance(segments: &Vec<Rc<Segment>>, point: &Point) -> f64 {
 	let mut min_distance = f64::MAX;
 	for segment in segments {
 		let distance = min_segment_distance(&segment, &point);
@@ -370,24 +413,24 @@ fn min_segments_distance(segments:&Vec<Rc<Segment>>, point:&Point) -> f64 {
 	return min_distance;
 }
 
-fn min_segment_distance(segment:&Segment, point:&Point) -> f64 {
+fn min_segment_distance(segment: &Segment, point: &Point) -> f64 {
 	let pv = segment.p0; // v
 	let pw = segment.p1; // w
-	
+
 	let dxwv = pw.x - pv.x;
 	let dywv = pw.y - pv.y;
 	let dxpv = point.x - pv.x;
 	let dypv = point.y - pv.y;
-	
-	let l2 = dxwv*dxwv + dywv*dywv;
+
+	let l2 = dxwv * dxwv + dywv * dywv;
 	if l2 == 0.0 {
-		return (dxpv*dxpv + dypv*dypv).sqrt();
+		return (dxpv * dxpv * point.scale_x2 + dypv * dypv).sqrt() * DEG2METERS;
 	}
-	
-	let t = ((dxpv*dxwv - dypv*dywv) / l2).max(0.0).min(1.0);
+
+	let t = ((dxpv * dxwv - dypv * dywv) / l2).max(0.0).min(1.0);
 
 	let dx = pv.x + t * dxwv - point.x;
 	let dy = pv.y + t * dywv - point.y;
-	
-	return (dx*dx + dy*dy).sqrt();
+
+	return (dx * dx * point.scale_x2 + dy * dy).sqrt() * DEG2METERS;
 }

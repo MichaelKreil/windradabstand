@@ -56,9 +56,11 @@ impl Image {
 	pub fn save(&self, filename:&Path) {
 		let size = self.size as u32;
 		let img = image::RgbImage::from_fn(size, size, |x,y| {
-			let d = self.data[(x + y*size) as usize] * 11100.0;
-			let v = d as u8;
-			image::Rgb([v, v, v])
+			let d = self.data[(x + y*size) as usize];
+			let v = d.min(2000.0) as u32;
+			let r = (v & 255u32) as u8;
+			let g = 16*((v >> 8) & 255u32) as u8;
+			image::Rgb([r, g, 0u8])
 		});
 		let _result = img.save(filename);
 	}
