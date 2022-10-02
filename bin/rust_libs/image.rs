@@ -60,7 +60,7 @@ impl Image {
 			let v = d as u8;
 			image::Rgb([v, v, v])
 		});
-		let result = img.save(filename);
+		let _result = img.save(filename);
 	}
 }
 
