@@ -53,7 +53,7 @@ pub mod geoimage {
 			if y >= self.size { panic!(); }
 			self.data[x + y*self.size] = distance;
 		}
-		pub fn save(&self, filename:&Path) {
+		pub fn export(&self, filename:&Path) {
 			let size = self.size as u32;
 			let img = image::RgbImage::from_fn(size, size, |x,y| {
 				let d = self.data[(x + y*size) as usize];

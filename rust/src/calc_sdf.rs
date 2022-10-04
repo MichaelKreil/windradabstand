@@ -17,7 +17,6 @@ pub mod geoimage;
 
 use std::env;
 use std::path::Path;
-use std::time::Instant;
 
 use crate::geometry::geometry::*;
 use crate::geoimage::geoimage::*;
@@ -48,7 +47,6 @@ fn main() {
 	let size = arguments.tile_size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-	let now = Instant::now();
 	for y in 0..size - 1 {
 		for x in 0..size - 1 {
 			let point = image.get_pixel_as_point(x, y);
@@ -56,13 +54,8 @@ fn main() {
 			image.set_pixel_value(x, y, distance);
 		}
 	}
-	let elapsed_time = now.elapsed();
-	println!("took {} ms.", elapsed_time.as_millis());
 
-	let now = Instant::now();
-	image.save(Path::new("test.png"));
-	let elapsed_time = now.elapsed();
-	println!("image.save: {} ms", elapsed_time.as_millis());
+	image.export(Path::new("test.png"));
 }
 
 fn parse_arguments() -> Arguments {
