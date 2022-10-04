@@ -112,6 +112,41 @@ pub mod geoimage {
 
 			return clone;
 		}
+		pub fn merge(tiles:Vec<GeoImage>) -> GeoImage {
+			if tiles.len() != 4 { panic!("need 4") };
+
+			let tile0 = &tiles[0];
+			let size = tile0.size*2;
+			let zoom = tile0.zoom-1;
+			let x_offset = tile0.x_offset/2;
+			let y_offset = tile0.y_offset/2;
+
+			let layout = [
+				[0,0,0],
+				[1,1,0],
+				[2,0,1],
+				[3,1,1]
+			];
+			
+			let mut image = GeoImage::new(size, zoom, x_offset, y_offset);
+
+			for item in layout {
+				let tile = &tiles[item[0]];
+				if tile.size != size/2 { panic!("wrong size") };
+				if tile.zoom != zoom+1 { panic!("wrong zoom") };
+				if tile.x_offset != x_offset*2 + item[1] { panic!("wrong x_offset") };
+				if tile.y_offset != y_offset*2 + item[2] { panic!("wrong y_offset") };
+				
+				let offset = item[1]*tile.size + item[2]*tile.size*size;
+				for y in 0..tile.size-1 {
+					for x in 0..tile.size-1 {
+						image.data[y*size+x + offset] = image.data[y*tile.size+x];
+					}
+				}
+			}
+
+			return image;
+		}
 	}
 
 
