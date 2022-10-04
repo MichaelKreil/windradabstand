@@ -9,18 +9,20 @@
 	5. save as png tiles
 */
 
-
 #[path = "lib/geometry.rs"]
-mod geometry;
+pub mod geometry;
 
 #[path = "lib/geoimage.rs"]
-mod geoimage;
+pub mod geoimage;
 
 use std::env;
 use std::path::Path;
 use std::time::Instant;
-use crate::geometry::geometry::{Collection};
-use crate::geoimage::geoimage::{GeoImage};
+
+use crate::geometry::geometry::*;
+use crate::geoimage::geoimage::*;
+
+
 
 #[derive(Debug)]
 struct Arguments {
@@ -40,11 +42,7 @@ fn main() {
 
 	let mut collection = Collection::new();
 
-	//let now = Instant::now();
 	collection.fill_from_json(&arguments.filename);
-	//let elapsed_time = now.elapsed();
-	//println!("took {} ms.", elapsed_time.as_millis());
-
 	collection.extract_segments();
 
 	let size = arguments.tile_size * arguments.n;

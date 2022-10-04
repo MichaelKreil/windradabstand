@@ -1,5 +1,9 @@
 
+// Warum auch immer Rust die Warnung zeigt, hiermit sind sie weg:
+#[allow(dead_code)]
+
 pub mod geometry {
+
 	use json;
 	use json::JsonValue;
 	use std::cmp::Ordering;
