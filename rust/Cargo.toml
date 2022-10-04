@@ -1,0 +1,19 @@
+[package]
+name = "windradabstand"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+json = "0.12.4"
+image = "0.24.4"
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "calc_sdf"
+path = "src/calc_sdf.rs"
+
+[[bin]]
+name = "merge_png"
+path = "src/merge_png.rs"
