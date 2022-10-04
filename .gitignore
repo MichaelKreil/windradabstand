@@ -1,4 +1,5 @@
 
+*.bin
 *.code-workspace
 *.png
 *.tar
