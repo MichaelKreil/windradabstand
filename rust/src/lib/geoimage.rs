@@ -7,7 +7,7 @@ mod geometry;
 pub mod geoimage {
 	use serde::{Serialize, Deserialize};
 	use std::{path::Path, fs::File};
-	use std::io::Write;
+	use std::io::{Write, Read};
 	use image;
 	use crate::geometry::geometry::Point;
 
@@ -72,18 +72,17 @@ pub mod geoimage {
 			let _result = img.save(filename);
 		}
 		pub fn save(&self, filename:&Path) {
-			let bin: Vec<u8> = bincode::serialize(&self).unwrap();
+			let buf: Vec<u8> = bincode::serialize(&self).unwrap();
 
 			let mut file = File::create(filename).unwrap();
-			let _result = file.write_all(&bin);
-			/*
-			// 8 bytes for the length of the vector, 4 bytes per float.
-			assert_eq!(encoded.len(), 8 + 4 * 4);
-
-			let decoded: World = bincode::deserialize(&encoded[..]).unwrap();
-
-			assert_eq!(world, decoded);
-			*/
+			let _result = file.write_all(&buf);
+		}
+		pub fn load(filename:&Path) -> GeoImage {
+			let mut buffer:Vec<u8> = Vec::new(); 
+			let mut file = File::open(filename).unwrap();
+			let _result = file.read_to_end(&mut buffer);
+			let image:GeoImage = bincode::deserialize(&buffer).unwrap();
+			return image;
 		}
 		pub fn scaled_down_clone(&self, new_size:usize) -> GeoImage {
 			if new_size >= self.size { panic!() }

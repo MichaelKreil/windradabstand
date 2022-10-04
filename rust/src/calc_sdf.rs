@@ -58,8 +58,10 @@ fn main() {
 	image.export(Path::new("test.png"));
 
 	let thumb = image.scaled_down_clone(arguments.tile_size);
-	thumb.export(Path::new("thumb.png"));
 	thumb.save(Path::new("test.bin"));
+
+	let test = GeoImage::load(Path::new("test.bin"));
+	test.export(Path::new("thumb.png"));
 }
 
 fn parse_arguments() -> Arguments {
