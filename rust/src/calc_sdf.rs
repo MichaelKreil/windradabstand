@@ -18,10 +18,8 @@ pub mod geoimage;
 use std::env;
 use std::path::Path;
 
-use crate::geometry::geometry::*;
 use crate::geoimage::geoimage::*;
-
-
+use crate::geometry::geometry::*;
 
 #[derive(Debug)]
 struct Arguments {
