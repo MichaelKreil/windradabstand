@@ -9,16 +9,17 @@
 	5. save as png tiles
 */
 
-use std::env;
-use std::path::Path;
-use std::time::Instant;
 
 #[path = "lib/geometry.rs"]
 mod geometry;
-use crate::geometry::geometry::{Collection};
 
 #[path = "lib/geoimage.rs"]
 mod geoimage;
+
+use std::env;
+use std::path::Path;
+use std::time::Instant;
+use crate::geometry::geometry::{Collection};
 use crate::geoimage::geoimage::{GeoImage};
 
 #[derive(Debug)]
