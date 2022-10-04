@@ -1,8 +1,7 @@
 
 *.code-workspace
-*.tar
 *.png
-~*
+*.tar
 /_documents
 /data/1_*
 /data/2_*
@@ -14,4 +13,5 @@
 /data/tmp/
 /docs/tiles/
 /node_modules/
-/target/
+/rust/target/
+~*

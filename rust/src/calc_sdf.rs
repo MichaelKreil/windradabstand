@@ -1,72 +1,74 @@
 /*
-    GeoJSON to Signed Distance Field (Image) as PNG Tiles:
-    1. load GeoJSON
-    3. add segments to R-Tree
-    4. for every pixel:
-        4.1. calc distance to nearest segment in meters
-        4.2. limit distance to maxDistance
-        4.3. if inside polygon: negative distance
-    5. save as png tiles
+	GeoJSON to Signed Distance Field (Image) as PNG Tiles:
+	1. load GeoJSON
+	3. add segments to R-Tree
+	4. for every pixel:
+		4.1. calc distance to nearest segment in meters
+		4.2. limit distance to maxDistance
+		4.3. if inside polygon: negative distance
+	5. save as png tiles
 */
 
 use std::env;
 use std::path::Path;
 use std::time::Instant;
 
-#[path = "rust_libs/geometry.rs"]
+#[path = "lib/geometry.rs"]
 mod geometry;
+use crate::geometry::geometry::{Collection};
 
-#[path = "rust_libs/image.rs"]
-mod image;
+#[path = "lib/geoimage.rs"]
+mod geoimage;
+use crate::geoimage::geoimage::{GeoImage};
 
 #[derive(Debug)]
 struct Arguments {
-    filename: String,
-    zoom: usize,
-    x0: usize,
-    y0: usize,
-    n: usize,
-    tile_size: usize,
+	filename: String,
+	zoom: usize,
+	x0: usize,
+	y0: usize,
+	n: usize,
+	tile_size: usize,
 }
 
 fn main() {
-    env::set_var("RUST_BACKTRACE", "1");
+	env::set_var("RUST_BACKTRACE", "1");
 
-    let arguments = parse_arguments();
-    println!("{:?}", arguments);
+	let arguments = parse_arguments();
+	println!("{:?}", arguments);
 
-    let mut collection = geometry::Collection::new();
+	let mut collection = Collection::new();
 
-    //let now = Instant::now();
-    collection.fill_from_json(&arguments.filename);
-    //let elapsed_time = now.elapsed();
-    //println!("took {} ms.", elapsed_time.as_millis());
+	//let now = Instant::now();
+	collection.fill_from_json(&arguments.filename);
+	//let elapsed_time = now.elapsed();
+	//println!("took {} ms.", elapsed_time.as_millis());
 
-    collection.extract_segments();
+	collection.extract_segments();
 
-    let size = arguments.tile_size * arguments.n;
-    let mut image = image::Image::new(size, arguments.zoom, arguments.x0, arguments.y0);
+	let size = arguments.tile_size * arguments.n;
+	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-    let now = Instant::now();
-    for y in 0..size - 1 {
-        for x in 0..size - 1 {
-            let point = image.get_pixel_as_point(x, y);
-            let distance = collection.get_min_distance(point);
-            image.set_pixel_value(x, y, distance);
-        }
-    }
-    let elapsed_time = now.elapsed();
-    println!("took {} ms.", elapsed_time.as_millis());
+	let now = Instant::now();
+	for y in 0..size - 1 {
+		for x in 0..size - 1 {
+			let point = image.get_pixel_as_point(x, y);
+			let distance = collection.get_min_distance(point);
+			image.set_pixel_value(x, y, distance);
+		}
+	}
+	let elapsed_time = now.elapsed();
+	println!("took {} ms.", elapsed_time.as_millis());
 
-    let now = Instant::now();
-    image.save(Path::new("test.png"));
-    let elapsed_time = now.elapsed();
-    println!("image.save: {} ms", elapsed_time.as_millis());
+	let now = Instant::now();
+	image.save(Path::new("test.png"));
+	let elapsed_time = now.elapsed();
+	println!("image.save: {} ms", elapsed_time.as_millis());
 }
 
 fn parse_arguments() -> Arguments {
-    let args: Vec<String> = env::args().collect();
-    return Arguments {
+	let args: Vec<String> = env::args().collect();
+	return Arguments {
 		filename: args.get(2).unwrap_or(&"/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson".to_string()).to_string(),
 		zoom:     args.get(3).unwrap_or(  &"11".to_string()).parse().unwrap(),
 		x0:       args.get(4).unwrap_or(&"1069".to_string()).parse().unwrap(),
