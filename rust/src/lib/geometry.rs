@@ -218,6 +218,11 @@ use std::rc::Rc;
 
 				match geometry_type {
 					"Polygon" => self.polygons.push(Polygon::import_from_json(coordinates)),
+					"MultiPolygon" => {
+						for polygon in coordinates.members() {
+							self.polygons.push(Polygon::import_from_json(polygon))
+						}
+					},
 					_ => panic!("{}", geometry_type),
 				}
 			}
