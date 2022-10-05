@@ -33,7 +33,7 @@ simpleCluster(async function (runWorker) {
 	console.log('Finished');
 
 	async function processLevel(action, z) {
-		console.log(`process level ${z} using ${action}`);
+		console.log(`process level ${z} using: ${action}`);
 		let todos = [];
 		let tilesBbox = bbox2Tiles(BBOX, z);
 		for (let y = tilesBbox[1]; y < tilesBbox[3]; y++) {
@@ -62,13 +62,12 @@ simpleCluster(async function (runWorker) {
 		case 'render': return await renderTile(todo);
 		case 'merge': return await mergeTile(todo);
 		default:
-			console.log({ todo });
 			throw Error();
 	}
 
 	async function renderTile(todo) {	
 		const { x, y, z } = todo;
-		console.log(z,y,x);
+		//console.log(z,y,x);
 		//console.log(todo);
 		const bboxInner = getTileBbox(x, y, z);
 		const bboxOuter = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius/1000));
