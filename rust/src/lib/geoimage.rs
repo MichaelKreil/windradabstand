@@ -5,12 +5,10 @@ pub mod geoimage {
 	use crate::geometry::geometry::Point;
 	use image;
 	use serde::{Deserialize, Serialize};
-	use std::fs::{create_dir, create_dir_all};
-use std::io::{Read, Write};
+	use std::fs::{File,create_dir_all};
+	use std::io::{Read, Write};
 	use std::panic;
-use std::path::PathBuf;
-use std::rc::Rc;
-use std::{fs::File, path::Path};
+	use std::path::{Path,PathBuf};
 
 	const PI: f64 = std::f64::consts::PI;
 
@@ -91,7 +89,7 @@ use std::{fs::File, path::Path};
 			let image: GeoImage = bincode::deserialize(&buffer).unwrap();
 			return image;
 		}
-		fn scaled_down_clone(&self, new_size: u32) -> GeoImage {
+		pub fn scaled_down_clone(&self, new_size: u32) -> GeoImage {
 			if new_size >= self.size {
 				panic!()
 			}
@@ -189,15 +187,21 @@ use std::{fs::File, path::Path};
 			}
 		}
 		fn export_to(&self, folder: &Path) {
+			self.export(&self.get_path(&folder, ".png").as_path());
+		}
+		pub fn save_to(&self, folder: &Path) {
+			self.save(&self.get_path(&folder, ".bin").as_path());
+		}
+		fn get_path(&self, folder: &Path, extension:&str) -> PathBuf {
 			let mut filename = PathBuf::from(folder);
 			filename.push(self.zoom.to_string());
 			filename.push(self.y_offset.to_string());
 			if create_dir_all(filename.as_path()).is_err() {
 				panic!();
 			}
-			filename.push(self.x_offset.to_string() + ".png");
+			filename.push(self.x_offset.to_string() + extension);
 
-			self.export(filename.as_path());
+			return filename;
 		}
 		fn extract_subtile(&self, dx: u32, dy: u32, tile_size: u32) -> GeoImage {
 			let n = self.size / tile_size;

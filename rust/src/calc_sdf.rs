@@ -57,6 +57,10 @@ fn main() {
 	}
 
 	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png));
+	let thumb = image.scaled_down_clone(arguments.size/2);
+	thumb.save_to(Path::new(&arguments.folder_bin));
+
+
 	/*
 	image.export(Path::new("test.png"));
 
