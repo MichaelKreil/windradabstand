@@ -207,8 +207,6 @@ use std::rc::Rc;
 			};
 		}
 		pub fn fill_from_json(&mut self, filename: &Path) {
-			println!("{:?}", filename);
-
 			let contents: &str = &fs::read_to_string(filename).unwrap();
 			let data = json::parse(contents).unwrap();
 			let features = &data["features"];
