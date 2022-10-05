@@ -48,8 +48,8 @@ fn main() {
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-	for y in 0..size - 1 {
-		for x in 0..size - 1 {
+	for y in 0..size {
+		for x in 0..size {
 			let point = image.get_pixel_as_point(x, y);
 			let distance = collection.get_min_distance(point);
 			image.set_pixel_value(x, y, distance);

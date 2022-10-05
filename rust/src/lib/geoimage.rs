@@ -101,11 +101,11 @@ use std::{fs::File, path::Path};
 
 			let mut clone = GeoImage::new(new_size, self.zoom, self.x_offset, self.y_offset);
 
-			for y0 in 0..clone.size - 1 {
-				for x0 in 0..clone.size - 1 {
+			for y0 in 0..clone.size {
+				for x0 in 0..clone.size {
 					let mut sum = 0.0f64;
-					for yd in 0..f1 - 1 {
-						for xd in 0..f1 - 1 {
+					for yd in 0..f1 {
+						for xd in 0..f1 {
 							let index = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
 							sum += self.data[index]
 						}
@@ -153,8 +153,8 @@ use std::{fs::File, path::Path};
 				};
 				
 				let offset = item[1] * tile.size + item[2] * tile.size * size;
-				for y in 0..tile.size - 1 {
-					for x in 0..tile.size - 1 {
+				for y in 0..tile.size {
+					for x in 0..tile.size {
 						let i0 = (y * size + x + offset) as usize;
 						let i1 = (y * tile.size + x) as usize;
 						image.data[i0] = image.data[i1];
@@ -181,8 +181,8 @@ use std::{fs::File, path::Path};
 				panic!()
 			}
 
-			for dy in 0..n-1 {
-				for dx in 0..n-1 {
+			for dy in 0..n {
+				for dx in 0..n {
 					let tile = self.extract_subtile(dx, dy, tile_size);
 					tile.export_to(folder);
 				}
@@ -214,8 +214,8 @@ use std::{fs::File, path::Path};
 				self.y_offset*n + dy
 			);
 
-			for y1 in 0..clone.size - 1 {
-				for x1 in 0..clone.size - 1 {
+			for y1 in 0..clone.size {
+				for x1 in 0..clone.size {
 					let y0 = dy*tile_size + y1;
 					let x0 = dx*tile_size + x1;
 					let index0 = (y0 *  self.size + x0) as usize;
