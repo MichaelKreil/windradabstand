@@ -40,7 +40,7 @@ fn main() {
 	let mut collection = Collection::new();
 
 	collection.fill_from_json(&arguments.filename);
-	collection.extract_segments();
+	collection.prepare_segment_lookup();
 
 	let size = arguments.tile_size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
@@ -52,6 +52,8 @@ fn main() {
 			image.set_pixel_value(x, y, distance);
 		}
 	}
+
+	//image.export_tile_tree();
 
 	image.export(Path::new("test.png"));
 

@@ -222,7 +222,7 @@ pub mod geometry {
 				}
 			}
 		}
-		pub fn extract_segments(&mut self) {
+		pub fn prepare_segment_lookup(&mut self) {
 			for polygon in &self.polygons {
 				polygon.extract_segments_to(&mut self.segments);
 			}
