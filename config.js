@@ -24,6 +24,8 @@ const config = {
 		webAssets: 'docs/assets',
 		tiles: 'docs/tiles',
 		temporary: 'data/tmp',
+		sdf: 'data/9_sdf',
+		sdfGeoJSON: 'data/9_sdf/geojson',
 	},
 	getFilename: {},
 	/*

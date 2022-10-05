@@ -35,9 +35,8 @@ struct Arguments {
 }
 
 fn main() {
-	env::set_var("RUST_BACKTRACE", "1");
-
 	let arguments = parse_arguments();
+	println!("arguments: {:?}", arguments);
 
 	let mut collection = Collection::new();
 
@@ -62,25 +61,28 @@ fn main() {
 
 fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
-	let json_string:&String = &args.get(2).unwrap_or(&"{}".to_string()).to_string();
+	//println!("args {:?}", args);
+	let json_string:&String = &args.get(1).unwrap_or(&"{}".to_string()).to_string();
 	let obj = &json::parse(json_string).unwrap();
+	//println!("obj {}", obj);
 
 	return Arguments {
-		filename_geo: parse_str(obj, "filename_geo", "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson"),
-		folder_png:   parse_str(obj, "folder_png",   "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/9_sdf/png/"),
-		folder_bin:   parse_str(obj, "folder_bin",   "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/9_sdf/sdf/"),
-		zoom:         parse_u32(obj, "zoom", 11),
-		x0:           parse_u32(obj, "x0", 1069),
-		y0:           parse_u32(obj, "y0", 697),
-		n:            parse_u32(obj, "n", 8),
-		size:         parse_u32(obj, "size", 256)
+		filename_geo: parse_str(obj, "filename_geo"),
+		folder_png:   parse_str(obj, "folder_png"),
+		folder_bin:   parse_str(obj, "folder_bin"),
+		zoom:         parse_u32(obj, "zoom"),
+		x0:           parse_u32(obj, "x0"),
+		y0:           parse_u32(obj, "y0"),
+		n:            parse_u32(obj, "n"),
+		size:         parse_u32(obj, "size")
 	};
 
-	fn parse_str(obj:&json::JsonValue, name:&str, default:&str) -> String {
-		return obj[name].as_str().unwrap_or(default).to_string();
+	fn parse_str(obj:&json::JsonValue, name:&str) -> String {
+		//println!("   obj {}", obj);
+		return obj[name].as_str().unwrap().to_string();
 	}
 
-	fn parse_u32(obj:&json::JsonValue, name:&str, default:u32) -> u32 {
-		return obj[name].as_u32().unwrap_or(default);
+	fn parse_u32(obj:&json::JsonValue, name:&str) -> u32 {
+		return obj[name].as_u32().unwrap();
 	}
 }
