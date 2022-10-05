@@ -56,8 +56,8 @@ fn main() {
 		}
 	}
 
-	//image.export_tile_tree();
-
+	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png));
+	/*
 	image.export(Path::new("test.png"));
 
 	let thumb = image.scaled_down_clone(arguments.size);
@@ -65,6 +65,7 @@ fn main() {
 
 	let test = GeoImage::load(Path::new("test.bin"));
 	test.export(Path::new("thumb.png"));
+	 */
 }
 
 fn parse_arguments() -> Arguments {

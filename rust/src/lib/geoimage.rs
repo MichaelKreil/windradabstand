@@ -5,8 +5,12 @@ pub mod geoimage {
 	use crate::geometry::geometry::Point;
 	use image;
 	use serde::{Deserialize, Serialize};
-	use std::io::{Read, Write};
-	use std::{fs::File, path::Path};
+	use std::fs::{create_dir, create_dir_all};
+use std::io::{Read, Write};
+	use std::panic;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::{fs::File, path::Path};
 
 	const PI: f64 = std::f64::consts::PI;
 
@@ -63,7 +67,7 @@ pub mod geoimage {
 			let index:usize = (x + y * self.size) as usize;
 			self.data[index] = distance;
 		}
-		pub fn export(&self, filename: &Path) {
+		fn export(&self, filename: &Path) {
 			let size = self.size as u32;
 			let img = image::RgbImage::from_fn(size, size, |x, y| {
 				let d = self.data[(x + y * size) as usize];
@@ -74,20 +78,20 @@ pub mod geoimage {
 			});
 			let _result = img.save(filename);
 		}
-		pub fn save(&self, filename: &Path) {
+		fn save(&self, filename: &Path) {
 			let buf: Vec<u8> = bincode::serialize(&self).unwrap();
 
 			let mut file = File::create(filename).unwrap();
 			let _result = file.write_all(&buf);
 		}
-		pub fn load(filename: &Path) -> GeoImage {
+		fn load(filename: &Path) -> GeoImage {
 			let mut buffer: Vec<u8> = Vec::new();
 			let mut file = File::open(filename).unwrap();
 			let _result = file.read_to_end(&mut buffer);
 			let image: GeoImage = bincode::deserialize(&buffer).unwrap();
 			return image;
 		}
-		pub fn scaled_down_clone(&self, new_size: u32) -> GeoImage {
+		fn scaled_down_clone(&self, new_size: u32) -> GeoImage {
 			if new_size >= self.size {
 				panic!()
 			}
@@ -102,18 +106,18 @@ pub mod geoimage {
 					let mut sum = 0.0f64;
 					for yd in 0..f1 - 1 {
 						for xd in 0..f1 - 1 {
-							let index:usize = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
+							let index = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
 							sum += self.data[index]
 						}
 					}
-					let index0:usize = (y0 * clone.size + x0) as usize;
+					let index0 = (y0 * clone.size + x0) as usize;
 					clone.data[index0] = sum / f2;
 				}
 			}
 
 			return clone;
 		}
-		pub fn merge(tiles: Vec<GeoImage>) -> GeoImage {
+		fn merge(tiles: Vec<GeoImage>) -> GeoImage {
 			if tiles.len() != 4 {
 				panic!("need 4")
 			};
@@ -159,6 +163,68 @@ pub mod geoimage {
 			}
 
 			return image;
+		}
+		pub fn export_tile_tree(&self, tile_size: u32, folder: &Path) {
+			self.export_tile_layer(tile_size, folder);
+
+			if self.size > tile_size {
+				let image = self.scaled_down_clone(self.size/2);
+				image.export_tile_tree(tile_size, folder)
+			}
+		}
+		fn export_tile_layer(&self, tile_size: u32, folder: &Path) {
+			let n = self.size / tile_size;
+			let dz = n.trailing_zeros();
+
+			if tile_size*2u32.pow(dz) != self.size {
+				println!("self.size {}, tile_size {}, n {}, dz {}", self.size, tile_size, n, dz);
+				panic!()
+			}
+
+			for dy in 0..n-1 {
+				for dx in 0..n-1 {
+					let tile = self.extract_subtile(dx, dy, tile_size);
+					tile.export_to(folder);
+				}
+			}
+		}
+		fn export_to(&self, folder: &Path) {
+			let mut filename = PathBuf::from(folder);
+			filename.push(self.zoom.to_string());
+			filename.push(self.y_offset.to_string());
+			if create_dir_all(filename.as_path()).is_err() {
+				panic!();
+			}
+			filename.push(self.x_offset.to_string() + ".png");
+
+			self.export(filename.as_path());
+		}
+		fn extract_subtile(&self, dx: u32, dy: u32, tile_size: u32) -> GeoImage {
+			let n = self.size / tile_size;
+			let dz = n.trailing_zeros();
+
+			if tile_size*2u32.pow(dz) != self.size {
+				panic!()
+			}
+
+			let mut clone = GeoImage::new(
+				tile_size,
+				self.zoom + dz,
+				self.x_offset*n + dx,
+				self.y_offset*n + dy
+			);
+
+			for y1 in 0..clone.size - 1 {
+				for x1 in 0..clone.size - 1 {
+					let y0 = dy*tile_size + y1;
+					let x0 = dx*tile_size + x1;
+					let index0 = (y0 *  self.size + x0) as usize;
+					let index1 = (y1 * clone.size + x1) as usize;
+					clone.data[index1] = self.data[index0];
+				}
+			}
+
+			return clone;
 		}
 	}
 
