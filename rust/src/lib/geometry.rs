@@ -10,7 +10,8 @@ pub mod geometry {
 	use std::collections::BinaryHeap;
 	use std::f64::consts::PI;
 	use std::fs;
-	use std::rc::Rc;
+	use std::path::Path;
+use std::rc::Rc;
 
 
 
@@ -205,7 +206,7 @@ pub mod geometry {
 				segments: Segments::new(),
 			};
 		}
-		pub fn fill_from_json(&mut self, filename: &String) {
+		pub fn fill_from_json(&mut self, filename: &Path) {
 			println!("{:?}", filename);
 
 			let contents: &str = &fs::read_to_string(filename).unwrap();

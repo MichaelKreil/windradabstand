@@ -12,10 +12,10 @@ pub mod geoimage {
 
 	#[derive(Serialize, Deserialize, PartialEq, Debug)]
 	pub struct GeoImage {
-		size: usize,
-		zoom: usize,
-		x_offset: usize,
-		y_offset: usize,
+		size: u32,
+		zoom: u32,
+		x_offset: u32,
+		y_offset: u32,
 		x0: f64,
 		y0: f64,
 		pixel_scale: f64,
@@ -23,7 +23,7 @@ pub mod geoimage {
 	}
 
 	impl GeoImage {
-		pub fn new(size: usize, zoom: usize, x_offset: usize, y_offset: usize) -> GeoImage {
+		pub fn new(size: u32, zoom: u32, x_offset: u32, y_offset: u32) -> GeoImage {
 			let scale = (2.0_f64).powf(zoom as f64);
 			//println!("Image::new {} {}", zoom, scale);
 			let length: usize = (size * size).try_into().unwrap();
@@ -43,7 +43,7 @@ pub mod geoimage {
 
 			return image;
 		}
-		pub fn get_pixel_as_point(&self, x: usize, y: usize) -> Point {
+		pub fn get_pixel_as_point(&self, x: u32, y: u32) -> Point {
 			//println!("get_pixel_as_point {} {} {} {} {} {}", x, y, self.x_offset, self.y_offset, self.scale, self.size);
 
 			return Point::new(
@@ -51,14 +51,17 @@ pub mod geoimage {
 				demercator_y((y as f64) * self.pixel_scale + self.y0),
 			);
 		}
-		pub fn set_pixel_value(&mut self, x: usize, y: usize, distance: f64) {
+		pub fn set_pixel_value(&mut self, x: u32, y: u32, distance: f64) {
 			if x >= self.size {
 				panic!();
-		}
+			}
+
 			if y >= self.size {
 				panic!();
 			}
-			self.data[x + y * self.size] = distance;
+
+			let index:usize = (x + y * self.size) as usize;
+			self.data[index] = distance;
 		}
 		pub fn export(&self, filename: &Path) {
 			let size = self.size as u32;
@@ -84,7 +87,7 @@ pub mod geoimage {
 			let image: GeoImage = bincode::deserialize(&buffer).unwrap();
 			return image;
 		}
-		pub fn scaled_down_clone(&self, new_size: usize) -> GeoImage {
+		pub fn scaled_down_clone(&self, new_size: u32) -> GeoImage {
 			if new_size >= self.size {
 				panic!()
 			}
@@ -99,11 +102,12 @@ pub mod geoimage {
 					let mut sum = 0.0f64;
 					for yd in 0..f1 - 1 {
 						for xd in 0..f1 - 1 {
-							let index = (y0 * f1 + yd) * self.size + (x0 * f1 + xd);
+							let index:usize = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
 							sum += self.data[index]
 						}
 					}
-					clone.data[y0 * clone.size + x0] = sum / f2;
+					let index0:usize = (y0 * clone.size + x0) as usize;
+					clone.data[index0] = sum / f2;
 				}
 			}
 
@@ -120,7 +124,7 @@ pub mod geoimage {
 			let x_offset = tile0.x_offset / 2;
 			let y_offset = tile0.y_offset / 2;
 
-			let layout = [
+			let layout:[[u32;3];4] = [
 				[0,0,0],
 				[1,1,0],
 				[2,0,1],
@@ -130,7 +134,7 @@ pub mod geoimage {
 			let mut image = GeoImage::new(size, zoom, x_offset, y_offset);
 
 			for item in layout {
-				let tile = &tiles[item[0]];
+				let tile = &tiles[item[0] as usize];
 				if tile.size != size / 2 {
 					panic!("wrong size")
 				};
@@ -147,7 +151,9 @@ pub mod geoimage {
 				let offset = item[1] * tile.size + item[2] * tile.size * size;
 				for y in 0..tile.size - 1 {
 					for x in 0..tile.size - 1 {
-						image.data[y * size + x + offset] = image.data[y * tile.size + x];
+						let i0 = (y * size + x + offset) as usize;
+						let i1 = (y * tile.size + x) as usize;
+						image.data[i0] = image.data[i1];
 					}
 				}
 			}

@@ -15,6 +15,7 @@ pub mod geometry;
 #[path = "lib/geoimage.rs"]
 pub mod geoimage;
 
+use json;
 use std::env;
 use std::path::Path;
 
@@ -23,12 +24,14 @@ use crate::geometry::geometry::*;
 
 #[derive(Debug)]
 struct Arguments {
-	filename: String,
-	zoom: usize,
-	x0: usize,
-	y0: usize,
-	n: usize,
-	tile_size: usize,
+	filename_geo: String,
+	folder_png: String,
+	folder_bin: String,
+	zoom: u32,
+	x0: u32,
+	y0: u32,
+	n: u32,
+	size: u32,
 }
 
 fn main() {
@@ -39,10 +42,10 @@ fn main() {
 
 	let mut collection = Collection::new();
 
-	collection.fill_from_json(&arguments.filename);
+	collection.fill_from_json(Path::new(&arguments.filename_geo));
 	collection.prepare_segment_lookup();
 
-	let size = arguments.tile_size * arguments.n;
+	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
 	for y in 0..size - 1 {
@@ -57,7 +60,7 @@ fn main() {
 
 	image.export(Path::new("test.png"));
 
-	let thumb = image.scaled_down_clone(arguments.tile_size);
+	let thumb = image.scaled_down_clone(arguments.size);
 	thumb.save(Path::new("test.bin"));
 
 	let test = GeoImage::load(Path::new("test.bin"));
@@ -66,12 +69,25 @@ fn main() {
 
 fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
+	let json_string:&String = &args.get(2).unwrap_or(&"{}".to_string()).to_string();
+	let obj = &json::parse(json_string).unwrap();
+
 	return Arguments {
-		filename: args.get(2).unwrap_or(&"/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson".to_string()).to_string(),
-		zoom:     args.get(3).unwrap_or(  &"11".to_string()).parse().unwrap(),
-		x0:       args.get(4).unwrap_or(&"1069".to_string()).parse().unwrap(),
-		y0:       args.get(5).unwrap_or( &"697".to_string()).parse().unwrap(),
-		n:        args.get(6).unwrap_or(   &"8".to_string()).parse().unwrap(),
-		tile_size:args.get(7).unwrap_or( &"256".to_string()).parse().unwrap(),
+		filename_geo: parse_str(obj, "filename_geo", "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/4_rules_geo_basis/tile.geojson"),
+		folder_png:   parse_str(obj, "folder_png",   "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/9_sdf/png/"),
+		folder_bin:   parse_str(obj, "folder_bin",   "/Users/michaelkreil/Projekte/privat/ZSHH/windradabstand/data/9_sdf/sdf/"),
+		zoom:         parse_u32(obj, "zoom", 11),
+		x0:           parse_u32(obj, "x0", 1069),
+		y0:           parse_u32(obj, "y0", 697),
+		n:            parse_u32(obj, "n", 8),
+		size:         parse_u32(obj, "size", 256)
 	};
+
+	fn parse_str(obj:&json::JsonValue, name:&str, default:&str) -> String {
+		return obj[name].as_str().unwrap_or(default).to_string();
+	}
+
+	fn parse_u32(obj:&json::JsonValue, name:&str, default:u32) -> u32 {
+		return obj[name].as_u32().unwrap_or(default);
+	}
 }
