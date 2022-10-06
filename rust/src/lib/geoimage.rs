@@ -82,7 +82,7 @@ pub mod geoimage {
 			let mut file = File::create(filename).unwrap();
 			let _result = file.write_all(&buf);
 		}
-		fn load(filename: &Path) -> GeoImage {
+		pub fn load(filename: &Path) -> GeoImage {
 			let mut buffer: Vec<u8> = Vec::new();
 			let mut file = File::open(filename).unwrap();
 			let _result = file.read_to_end(&mut buffer);
@@ -115,7 +115,7 @@ pub mod geoimage {
 
 			return clone;
 		}
-		fn merge(tiles: Vec<GeoImage>) -> GeoImage {
+		pub fn merge(tiles: Vec<GeoImage>) -> GeoImage {
 			if tiles.len() != 4 {
 				panic!("need 4")
 			};
@@ -186,22 +186,31 @@ pub mod geoimage {
 				}
 			}
 		}
-		fn export_to(&self, folder: &Path) {
+		pub fn export_to(&self, folder: &Path) {
 			self.export(&self.get_path(&folder, ".png").as_path());
 		}
 		pub fn save_to(&self, folder: &Path) {
 			self.save(&self.get_path(&folder, ".bin").as_path());
 		}
-		fn get_path(&self, folder: &Path, extension:&str) -> PathBuf {
+		pub fn get_size(&self) -> u32 {
+			return self.size;
+		}
+		pub fn calc_path(folder: &Path, z: u32, y: u32, x: u32, extension: &str) -> PathBuf {
 			let mut filename = PathBuf::from(folder);
-			filename.push(self.zoom.to_string());
-			filename.push(self.y_offset.to_string());
+
+			filename.push(z.to_string());
+			filename.push(y.to_string());
+
 			if create_dir_all(filename.as_path()).is_err() {
 				panic!();
 			}
-			filename.push(self.x_offset.to_string() + extension);
+
+			filename.push(x.to_string() + extension);
 
 			return filename;
+		}
+		fn get_path(&self, folder: &Path, extension:&str) -> PathBuf {
+			return GeoImage::calc_path(folder, self.zoom, self.y_offset, self.x_offset, extension);
 		}
 		fn extract_subtile(&self, dx: u32, dy: u32, tile_size: u32) -> GeoImage {
 			let n = self.size / tile_size;

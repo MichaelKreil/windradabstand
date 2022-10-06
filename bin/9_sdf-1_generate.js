@@ -66,10 +66,8 @@ simpleCluster(async function (runWorker) {
 	}
 
 	async function renderTile(todo) {	
-		const { x, y, z } = todo;
-		//console.log(z,y,x);
-		//console.log(todo);
-		const bboxInner = getTileBbox(x, y, z);
+		
+		const bboxInner = getTileBbox(todo.x, todo.y, todo.z);
 		const bboxOuter = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius/1000));
 
 		const sql = ogrGenerateSQL({
@@ -77,7 +75,7 @@ simpleCluster(async function (runWorker) {
 			bbox:bboxOuter
 		})
 
-		let filenameGeoJSON = config.getFilename.sdfGeoJSON(`${z}-${y}-${x}.geojson`);
+		let filenameGeoJSON = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}.geojson`);
 		let filenameSDF;
 
 		wrapSpawn('ogr2ogr', [
@@ -103,12 +101,20 @@ simpleCluster(async function (runWorker) {
 	}
 
 	async function mergeTile(todo) {
-		throw Error();
+		wrapSpawn(resolve(__dirname, '../rust/target/release/merge'), [
+			JSON.stringify({
+				folder_png: resolve(config.folders.sdf, 'png'),
+				folder_bin: resolve(config.folders.sdf, 'sdf'),
+				zoom: todo.z,
+				x0: todo.x,
+				y0: todo.y
+			})
+		])
 	}
 })
 
 function getTileFilename(x, y, z) {
-	return config.getFilename.tiles(['sdf', z, y, x].join('/') + '.png');
+	return config.getFilename.sdf(['png', z, y, x].join('/') + '.png');
 }
 
 function wrapSpawn(cmd, args) {

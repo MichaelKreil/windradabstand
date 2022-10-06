@@ -17,5 +17,5 @@ name = "calc_sdf"
 path = "src/calc_sdf.rs"
 
 [[bin]]
-name = "merge_png"
-path = "src/merge_png.rs"
+name = "merge"
+path = "src/merge.rs"
