@@ -15,6 +15,7 @@ use crate::geoimage::geoimage::*;
 struct Arguments {
 	folder_png: String,
 	folder_bin: String,
+	size: u32,
 	zoom: u32,
 	x0: u32,
 	y0: u32
@@ -29,13 +30,17 @@ fn main() {
 	let z = args.zoom+1;
 	let folder_bin = Path::new(&args.folder_bin);
 
-	let mut images = Vec::new();
-	images.push(GeoImage::load(GeoImage::calc_path(folder_bin, z, x  , y  , ".bin").as_path()));
-	images.push(GeoImage::load(GeoImage::calc_path(folder_bin, z, x+1, y  , ".bin").as_path()));
-	images.push(GeoImage::load(GeoImage::calc_path(folder_bin, z, x  , y+1, ".bin").as_path()));
-	images.push(GeoImage::load(GeoImage::calc_path(folder_bin, z, x+1, y+1, ".bin").as_path()));
 
-	let image = GeoImage::merge(images);
+	let mut images:[Option<GeoImage>;4] = [None,None,None,None];
+
+	for item in LAYOUT {
+		let path_buf = GeoImage::calc_path(folder_bin, z, x + item.x, y + item.y, ".bin");
+		let path = path_buf.as_path();
+		if path.is_file() {
+			let _image = images[item.index].insert(GeoImage::load(path));
+		}
+	}
+	let image = GeoImage::merge(images, args.size, args.zoom, args.x0, args.y0);
 
 	image.export_to(Path::new(&args.folder_png));
 
@@ -53,6 +58,7 @@ fn parse_arguments() -> Arguments {
 	return Arguments {
 		folder_png:   parse_str(obj, "folder_png"),
 		folder_bin:   parse_str(obj, "folder_bin"),
+		size:         parse_u32(obj, "size"),
 		zoom:         parse_u32(obj, "zoom"),
 		x0:           parse_u32(obj, "x0"),
 		y0:           parse_u32(obj, "y0")

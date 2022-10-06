@@ -105,6 +105,7 @@ simpleCluster(async function (runWorker) {
 			JSON.stringify({
 				folder_png: resolve(config.folders.sdf, 'png'),
 				folder_bin: resolve(config.folders.sdf, 'sdf'),
+				size: TILE_SIZE,
 				zoom: todo.z,
 				x0: todo.x,
 				y0: todo.y

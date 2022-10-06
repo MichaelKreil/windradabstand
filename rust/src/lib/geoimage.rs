@@ -11,10 +11,23 @@ pub mod geoimage {
 	use std::path::{Path,PathBuf};
 
 	const PI: f64 = std::f64::consts::PI;
+	const MAX_DISTANCE: f64 = 3000.0;
+
+	pub struct LayoutItem {
+		pub index: usize,
+		pub x: u32,
+		pub y: u32,
+	}
+	pub const LAYOUT:[LayoutItem;4] = [
+		LayoutItem{index:0, x:0, y:0},
+		LayoutItem{index:1, x:1, y:0},
+		LayoutItem{index:2, x:0, y:1},
+		LayoutItem{index:3, x:1, y:1}
+	];
 
 	#[derive(Serialize, Deserialize, PartialEq, Debug)]
 	pub struct GeoImage {
-		size: u32,
+		pub size: u32,
 		zoom: u32,
 		x_offset: u32,
 		y_offset: u32,
@@ -41,7 +54,7 @@ pub mod geoimage {
 				pixel_scale: 1.0 / (size as f64) / scale,
 				data: Vec::with_capacity(length),
 			};
-			image.data.resize(length, f64::MAX);
+			image.data.resize(length, MAX_DISTANCE);
 
 			return image;
 		}
@@ -69,7 +82,7 @@ pub mod geoimage {
 			let size = self.size as u32;
 			let img = image::RgbImage::from_fn(size, size, |x, y| {
 				let d = self.data[(x + y * size) as usize];
-				let v = d.min(2000.0) as u32;
+				let v = d.min(MAX_DISTANCE) as u32;
 				let r = (v & 255u32) as u8;
 				let g = 16 * ((v >> 8) & 255u32) as u8;
 				image::Rgb([r, g, 0u8])
@@ -115,46 +128,39 @@ pub mod geoimage {
 
 			return clone;
 		}
-		pub fn merge(tiles: Vec<GeoImage>) -> GeoImage {
+		pub fn merge(tiles: [Option<GeoImage>;4], size:u32, zoom:u32, x_offset:u32, y_offset:u32) -> GeoImage {
 			if tiles.len() != 4 {
 				panic!("need 4")
 			};
-
-			let tile0 = &tiles[0];
-			let size = tile0.size * 2;
-			let zoom = tile0.zoom - 1;
-			let x_offset = tile0.x_offset / 2;
-			let y_offset = tile0.y_offset / 2;
-
-			let layout:[[u32;3];4] = [
-				[0,0,0],
-				[1,1,0],
-				[2,0,1],
-				[3,1,1]
-			];
 			
+			let half_size = size/2;
 			let mut image = GeoImage::new(size, zoom, x_offset, y_offset);
 
-			for item in layout {
-				let tile = &tiles[item[0] as usize];
-				if tile.size != size / 2 {
+			for item in LAYOUT {
+				if tiles[item.index].is_none() {
+					continue;
+				}
+			
+				let tile:&GeoImage = tiles[item.index].as_ref().unwrap();
+
+				if tile.size != half_size {
 					panic!("wrong size")
 				};
 				if tile.zoom != zoom + 1 {
 					panic!("wrong zoom")
 				};
-				if tile.x_offset != x_offset * 2 + item[1] {
+				if tile.x_offset != x_offset * 2 + item.x {
 					panic!("wrong x_offset")
 				};
-				if tile.y_offset != y_offset * 2 + item[2] {
+				if tile.y_offset != y_offset * 2 + item.y {
 					panic!("wrong y_offset")
 				};
 				
-				let offset = item[1] * tile.size + item[2] * tile.size * size;
-				for y in 0..tile.size {
-					for x in 0..tile.size {
+				let offset = item.x * half_size + item.y * half_size * size;
+				for y in 0..half_size {
+					for x in 0..half_size {
 						let i0 = (y * size + x + offset) as usize;
-						let i1 = (y * tile.size + x) as usize;
+						let i1 = (y * half_size + x) as usize;
 						image.data[i0] = image.data[i1];
 					}
 				}
@@ -191,9 +197,6 @@ pub mod geoimage {
 		}
 		pub fn save_to(&self, folder: &Path) {
 			self.save(&self.get_path(&folder, ".bin").as_path());
-		}
-		pub fn get_size(&self) -> u32 {
-			return self.size;
 		}
 		pub fn calc_path(folder: &Path, z: u32, y: u32, x: u32, extension: &str) -> PathBuf {
 			let mut filename = PathBuf::from(folder);
