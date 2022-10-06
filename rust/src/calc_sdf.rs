@@ -62,7 +62,7 @@ fn main() {
 fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
 	//println!("args {:?}", args);
-	let json_string:&String = &args.get(1).unwrap_or(&"{}".to_string()).to_string();
+	let json_string:&String = &args.get(1).unwrap().to_string();
 	let obj = &json::parse(json_string).unwrap();
 	//println!("obj {}", obj);
 
