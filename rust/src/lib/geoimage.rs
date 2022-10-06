@@ -82,8 +82,23 @@ pub mod geoimage {
 			let size = self.size as u32;
 			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
 				let d = self.data[(x + y * size) as usize];
-				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE);
-				return image::Luma([(v*10.0 + 32768.0) as u16]);
+				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*1.0 + 32768.0;
+				let i = v as u16;
+				return image::Rgb([
+					(i & 255u16) as u8,
+					(i >> 8) as u8,
+					0u8
+				]);
+			});
+			let _result = img.save(filename);
+		}
+		fn export_16(&self, filename: &Path) {
+			let size = self.size as u32;
+			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
+				let d = self.data[(x + y * size) as usize];
+				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*10.0 + 32768.0;
+				let i = v as u16;
+				return image::Luma([i]);
 			});
 			let _result = img.save(filename);
 		}
