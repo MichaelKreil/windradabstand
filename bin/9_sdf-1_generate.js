@@ -76,7 +76,6 @@ simpleCluster(async function (runWorker) {
 		})
 
 		let filenameGeoJSON = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}.geojson`);
-		let filenameSDF;
 
 		wrapSpawn('ogr2ogr', [
 			'-sql', sql,
