@@ -80,12 +80,10 @@ pub mod geoimage {
 		}
 		fn export(&self, filename: &Path) {
 			let size = self.size as u32;
-			let img = image::RgbImage::from_fn(size, size, |x, y| {
+			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
 				let d = self.data[(x + y * size) as usize];
-				let v = d.min(MAX_DISTANCE) as u32;
-				let r = (v & 255u32) as u8;
-				let g = 16 * ((v >> 8) & 255u32) as u8;
-				image::Rgb([r, g, 0u8])
+				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE);
+				return image::Luma([(v*10.0 + 32768.0) as u16]);
 			});
 			let _result = img.save(filename);
 		}
