@@ -335,7 +335,7 @@ use std::rc::Rc;
 			let root = (self.root).as_ref().unwrap().clone();
 			heap.push(HeapNode::new(&root, point));
 
-			let mut min_distance: f64 = 1e20;
+			let mut min_distance: f64 = 3000.0;
 
 			while !heap.is_empty() {
 				let heap_node = heap.pop().unwrap();

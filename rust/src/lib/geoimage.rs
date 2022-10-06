@@ -92,6 +92,7 @@ pub mod geoimage {
 			});
 			let _result = img.save(filename);
 		}
+		/*
 		fn export_16(&self, filename: &Path) {
 			let size = self.size as u32;
 			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
@@ -102,6 +103,7 @@ pub mod geoimage {
 			});
 			let _result = img.save(filename);
 		}
+		*/
 		fn save(&self, filename: &Path) {
 			let buf: Vec<u8> = bincode::serialize(&self).unwrap();
 
