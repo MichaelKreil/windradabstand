@@ -44,7 +44,7 @@ simpleCluster(async function (runWorker) {
 			}
 		}
 
-		//todos = todos.slice(1000);
+		todos.sort(() => Math.random() - 0.5);
 
 		let progress = new Progress(todos.length);
 
