@@ -92,7 +92,9 @@ pub mod geoimage {
 					let mut data:Vec<i32> = Vec::new();
 					data.resize(n*n, 0);
 					for i in 0..n*n {
-						data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)) as i32;
+						//data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)) as i32;
+						//data[i] = (self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)).powi(2) as i32;
+						data[i] = ((self.data[i] - MIN_DISTANCE)*255.0/(MAX_DISTANCE - MIN_DISTANCE)) as i32;
 					}
 
 					/* horizontal
@@ -103,7 +105,7 @@ pub mod geoimage {
 
 					for y in (1..n).rev() {
 						for x in (1..n).rev() {
-							data[y*n+x] = data[y*n+x] - data[y*n+x-1] - data[y*n+x-n] + data[y*n+x-n-1];
+							//data[y*n+x] = data[y*n+x] - data[y*n+x-1] - data[y*n+x-n] + data[y*n+x-n-1];
 						}
 					}
 					/*
@@ -113,12 +115,12 @@ pub mod geoimage {
 					*/
 
 					let mut buf:Vec<u8> = Vec::new();
-					buf.resize(n*n*2, 0);
+					buf.resize(n*n, 0);
 					for i in 0..n*n {
 						let v = (data[i] + 32768) as u16;
 						let b = v.to_le_bytes();
-						buf[i*2+0] = b[0];
-						buf[i*2+1] = b[1];
+						buf[i+0] = b[0];
+						//buf[i*2+1] = b[1];
 					}
 
 					let mut file = File::create(filename).unwrap();
@@ -128,12 +130,9 @@ pub mod geoimage {
 					let size = self.size as u32;
 					let img = image::ImageBuffer::from_fn(size, size, |x, y| {
 						let d = self.data[(x + y * size) as usize];
-						let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*1.0 + 32768.0;
-						let i = v as u16;
-						return image::Rgb([
-							(i & 255u16) as u8,
-							(i >> 8) as u8,
-							0u8
+						let v = ((d-MIN_DISTANCE)/(MAX_DISTANCE-MIN_DISTANCE)).max(0.0).min(1.0);
+						return image::Luma([
+							(v*255.0) as u8
 						]);
 					});
 					let _result = img.save(filename);

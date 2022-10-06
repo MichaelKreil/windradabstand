@@ -14,7 +14,7 @@ const { resolve } = require('path');
 const FILENAME_LAYER1 = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
 const FILENAME_LAYER2 = config.getFilename.rulesGeoBasis('gebaeude.gpkg');
 const COMBINED_RENDER_LEVELS = 3;
-const TILE_SIZE = 256;
+const TILE_SIZE = 512;
 
 simpleCluster(async function (runWorker) {
 	wrapSpawn('cargo', [

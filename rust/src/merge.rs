@@ -42,7 +42,7 @@ fn main() {
 	}
 	let image = GeoImage::merge(images, args.size, args.zoom, args.x0, args.y0);
 
-	image.export_to(Path::new(&args.folder_png), ".bin16");
+	image.export_to(Path::new(&args.folder_png), ".png");
 
 	let thumb = image.scaled_down_clone(image.size/2);
 	thumb.export_to(folder_bin, ".bin");
