@@ -34,7 +34,7 @@ fn main() {
 	let mut images:[Option<GeoImage>;4] = [None,None,None,None];
 
 	for item in LAYOUT {
-		let path_buf = GeoImage::calc_path(folder_bin, z, x + item.x, y + item.y, ".bin");
+		let path_buf = GeoImage::calc_path(folder_bin, z, y + item.y, x + item.x, ".bin");
 		let path = path_buf.as_path();
 		if path.is_file() {
 			let _image = images[item.index].insert(GeoImage::load(path));
