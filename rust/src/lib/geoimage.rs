@@ -79,18 +79,69 @@ pub mod geoimage {
 			self.data[index] = distance;
 		}
 		fn export(&self, filename: &Path) {
-			let size = self.size as u32;
-			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
-				let d = self.data[(x + y * size) as usize];
-				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*1.0 + 32768.0;
-				let i = v as u16;
-				return image::Rgb([
-					(i & 255u16) as u8,
-					(i >> 8) as u8,
-					0u8
-				]);
-			});
-			let _result = img.save(filename);
+			let extension = filename.extension().unwrap().to_str().unwrap();
+			match extension {
+				"bin" => {
+					let buf: Vec<u8> = bincode::serialize(&self).unwrap();
+					let mut file = File::create(filename).unwrap();
+					let _result = file.write_all(&buf);
+				},
+				"bin16" => {
+					let n = self.size as usize;
+					let mut data:Vec<i32> = Vec::new();
+					data.resize(n*n, 0);
+					for i in 0..n*n {
+						data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(-MAX_DISTANCE)) as i32;
+					}
+
+					/* horizontal
+					for i in (1..n).rev() {
+						data[i] -= data[i-1];
+					}
+					*/
+
+					for y in (1..n).rev() {
+						for x in (1..n).rev() {
+							data[y*n+x] = data[y*n+x] - data[y*n+x-1] - data[y*n+x-n] + data[y*n+x-n-1];
+						}
+					}
+					/*
+					for i in (2..n).rev() {
+						data[i] -= data[i-1];
+					}
+					*/
+
+					let mut buf:Vec<u8> = Vec::new();
+					buf.resize(n*n*2, 0);
+					for i in 0..n*n {
+						let v = (data[i] + 32768) as u16;
+						let b = v.to_le_bytes();
+						buf[i*2+0] = b[0];
+						buf[i*2+1] = b[1];
+					}
+
+					let mut file = File::create(filename).unwrap();
+					let _result = file.write_all(&buf);
+				},
+				"png" => {
+					let size = self.size as u32;
+					let img = image::ImageBuffer::from_fn(size, size, |x, y| {
+						let d = self.data[(x + y * size) as usize];
+						let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*1.0 + 32768.0;
+						let i = v as u16;
+						return image::Rgb([
+							(i & 255u16) as u8,
+							(i >> 8) as u8,
+							0u8
+						]);
+					});
+					let _result = img.save(filename);
+				},
+				_ => {
+					println!("unknown extension: {}", extension);
+					panic!();
+				}
+			}
 		}
 		/*
 		fn export_16(&self, filename: &Path) {
@@ -104,12 +155,6 @@ pub mod geoimage {
 			let _result = img.save(filename);
 		}
 		*/
-		fn save(&self, filename: &Path) {
-			let buf: Vec<u8> = bincode::serialize(&self).unwrap();
-
-			let mut file = File::create(filename).unwrap();
-			let _result = file.write_all(&buf);
-		}
 		pub fn load(filename: &Path) -> GeoImage {
 			let mut buffer: Vec<u8> = Vec::new();
 			let mut file = File::open(filename).unwrap();
@@ -156,7 +201,7 @@ pub mod geoimage {
 					continue;
 				}
 			
-				let tile:&GeoImage = tiles[item.index].as_ref().unwrap();
+				let tile: &GeoImage = tiles[item.index].as_ref().unwrap();
 
 				if tile.size != half_size {
 					panic!("wrong size")
@@ -184,15 +229,15 @@ pub mod geoimage {
 
 			return image;
 		}
-		pub fn export_tile_tree(&self, tile_size: u32, folder: &Path) {
-			self.export_tile_layer(tile_size, folder);
+		pub fn export_tile_tree(&self, tile_size: u32, folder: &Path, extension: &str) {
+			self.export_tile_layer(tile_size, folder, extension);
 
 			if self.size > tile_size {
 				let image = self.scaled_down_clone(self.size/2);
-				image.export_tile_tree(tile_size, folder)
+				image.export_tile_tree(tile_size, folder, extension)
 			}
 		}
-		fn export_tile_layer(&self, tile_size: u32, folder: &Path) {
+		fn export_tile_layer(&self, tile_size: u32, folder: &Path, extension: &str) {
 			let n = self.size / tile_size;
 			let dz = n.trailing_zeros();
 
@@ -204,15 +249,12 @@ pub mod geoimage {
 			for dy in 0..n {
 				for dx in 0..n {
 					let tile = self.extract_subtile(dx, dy, tile_size);
-					tile.export_to(folder);
+					tile.export_to(folder, extension);
 				}
 			}
 		}
-		pub fn export_to(&self, folder: &Path) {
-			self.export(&self.get_path(&folder, ".png").as_path());
-		}
-		pub fn save_to(&self, folder: &Path) {
-			self.save(&self.get_path(&folder, ".bin").as_path());
+		pub fn export_to(&self, folder: &Path, extension: &str) {
+			self.export(&self.get_path(&folder, extension).as_path());
 		}
 		pub fn calc_path(folder: &Path, z: u32, y: u32, x: u32, extension: &str) -> PathBuf {
 			let mut filename = PathBuf::from(folder);
@@ -228,7 +270,7 @@ pub mod geoimage {
 
 			return filename;
 		}
-		fn get_path(&self, folder: &Path, extension:&str) -> PathBuf {
+		fn get_path(&self, folder: &Path, extension: &str) -> PathBuf {
 			return GeoImage::calc_path(folder, self.zoom, self.y_offset, self.x_offset, extension);
 		}
 		fn extract_subtile(&self, dx: u32, dy: u32, tile_size: u32) -> GeoImage {

@@ -42,10 +42,10 @@ fn main() {
 	}
 	let image = GeoImage::merge(images, args.size, args.zoom, args.x0, args.y0);
 
-	image.export_to(Path::new(&args.folder_png));
+	image.export_to(Path::new(&args.folder_png), ".bin16");
 
 	let thumb = image.scaled_down_clone(image.size/2);
-	thumb.save_to(folder_bin);
+	thumb.export_to(folder_bin, ".bin");
 }
 
 fn parse_arguments() -> Arguments {
