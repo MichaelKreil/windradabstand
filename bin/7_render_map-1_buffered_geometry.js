@@ -10,7 +10,7 @@ const { ensureFolder, Progress } = require('../lib/helper.js');
 
 const DATABASE_FILENAME = config.getFilename.bufferedGeometry('all.gpkg');
 const COMBINED_RENDER_LEVELS = 4;
-const TILE_SIZE = 512;
+const TILE_SIZE = config.tileSize;
 
 simpleCluster(async function (runWorker) {
 	const zoomLevel = config.maxMapZoomLevel - (COMBINED_RENDER_LEVELS - 1);
