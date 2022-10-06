@@ -12,6 +12,7 @@ pub mod geoimage {
 
 	const PI: f64 = std::f64::consts::PI;
 	const MAX_DISTANCE: f64 = 3000.0;
+	const MIN_DISTANCE: f64 =  300.0;
 
 	pub struct LayoutItem {
 		pub index: usize,
@@ -91,7 +92,7 @@ pub mod geoimage {
 					let mut data:Vec<i32> = Vec::new();
 					data.resize(n*n, 0);
 					for i in 0..n*n {
-						data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(-MAX_DISTANCE)) as i32;
+						data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)) as i32;
 					}
 
 					/* horizontal
