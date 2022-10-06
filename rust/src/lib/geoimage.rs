@@ -170,11 +170,12 @@ pub mod geoimage {
 				};
 				
 				let offset = item.x * half_size + item.y * half_size * size;
+				
 				for y in 0..half_size {
 					for x in 0..half_size {
 						let i0 = (y * size + x + offset) as usize;
 						let i1 = (y * half_size + x) as usize;
-						image.data[i0] = image.data[i1];
+						image.data[i0] = tile.data[i1];
 					}
 				}
 			}
