@@ -142,7 +142,7 @@
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
 					type: 'raster',
-					tiles: [ URL+'tiles/buffered/{z}/{y}/{x}.png' ],
+					tiles: [ URL+'tiles/{z}/{y}/{x}.png' ],
 					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
 					minzoom: 0,
 					maxzoom: 14,
@@ -153,117 +153,10 @@
 					type: 'raster',
 					source: 'tilesSource',
 					paint: {
-						'raster-opacity': [ 'interpolate', ['exponential', 1], ['zoom'], 5, 1, 8, 0.3 ],
+						'raster-opacity': 1,
 					},
-				})
-
-				let wind = await loadWind();
-				wind.forEach(w => {
-					w.ok = (Object.keys(w.min).length === 0);
-					w.color = w.ok ? '#0088c2' : '#c00d0d';
-					w.order = (w.ok ? 0 : 100) + w.Breitengrad;
-				})
-				wind = wind.sort((a,b) => a.order - b.order);
-				let features = wind.map(w => ({
-					type: 'Feature',
-					geometry: {
-						type: 'Point',
-						coordinates: [parseFloat(w.Laengengrad), parseFloat(w.Breitengrad)]
-					},
-					properties: w
-				}))
-
-				map.addSource('pointData', { type: 'geojson', data: { type: 'FeatureCollection', features } })
-
-				map.addLayer({
-					id: 'windSymbols',
-					type: 'circle',
-					source: 'pointData',
-					paint: {
-						'circle-color': ['get', 'color'],
-						'circle-opacity': [ 'interpolate', ['linear'], ['zoom'], 6, 0, 7, 1 ],
-						'circle-radius': [ 'interpolate', ['exponential', 1.5], ['zoom'], 6,  1, 14, 12 ],
-					}
-				});
-				
-				map.on('mouseenter', 'windSymbols', () => {
-					if (map.getZoom() < 6) return;
-					map.getCanvas().style.cursor = 'pointer';
-				});
-
-				// Change it back to a pointer when it leaves.
-				map.on('mouseleave', 'windSymbols', () => {
-					map.getCanvas().style.cursor = '';
-				});
-				map.on('click', 'windSymbols', e => {
-					let {lng,lat} = e.lngLat;
-					let wind = e.features[0];
-					if (!wind) return;
-					console.log(wind.properties);
 				})
 			})
-
-			async function loadWind() {
-				let data = await loadViaAjax(URL+'data/wind.json');
-				let wind = [];
-				Object.entries(JSON.parse(data)).forEach(([key,values]) => {
-					switch (key) {
-						case 'Breitengrad':
-						case 'Laengengrad':
-							values = runLengthDecoding(values);
-							values = diffDecoding(values);
-							values = values.map(v => v / 1e5);
-						break;
-						case 'Bruttoleistung':
-						case 'bundeslandAGS':
-						case 'groupIndex':
-						case 'hoehe':
-						case 'Inbetriebnahmedatum':
-						case 'Nabenhoehe':
-						case 'Rotordurchmesser':
-							values = runLengthDecoding(values);
-							break;
-						default:
-							if (key.startsWith('min_')) {
-								values = runLengthDecoding(values);
-								break;
-							}
-							console.log('what should we do with', key, 'early in the morning');
-					}
-
-					values.forEach((v,i) => {
-						if (!wind[i]) wind[i] = {min:{}};
-						if (key.startsWith('min_')) {
-							if (v !== null) wind[i].min[key.slice(4)] = v;
-						} else {
-							wind[i][key] = v;
-						}
-					})
-				});
-				
-				return wind;
-
-				function runLengthDecoding(array) {
-					let result = [];
-					array.forEach(v => {
-						if (Array.isArray(v)) {
-							for (let i = 0; i < v[1]; i++) result.push(v[0])
-						} else {
-							result.push(v);
-						}
-					})
-					return result;
-				}
-
-				function diffDecoding(array) {
-					for (let i = 1; i < array.length; i++) {
-						if (array[i] === null) continue;
-						if (array[i - 1] === null) continue;
-						array[i] += array[i - 1];
-					}
-					return array;
-				}
-			}
 
 			function loadViaAjax(url) {
 				return new Promise((res, rej) => {
