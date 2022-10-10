@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Die Verhinderung der Windenergie</title>
 
-	<script src="/scripts/maplibre-gl.js"></script>
-	<link href="/scripts/maplibre-gl.css" rel="stylesheet" />
 	<style>
 		body {
 			font-family: "Times New Roman", Times, serif;
@@ -39,200 +36,42 @@
 		#mapContainer {
 			margin: auto;
 			max-width: 800px;
-			height: 80vh;
-		}
-		#map {
-			width: 100%;
-			height: 100%;
-		}
-		.maplibregl-ctrl-attrib-inner {
-			line-height: 1.2em;
 		}
 	</style>
 </head>
 
 <body>
 	<div class="page">
-	<h1>Windenergie wirksam verhindert</h1>
-	<p class="description">
-		16 Jahre konservative Politik haben ihre Spuren hinterlassen. Der Strom aus Windenergie wird nicht aussreichen, um unsere Klimaziele einzuhalten.
-	</p>
-	
-	<p>Um das vereinbarte Ziel, die Erderwärmung auf 1,5 Grad zu begrenzen, noch erreichen zu können, <a href="https://taz.de/Schwerpunkt-Klimawandel/!t5008262/">bleiben uns noch etwa 7 Jahre</a>. Im Sommer 2029 müssten wir dann von einem Tag auf den nächsten alles, was Klimagase erzeugt, ausschalten. Das heißt keine Autos mit Benzin und Dieselmotoren mehr, keine Flugzeuge, keine Kohle-, Öl- und Gasheizungen, keine Stahlproduktion, kein Fleisch, Abschalten aller Kraftwerke mit fossilen Brennstoffen.</p>
+		<h1>Windenergie wirksam verhindert</h1>
+		<p class="description">
+			16 Jahre konservative Politik haben ihre Spuren hinterlassen. Der Strom aus Windenergie wird nicht aussreichen, um unsere Klimaziele einzuhalten.
+		</p>
+		
+		<p>Um das vereinbarte Ziel, die Erderwärmung auf 1,5 Grad zu begrenzen, noch erreichen zu können, <a href="https://taz.de/Schwerpunkt-Klimawandel/!t5008262/">bleiben uns noch etwa 7 Jahre</a>. Im Sommer 2029 müssten wir dann von einem Tag auf den nächsten alles, was Klimagase erzeugt, ausschalten. Das heißt keine Autos mit Benzin und Dieselmotoren mehr, keine Flugzeuge, keine Kohle-, Öl- und Gasheizungen, keine Stahlproduktion, kein Fleisch, Abschalten aller Kraftwerke mit fossilen Brennstoffen.</p>
 
-	<p>Natürlich werden wir uns das Abschalten notwendiger Infrastrukturen nicht leisten können. Aber ebensowenig können wir es uns nicht leisten, Klimaziele zu reißen. Aus diesem Dilemma hat uns die Wissenschaft einen Weg aufgezeigt, und zwar der radikale Umstieg auf erneuerbare Energien: Heizen mit grünem Strom, Fahren mit grünem Strom, Fliegen mit Treibstoff aus grünem Strom usw. Dieser radikale Umstieg ist möglich, aber er braucht eine Menge Strom aus regenerativen Energien. Schätzungen bewegen sich im Bereich von x Watt, die Tag und Nacht gebraucht werden. Das wird uns nur mit x Windrädern gelingen. Aber die haben wir nicht.</p>
+		<p>Natürlich werden wir uns das Abschalten notwendiger Infrastrukturen nicht leisten können. Aber ebensowenig können wir es uns nicht leisten, Klimaziele zu reißen. Aus diesem Dilemma hat uns die Wissenschaft einen Weg aufgezeigt, und zwar der radikale Umstieg auf erneuerbare Energien: Heizen mit grünem Strom, Fahren mit grünem Strom, Fliegen mit Treibstoff aus grünem Strom usw. Dieser radikale Umstieg ist möglich, aber er braucht eine Menge Strom aus regenerativen Energien. Schätzungen bewegen sich im Bereich von x Watt, die Tag und Nacht gebraucht werden. Das wird uns nur mit x Windrädern gelingen. Aber die haben wir nicht.</p>
 
-	<p>Im Gegenteil: Die alten Bundesregierungen, hauptsächlich unter der Führung von CDU und CSU, haben in 16 Jahren <a href="https://www.focus.de/finanzen/news/focus-online-serie-energiewende-in-deutschland-ein-fataler-rechenfehler-vergroesstert-deutschlands-stromhunger-nur-noch-weiter_id_28981979.html">falsche Prognosen</a> und <a href="https://www.spiegel.de/wirtschaft/altmaier-entschuldigt-sich-fuer-rechenfehler-bei-windkraft-schallbelastung-a-9d8ed560-395e-4fd9-8c58-e0d4c3ecd011">falsche Studien</a> veröffentlicht, <a href="https://www.deutschlandfunk.de/ausschreibungspflicht-bei-solaranlagen-kaum-chancen-fuer-100.html">Solarenergie</a> und <a href="https://www.klimareporter.de/strom/ausschreibungen-fuer-alte-windraeder-fallen-weg">Windenergie</a> mit komplexen Ausschreibungsverfahren verteuert, und als Gipfel wurden auf <a href="https://www.fr.de/meinung/totengloeckchen-energiewende-10922087.html">Wunsch von CDU-Kanzlerkandidat Armin Laschet mit der sogenannten Länderöffnungsklausel neue Abstandsregelungen auf Länderebene</a> ermöglicht, die man nur als Sargnagel für den Ausbau von Windenergie bezeichnen kann.</p>
+		<p>Im Gegenteil: Die alten Bundesregierungen, hauptsächlich unter der Führung von CDU und CSU, haben in 16 Jahren <a href="https://www.focus.de/finanzen/news/focus-online-serie-energiewende-in-deutschland-ein-fataler-rechenfehler-vergroesstert-deutschlands-stromhunger-nur-noch-weiter_id_28981979.html">falsche Prognosen</a> und <a href="https://www.spiegel.de/wirtschaft/altmaier-entschuldigt-sich-fuer-rechenfehler-bei-windkraft-schallbelastung-a-9d8ed560-395e-4fd9-8c58-e0d4c3ecd011">falsche Studien</a> veröffentlicht, <a href="https://www.deutschlandfunk.de/ausschreibungspflicht-bei-solaranlagen-kaum-chancen-fuer-100.html">Solarenergie</a> und <a href="https://www.klimareporter.de/strom/ausschreibungen-fuer-alte-windraeder-fallen-weg">Windenergie</a> mit komplexen Ausschreibungsverfahren verteuert, und als Gipfel wurden auf <a href="https://www.fr.de/meinung/totengloeckchen-energiewende-10922087.html">Wunsch von CDU-Kanzlerkandidat Armin Laschet mit der sogenannten Länderöffnungsklausel neue Abstandsregelungen auf Länderebene</a> ermöglicht, die man nur als Sargnagel für den Ausbau von Windenergie bezeichnen kann.</p>
 
-	<p>Diese Abstandsregeln sind inzwischen zum zentralen Streitthema geworden, denn es ist klar: Wer den Ausbau von regenerativen Energien in Deutschland verhindern will, muss einfach nur jedem Gemeinderat ein Mitspracherecht geben.</p>
+		<p>Diese Abstandsregeln sind inzwischen zum zentralen Streitthema geworden, denn es ist klar: Wer den Ausbau von regenerativen Energien in Deutschland verhindern will, muss einfach nur jedem Gemeinderat ein Mitspracherecht geben.</p>
 
-	<p>Nun ist es zum ersten Mal gelungen, auf der Basis der Abstandsregelungen aller Bundesländer in Kombination mit den amtlichen Daten für Wohngebäude, Straßen, Stromleitungen, Bahntrassen, Naturschutzgebieten usw. deutschlandweit auszurechnen, wo der Bau von Windräder verhindert wurde.</p>
+		<p>Nun ist es zum ersten Mal gelungen, auf der Basis der Abstandsregelungen aller Bundesländer in Kombination mit den amtlichen Daten für Wohngebäude, Straßen, Stromleitungen, Bahntrassen, Naturschutzgebieten usw. deutschlandweit auszurechnen, wo der Bau von Windräder verhindert wurde.</p>
 
-	<h2>Rote Karte für den Windkraftausbau</h2>
-	
-	<div id="mapContainer"><div id="map"></div></div>
+		<h2>Rote Karte für den Windkraftausbau</h2>
+		
+		<iframe src="map.html" style="height: 80vh;" allowfullscreen></iframe>
 
-	<p>Wenn man in die Karte näher reinzoomt, erscheinen die bisher gebauten Windräder. Viele Windräder liegen in Gebieten, wo sie gegen die Abstandsregelungen verstoßen. Das bedeutet, dass sie nach Ablauf der Genehmigungen nicht weiter betrieben oder aufgerüstet werden dürfen. Sie müssen abgerissen werden.</p>
+		<p>Wenn man in die Karte näher reinzoomt, erscheinen die bisher gebauten Windräder. Viele Windräder liegen in Gebieten, wo sie gegen die Abstandsregelungen verstoßen. Das bedeutet, dass sie nach Ablauf der Genehmigungen nicht weiter betrieben oder aufgerüstet werden dürfen. Sie müssen abgerissen werden.</p>
 
-	<p><i>… hier Statistiken der Bundesländer einfügen …</i></p>
+		<p><i>… hier Statistiken der Bundesländer einfügen …</i></p>
 
-	<p>So wird das mit dem Ausbau der regenerativen Energien nichts. Die Weigerung, sich mit der Notwendigkeit auseinanderzusetzen, wurde hinter komplizierten Paragrafen versteckt.</p>
-	
-	<h2>Fakten sind unerwünscht. Staatsanwaltschaft ermittelt.</h2>
+		<p>So wird das mit dem Ausbau der regenerativen Energien nichts. Die Weigerung, sich mit der Notwendigkeit auseinanderzusetzen, wurde hinter komplizierten Paragrafen versteckt.</p>
+		
+		<h2>Fakten sind unerwünscht. Staatsanwaltschaft ermittelt.</h2>
 
-	<p>Warum konnte noch niemand so eine Karte zeigen? Weil die Daten bisher nicht vorlagen. Auch hier hatte die Politik einen Weg gefunden, die notwendige Transparenz zu verhindern, in dem sie diese von Steuerzahler*innen finanzierte Daten unter Verschluss hielt. Die Begründung lautet, dass die Verwaltung Urheberrechte darauf hat, weil sie mit dem Verkauf an Unternehmen damit Geld verdienen möchte. Die Lage der Wohngebäude in Deutschland, die man für die Berechnung der Abstandsregelungen benötigt, wird zwar von der Hälfte der Bundesländen kostenfrei rausgegeben, aber die anderen verlangen Geld dafür. Allein Bayern möchet dafür stolze 40.000 €. In Summe würde die Datengrundlage für die Karte mehrere Hunderttausend Euro kosten.</p>
+		<p>Warum konnte noch niemand so eine Karte zeigen? Weil die Daten bisher nicht vorlagen. Auch hier hatte die Politik einen Weg gefunden, die notwendige Transparenz zu verhindern, in dem sie diese von Steuerzahler*innen finanzierte Daten unter Verschluss hielt. Die Begründung lautet, dass die Verwaltung Urheberrechte darauf hat, weil sie mit dem Verkauf an Unternehmen damit Geld verdienen möchte. Die Lage der Wohngebäude in Deutschland, die man für die Berechnung der Abstandsregelungen benötigt, wird zwar von der Hälfte der Bundesländen kostenfrei rausgegeben, aber die anderen verlangen Geld dafür. Allein Bayern möchet dafür stolze 40.000 €. In Summe würde die Datengrundlage für die Karte mehrere Hunderttausend Euro kosten.</p>
 
-	<p>Da sich einige Bundesländer weigern, diese Daten rauszugeben, verstoße ich mit dieser Veröffentlichung gegen behauptete Urheberrechte. Die Staatsanwaltschaft München ermittelt bereits. Gemeinsam mit der Unterstützung der GFF, der Wikimedia-Foundation und dem CCC freuen wir uns auf das Verfahren, mit dem wir endlich die Nichtigkeiten von staatlichen Urheberrechten erklagen und die Notwendigkeit von OpenData bestätigen lassen wollen.</p>
+		<p>Da sich einige Bundesländer weigern, diese Daten rauszugeben, verstoße ich mit dieser Veröffentlichung gegen behauptete Urheberrechte. Die Staatsanwaltschaft München ermittelt bereits. Gemeinsam mit der Unterstützung der GFF, der Wikimedia-Foundation und dem CCC freuen wir uns auf das Verfahren, mit dem wir endlich die Nichtigkeiten von staatlichen Urheberrechten erklagen und die Notwendigkeit von OpenData bestätigen lassen wollen.</p>
 	</div>
-	<script>
-		(() => {
-			//const URL = 'http://168.119.98.135:8080/'
-			//const URL = 'http://192.168.178.23:8080/'
-			const URL = '/'
-			let container = document.getElementById('map');
-			let map = new maplibregl.Map({
-				container,
-				style: 'https://karten.party/styles/positron/style.json',
-				center: [10, 51],
-				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-				maxBounds: [ 1.8, 46.2, 19.1, 56.1 ],
-				maxZoom: 13,
-				minPitch: 0,
-				maxPitch: 0,
-				hash: true,
-				dragRotate: false,
-				touchZoomRotate: false,
-				touchPitch: false,
-				attributionControl: false
-			});
-			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
-			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
-
-			let attributionControl = new maplibregl.AttributionControl({ compact: true,
-				customAttribution: [
-					'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
-
-					'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/',
-					'Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html',
-					'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs',
-					'Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/',
-					'Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289',
-					'Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true',
-					'Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start',
-					'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b',
-					'Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html',
-					'Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9',
-					'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/',
-					'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191',
-					'Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html',
-					'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html',
-					'Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html',
-					'Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen',
-					
-					'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
-				].map(e => {
-					e = e.split(';');
-					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
-				}).join(' | ')
-			})
-			map.addControl(attributionControl);
-			attributionControl._updateCompactMinimize();
-
-			const maxDistance = 2500;
-			const minDistance =    0;
-			const distance = 1000;
-			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
-			const sdfWidth = 1/(maxDistance - minDistance);
-			
-			map.addControl(new maplibregl.FullscreenControl());
-			map.on('load', async () => {
-				map.addSource('tilesSource', {
-					type: 'raster',
-					tiles: [ URL+'tiles/{z}/{y}/{x}.png' ],
-					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-					minzoom: 0,
-					maxzoom: 13,
-					tileSize: 256,
-				})
-				map.addLayer({
-					id: 'tilesLayer',
-					type: 'raster',
-					source: 'tilesSource',
-					paint: {
-						'raster-sdf-limit':sdfLimit,
-						'raster-sdf-width':sdfWidth,
-						'raster-opacity': 0.6,
-					},
-				})
-				let sliderControl = new SliderControl({
-					minValue: 400,
-					maxValue: 2000,
-					handle: v => {
-						//console.log(v);
-						map.setPaintProperty('tilesLayer', 'raster-sdf-limit', (v - minDistance) / (maxDistance - minDistance));
-						map.triggerRepaint();
-					}
-				})
-				map.addControl(sliderControl, 'bottom-left');
-			})
-
-			function loadViaAjax(url) {
-				return new Promise((res, rej) => {
-					let req = new XMLHttpRequest();
-					req.open('GET', url, true);
-					req.onload = () => {
-						if (req.status < 200 || req.status >= 400) {
-							console.log(req);
-							return rej(req.status);
-						}
-						res(req.response);
-					}
-					req.send();
-				})
-			}
-
-			function SliderControl(opt) {
-				let map, container, slider, requesting, lastValue;
-				return {
-					onAdd, onRemove,
-				}
-				function onAdd(_map) {
-					map = _map;
-					container = document.createElement('div');
-					container.className = 'maplibregl-ctrl';
-
-					slider = document.createElement('input');
-					Object.assign(slider, {
-						type: 'range',
-						step: 1,
-						value: opt.minValue,
-						min: opt.minValue,
-						max: opt.maxValue,
-					})
-					slider.addEventListener('input', e => {
-						if (requesting) return;
-						requestAnimationFrame(() => {
-							requesting = false;
-							let value = slider.value;
-							if (value === lastValue) return;
-							lastValue = value;
-							opt.handle(value);
-						});
-						requesting = true;
-					})
-					slider.dispatchEvent(new Event('input'));
-
-					container.append(slider);
-					return container;
-				}
-
-				function onRemove() {
-					this._container.parentNode.removeChild(this._container);
-					this._map = undefined;
-				}
-			}
-
-		})()
-</script>
 </body>
 </html>

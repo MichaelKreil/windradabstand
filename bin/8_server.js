@@ -52,7 +52,7 @@ if (serverMode === 'main') {
 app.use('/data', serveStatic('data'));
 app.use('/scripts', serveStatic('scripts'));
 //app.use('/assets', serveStatic('assets'));
-app.use(/\//, serveStatic('.', false))
+app.use('/', serveStatic('.', false))
 
 const tiles = getFileTarDB(config.getFilename.tiles('tiles.tar'));
 app.get(/\/tiles\/(.*\.png)/, (req, res) => {

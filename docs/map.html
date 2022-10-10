@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>Die Verhinderung der Windenergie</title>
+
+	<script src="/scripts/maplibre-gl.js"></script>
+	<link href="/scripts/maplibre-gl.css" rel="stylesheet" />
+	<style>
+		html, body, #map {
+			width: 100vw;
+			height: 100vh;
+			margin: 0;
+			padding: 0;
+		}
+		.maplibregl-ctrl-attrib-inner {
+			line-height: 1.2em;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="map"></div>
+	<script>
+		(() => {
+			//const URL = 'http://168.119.98.135:8080/'
+			//const URL = 'http://192.168.178.23:8080/'
+			const URL = '/'
+			let container = document.getElementById('map');
+			let map = new maplibregl.Map({
+				container,
+				style: 'https://karten.party/styles/positron/style.json',
+				center: [10, 51],
+				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
+				maxBounds: [ 1.8, 46.2, 19.1, 56.1 ],
+				maxZoom: 13,
+				minPitch: 0,
+				maxPitch: 0,
+				hash: true,
+				dragRotate: false,
+				touchZoomRotate: false,
+				touchPitch: false,
+				attributionControl: false
+			});
+			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
+			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
+
+			let attributionControl = new maplibregl.AttributionControl({ compact: true,
+				customAttribution: [
+					'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
+
+					'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/',
+					'Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html',
+					'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs',
+					'Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/',
+					'Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289',
+					'Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true',
+					'Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start',
+					'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b',
+					'Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html',
+					'Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9',
+					'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/',
+					'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191',
+					'Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html',
+					'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html',
+					'Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html',
+					'Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen',
+					
+					'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
+				].map(e => {
+					e = e.split(';');
+					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
+				}).join(' | ')
+			})
+			map.addControl(attributionControl);
+			attributionControl._updateCompactMinimize();
+
+			const maxDistance = 2500;
+			const minDistance =    0;
+			const distance = 1000;
+			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
+			const sdfWidth = 1/(maxDistance - minDistance);
+			
+			map.addControl(new maplibregl.FullscreenControl());
+			map.on('load', async () => {
+				map.addSource('tilesSource', {
+					type: 'raster',
+					tiles: [ URL+'tiles/{z}/{y}/{x}.png' ],
+					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
+					minzoom: 0,
+					maxzoom: 13,
+					tileSize: 256,
+				})
+				map.addLayer({
+					id: 'tilesLayer',
+					type: 'raster',
+					source: 'tilesSource',
+					paint: {
+						'raster-sdf-limit':sdfLimit,
+						'raster-sdf-width':sdfWidth,
+						'raster-opacity': 0.6,
+					},
+				})
+				let sliderControl = new SliderControl({
+					minValue: 400,
+					maxValue: 2000,
+					handle: v => {
+						//console.log(v);
+						map.setPaintProperty('tilesLayer', 'raster-sdf-limit', (v - minDistance) / (maxDistance - minDistance));
+						map.triggerRepaint();
+					}
+				})
+				map.addControl(sliderControl, 'bottom-left');
+			})
+
+			function loadViaAjax(url) {
+				return new Promise((res, rej) => {
+					let req = new XMLHttpRequest();
+					req.open('GET', url, true);
+					req.onload = () => {
+						if (req.status < 200 || req.status >= 400) {
+							console.log(req);
+							return rej(req.status);
+						}
+						res(req.response);
+					}
+					req.send();
+				})
+			}
+
+			function SliderControl(opt) {
+				let map, container, slider, requesting, lastValue;
+				return {
+					onAdd, onRemove,
+				}
+				function onAdd(_map) {
+					map = _map;
+					container = document.createElement('div');
+					container.className = 'maplibregl-ctrl';
+
+					slider = document.createElement('input');
+					Object.assign(slider, {
+						type: 'range',
+						step: 1,
+						value: opt.minValue,
+						min: opt.minValue,
+						max: opt.maxValue,
+					})
+					slider.addEventListener('input', e => {
+						if (requesting) return;
+						requestAnimationFrame(() => {
+							requesting = false;
+							let value = slider.value;
+							if (value === lastValue) return;
+							lastValue = value;
+							opt.handle(value);
+						});
+						requesting = true;
+					})
+					slider.dispatchEvent(new Event('input'));
+
+					container.append(slider);
+					return container;
+				}
+
+				function onRemove() {
+					this._container.parentNode.removeChild(this._container);
+					this._map = undefined;
+				}
+			}
+
+		})()
+	</script>
+</body>
+</html>
