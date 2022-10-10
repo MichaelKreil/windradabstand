@@ -54,12 +54,12 @@ app.use('/scripts', serveStatic('scripts'));
 //app.use('/assets', serveStatic('assets'));
 app.use(/\//, serveStatic('.', false))
 
-const bufferedTiles = getFileTarDB(config.getFilename.tiles('buffered.tar'));
-app.get(/\/tiles\/(buffered.*\.png)/, (req, res) => {
+const tiles = getFileTarDB(config.getFilename.tiles('tiles.tar'));
+app.get(/\/tiles\/(.*\.png)/, (req, res) => {
 	let filename = req.params[0];
 	res
 		.set('Content-Type', 'image/png')
-		.end(bufferedTiles.get(filename));
+		.end(tiles.get(filename));
 })
 
 app.listen(port, console.log(`listening on port ${port}`))

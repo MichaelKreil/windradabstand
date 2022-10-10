@@ -8,7 +8,7 @@ const { simpleCluster } = require('big-data-tools');
 const { bbox2Tiles, getTileBbox, mercator, ogrGenerateSQL, bbox4326To3857, bboxGeo2WebPixel, bboxWebPixel2Geo } = require('../lib/geohelper.js');
 const { ensureFolder, Progress } = require('../lib/helper.js');
 const turf = require('@turf/turf');
-const { spawnSync } = require('child_process');
+const { spawnSync, execSync } = require('child_process');
 const { resolve } = require('path');
 
 const FILENAME_LAYER1 = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
@@ -30,6 +30,15 @@ simpleCluster(async function (runWorker) {
 	await processLevel('render', zoomLevel);
 	for (let z = zoomLevel - 1; z >= 0; z--) await processLevel('merge', z);
 
+	let pngFolder = resolve(config.folders.sdf, 'png');
+	let tilesTar = resolve(config.folders.tiles, 'tiles.tar');
+	/*
+	console.log('1/2 optipng')
+	wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"`);
+	*/
+	console.log('2/2 tar')
+	wrapExec(`rm "${tilesTar}"; cd "${pngFolder}"; tar -cf "${tilesTar}" *`);
+
 	console.log('Finished');
 
 	async function processLevel(action, z) {
@@ -47,12 +56,10 @@ simpleCluster(async function (runWorker) {
 		todos.sort(() => Math.random() - 0.5);
 
 		let progress = new Progress(todos.length);
-
 		await todos.forEachParallel((todo, i) => {
 			progress(i);
 			return runWorker(todo)
 		});
-
 		console.log('');
 	}
 
@@ -127,4 +134,15 @@ function wrapSpawn(cmd, args) {
 	console.error(result.stdout.toString());
 	console.error(result.stderr.toString());
 	throw Error();
+}
+
+function wrapExec(cmd) {
+	try {
+		execSync(cmd);
+	} catch (e) {
+		console.log('stdout', e.stdout.toString());
+		console.log('stderr', e.stderr.toString());
+		console.log(e);
+		throw e;
+	}
 }
