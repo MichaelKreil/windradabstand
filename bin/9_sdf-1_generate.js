@@ -13,7 +13,7 @@ const { resolve } = require('path');
 
 const FILENAME_LAYER1 = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
 const FILENAME_LAYER2 = config.getFilename.rulesGeoBasis('gebaeude.gpkg');
-const COMBINED_RENDER_LEVELS = 3;
+const COMBINED_RENDER_LEVELS = 4;
 const TILE_SIZE = config.tileSize;
 
 simpleCluster(async function (runWorker) {
@@ -32,10 +32,10 @@ simpleCluster(async function (runWorker) {
 
 	let pngFolder = resolve(config.folders.sdf, 'png');
 	let tilesTar = resolve(config.folders.tiles, 'tiles.tar');
-	/*
+	
 	console.log('1/2 optipng')
 	wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"`);
-	*/
+	
 	console.log('2/2 tar')
 	wrapExec(`rm "${tilesTar}"; cd "${pngFolder}"; tar -cf "${tilesTar}" *`);
 
@@ -138,7 +138,7 @@ function wrapSpawn(cmd, args) {
 
 function wrapExec(cmd) {
 	try {
-		execSync(cmd);
+		execSync(cmd, { stdio: 'inherit' });
 	} catch (e) {
 		console.log('stdout', e.stdout.toString());
 		console.log('stderr', e.stderr.toString());
