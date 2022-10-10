@@ -11,8 +11,8 @@ pub mod geoimage {
 	use std::path::{Path,PathBuf};
 
 	const PI: f64 = std::f64::consts::PI;
-	const MAX_DISTANCE: f64 = 2200.0;
-	const MIN_DISTANCE: f64 =  200.0;
+	const MAX_DISTANCE: f64 = 2500.0;
+	const MIN_DISTANCE: f64 =    0.0;
 
 	pub struct LayoutItem {
 		pub index: usize,
