@@ -96,7 +96,7 @@
 				center: [10, 51],
 				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
 				maxBounds: [ 1.8, 46.2, 19.1, 56.1 ],
-				maxZoom: 14.5,
+				maxZoom: 13,
 				minPitch: 0,
 				maxPitch: 0,
 				hash: true,
@@ -137,6 +137,12 @@
 			})
 			map.addControl(attributionControl);
 			attributionControl._updateCompactMinimize();
+
+			const maxDistance = 2500;
+			const minDistance =    0;
+			const distance = 1000;
+			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
+			const sdfWidth = 1/(maxDistance - minDistance);
 			
 			map.addControl(new maplibregl.FullscreenControl());
 			map.on('load', async () => {
@@ -145,7 +151,7 @@
 					tiles: [ URL+'tiles/{z}/{y}/{x}.png' ],
 					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
 					minzoom: 0,
-					maxzoom: 14,
+					maxzoom: 13,
 					tileSize: 256,
 				})
 				map.addLayer({
@@ -153,9 +159,21 @@
 					type: 'raster',
 					source: 'tilesSource',
 					paint: {
-						'raster-opacity': 1,
+						'raster-sdf-limit':sdfLimit,
+						'raster-sdf-width':sdfWidth,
+						'raster-opacity': 0.6,
 					},
 				})
+				let sliderControl = new SliderControl({
+					minValue: 400,
+					maxValue: 2000,
+					handle: v => {
+						//console.log(v);
+						map.setPaintProperty('tilesLayer', 'raster-sdf-limit', (v - minDistance) / (maxDistance - minDistance));
+						map.triggerRepaint();
+					}
+				})
+				map.addControl(sliderControl, 'bottom-left');
 			})
 
 			function loadViaAjax(url) {
@@ -171,6 +189,47 @@
 					}
 					req.send();
 				})
+			}
+
+			function SliderControl(opt) {
+				let map, container, slider, requesting, lastValue;
+				return {
+					onAdd, onRemove,
+				}
+				function onAdd(_map) {
+					map = _map;
+					container = document.createElement('div');
+					container.className = 'maplibregl-ctrl';
+
+					slider = document.createElement('input');
+					Object.assign(slider, {
+						type: 'range',
+						step: 1,
+						value: opt.minValue,
+						min: opt.minValue,
+						max: opt.maxValue,
+					})
+					slider.addEventListener('input', e => {
+						if (requesting) return;
+						requestAnimationFrame(() => {
+							requesting = false;
+							let value = slider.value;
+							if (value === lastValue) return;
+							lastValue = value;
+							opt.handle(value);
+						});
+						requesting = true;
+					})
+					slider.dispatchEvent(new Event('input'));
+
+					container.append(slider);
+					return container;
+				}
+
+				function onRemove() {
+					this._container.parentNode.removeChild(this._container);
+					this._map = undefined;
+				}
 			}
 
 		})()
