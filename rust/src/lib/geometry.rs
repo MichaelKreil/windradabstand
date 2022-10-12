@@ -9,6 +9,7 @@ pub mod geometry {
 	use std::cmp::Ordering;
 	use std::collections::BinaryHeap;
 	use std::f32::consts::PI;
+	use std::fmt;
 	use std::fs;
 	use std::path::Path;
 	use std::rc::Rc;
@@ -22,16 +23,23 @@ pub mod geometry {
 
 	#[derive(Debug)]
 	struct BBox {
-		min: Point,
-		max: Point,
+		x_min: f32,
+		y_min: f32,
+		x_max: f32,
+		y_max: f32,
 	}
 
 	impl BBox {
 		fn new() -> BBox {
 			BBox {
-				min: Point::new( 180.0,  90.0),
-				max: Point::new(-180.0, -90.0),
+				x_min: 180.0,
+				y_min:  90.0,
+				x_max:-180.0,
+				y_max: -90.0,
 			}
+		}
+		fn from_coordinates(x_min:f32, y_min:f32, x_max:f32, y_max:f32) -> BBox {
+			return BBox {x_min, y_min, x_max, y_max}
 		}
 		fn from_segments(segments: &Vec<Rc<Segment>>) -> BBox {
 			let mut bbox = BBox::new();
@@ -42,52 +50,96 @@ pub mod geometry {
 			return bbox;
 		}
 		fn add_point(&mut self, point: &Point) {
-			if self.min.x > point.x {
-				self.min.x = point.x
+			if self.x_min > point.x {
+				self.x_min = point.x
 			};
-			if self.min.y > point.y {
-				self.min.y = point.y
+			if self.y_min > point.y {
+				self.y_min = point.y
 			};
-			if self.max.x < point.x {
-				self.max.x = point.x
+			if self.x_max < point.x {
+				self.x_max = point.x
 			};
-			if self.max.y < point.y {
-				self.max.y = point.y
+			if self.y_max < point.y {
+				self.y_max = point.y
 			};
 		}
 		fn add_bbox(&mut self, bbox: &BBox) {
-			if self.min.x > bbox.min.x {
-				self.min.x = bbox.min.x
+			if self.x_min > bbox.x_min {
+				self.x_min = bbox.x_min
 			};
-			if self.min.y > bbox.min.y {
-				self.min.y = bbox.min.y
+			if self.y_min > bbox.y_min {
+				self.y_min = bbox.y_min
 			};
-			if self.max.x < bbox.max.x {
-				self.max.x = bbox.max.x
+			if self.x_max < bbox.x_max {
+				self.x_max = bbox.x_max
 			};
-			if self.max.y < bbox.max.y {
-				self.max.y = bbox.max.y
+			if self.y_max < bbox.y_max {
+				self.y_max = bbox.y_max
 			};
 		}
 		fn center(&self) -> Point {
 			return Point::new(
-				(self.min.x + self.max.x) / 2.0,
-				(self.min.y + self.max.y) / 2.0,
+				(self.x_min + self.x_max) / 2.0,
+				(self.y_min + self.y_max) / 2.0,
+			);
+		}
+		fn top_left(&self) -> Point {
+			return Point::new(
+				self.x_min,
+				self.y_max,
 			);
 		}
 		fn width(&self) -> f32 {
-			return self.max.x - self.min.x;
+			return self.x_max - self.x_min;
 		}
 		fn height(&self) -> f32 {
-			return self.max.y - self.min.y;
+			return self.y_max - self.y_min;
 		}
 		fn distance_to(&self, point: &Point) -> f32 {
-			let dx = (self.min.x - point.x).max(point.x - self.max.x).max(0.0);
-			let dy = (self.min.y - point.y).max(point.y - self.max.y).max(0.0);
+			let dx = (self.x_min - point.x).max(point.x - self.x_max).max(0.0);
+			let dy = (self.y_min - point.y).max(point.y - self.y_max).max(0.0);
 
-			//println!("distance_to {} {}", dx, dy);
-			//println!("{:?} {:?}", self, point);
 			return (dx * dx * point.scale_x2 + dy * dy).sqrt() * DEG2METERS;
+		}
+		fn contains_point(&self, point: &Point) -> bool {
+			if (point.x < self.x_min) || (point.y < self.y_min) {
+				return false;
+			}
+			if (point.x > self.x_max) || (point.y > self.y_max) {
+				return false;
+			}
+			return true;
+		}
+		fn overlaps_bbox(&self, bbox: &BBox) -> bool {
+			if (bbox.x_min > self.x_max) || (bbox.x_max < self.x_min) {
+				return false;
+			}
+			if (bbox.y_min > self.y_max) || (bbox.y_max < self.y_min) {
+				return false;
+			}
+			return true;
+		}
+		fn covers_bbox(&self, bbox: &BBox) -> bool {
+			if (bbox.x_min < self.x_min) || (bbox.x_max > self.x_max) {
+				return false;
+			}
+			if (bbox.y_min < self.y_min) || (bbox.y_max > self.y_max) {
+				return false;
+			}
+			return true;
+		}
+	}
+	impl fmt::Display for BBox {
+		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+			write!(
+				f,
+				"{{\"type\":\"Feature\",\"geometry\":{{\"type\":\"Polygon\",\"coordinates\":[[[{},{}],[{},{}],[{},{}],[{},{}],[{},{}]]]}}}}",
+				self.x_min, self.y_min,
+				self.x_min, self.y_max,
+				self.x_max, self.y_max,
+				self.x_max, self.y_min,
+				self.x_min, self.y_min,
+			)
 		}
 	}
 
@@ -117,7 +169,7 @@ pub mod geometry {
 	}
 
 
-
+	#[derive(Debug)]
 	struct Polyline {
 		points: Vec<Point>,
 		bbox: BBox,
@@ -153,10 +205,164 @@ pub mod geometry {
 				segments.add(p0, p1);
 			}
 		}
+		fn contains_point(&self, point:&Point) -> bool {
+			if !self.bbox.contains_point(point) {
+				return false;
+			}
+
+			// A point is in a polygon if a line from the point to infinity crosses the polygon an odd number of times
+			let mut odd:bool = false;
+			
+			//For each edge (In this case for each point of the polygon and the previous one)
+			for i in 0..self.points.len()-1 {
+				//If a line from the point into infinity crosses this edge
+				let p0 = self.points[i  ];
+				let p1 = self.points[i+1];
+
+				// One point needs to be above, one below our y coordinate
+				if (p1.y > point.y) != (p0.y > point.y) {
+					// ...and the edge doesn't cross our Y corrdinate before our x coordinate (but between our x coordinate and infinity)
+					if point.x < (p0.x - p1.x) * (point.y - p1.y) / (p0.y - p1.y) + p1.x {
+						odd = !odd; // negate odd
+					}
+				}
+			}
+			
+			//If the number of crossings was odd, the point is in the polygon
+			return odd;
+		}
+		fn overlaps_bbox(&self, bbox:&BBox) -> bool {
+			//println!("Polyline overlap: points {:?}", self.points.len());
+
+			if !self.bbox.overlaps_bbox(bbox) {
+				return false;
+			}
+			
+			//println!("Polyline overlap: bbox is overlaped by bbox");
+
+			if self.contains_point(&bbox.top_left()) {
+				//println!("Polyline overlap: ring contains bbox corner");
+				return true;
+			}
+
+			if self.intersects_bbox(bbox) {
+				//println!("Polyline overlap: intersection found :)");
+				return true;
+			} else {
+				//println!("Polyline overlap: no intersection :(");
+				return false;
+			}
+		}
+		fn covers_bbox(&self, bbox:&BBox) -> bool {
+			//println!("Polyline cover: points {:?}", self.points.len());
+
+			if !self.bbox.covers_bbox(bbox) {
+				return false;
+			}
+
+			//println!("Polyline cover: bbox is covered by bbox");
+
+			if !self.contains_point(&bbox.top_left()) {
+				//println!("Polyline cover: ring does not contain bbox corner");
+				return false;
+			}
+
+			if self.intersects_bbox(bbox) {
+				//println!("Polyline cover: intersection found :(");
+				return false;
+			} else {
+				//println!("Polyline cover: no intersection :)");
+				return true;
+			}
+		}
+		fn intersects_bbox(&self, bbox:&BBox) -> bool {
+			//let x0 = bbox.x_min;
+			//let y0 = bbox.y_min;
+			//let x1 = bbox.x_max;
+			//let y1 = bbox.y_max;
+			let pa = &Point::new(bbox.x_min, bbox.y_min);
+			let pb = &Point::new(bbox.x_min, bbox.y_max);
+			let pc = &Point::new(bbox.x_max, bbox.y_max);
+			let pd = &Point::new(bbox.x_max, bbox.y_min);
+
+			for i in 0..self.points.len()-1 {
+				let p0 = &self.points[i];
+				let p1 = &self.points[i+1];
+				/*
+				if intersect_vert(x0, y0, y1, p0, p1) {
+					return true;
+				}
+				if intersect_vert(x1, y0, y1, p0, p1) {
+					return true;
+				}
+				if intersect_hori(y0, x0, x1, p0, p1) {
+					return true;
+				}
+				if intersect_hori(y1, x0, x1, p0, p1) {
+					return true;
+				}
+				*/
+				if intersects(pa, pb, p0, p1) {
+					return true;
+				}
+				if intersects(pb, pc, p0, p1) {
+					return true;
+				}
+				if intersects(pc, pd, p0, p1) {
+					return true;
+				}
+				if intersects(pd, pa, p0, p1) {
+					return true;
+				}
+			}
+			return false;
+
+			fn intersect_vert(x:f32, y0:f32, y1:f32, p0:&Point, p1:&Point) -> bool {
+				if (p0.x < x) == (p1.x < x) { // Beide auf der gleichen Seite
+					return false;
+				}
+				if (p0.y < y0) && (p1.y < y0) { // Beide zu weit unten
+					return false;
+				}
+				if (p0.y > y1) && (p1.y > y1) { // Beide zu weit oben
+					return false;
+				}
+				// Schnittpunkt berechnen
+				let y = (x - p0.x) * (p1.y - p0.y) / (p1.x - p0.x) + p0.y;
+				return (y >= y0) && (y <= y1);
+			}
+
+			fn intersect_hori(y:f32, x0:f32, x1:f32, p0:&Point, p1:&Point) -> bool {
+				if (p0.y < y) == (p1.y < y) { // Beide auf der gleichen Seite
+					return false;
+				}
+				if (p0.x < x0) && (p1.x < x0) { // Beide zu weit links
+					return false;
+				}
+				if (p0.x > x1) && (p1.x > x1) { // Beide zu weit rechts
+					return false;
+				}
+				// Schnittpunkt berechnen
+				let x = (y - p0.y) * (p1.x - p0.x) / (p1.y - p0.y) + p0.x;
+				return (x >= x0) && (x <= x1);
+			}
+
+			fn intersects(a0:&Point, a1:&Point, b0:&Point, b1:&Point) -> bool {
+				let dx0 = a1.x - a0.x;
+				let dx1 = b1.x - b0.x;
+				let dy0 = a1.y - a0.y;
+				let dy1 = b1.y - b0.y;
+				let p0 = dy1 * (b1.x - a0.x) - dx1 * (b1.y - a0.y);
+				let p1 = dy1 * (b1.x - a1.x) - dx1 * (b1.y - a1.y);
+				let p2 = dy0 * (a1.x - b0.x) - dx0 * (a1.y - b0.y);
+				let p3 = dy0 * (a1.x - b1.x) - dx0 * (a1.y - b1.y);
+				return (p0 * p1 <= 0.0) && (p2 * p3 <= 0.0);
+			}
+		}
 	}
 
 
-
+	#[derive(Debug)]
 	struct Polygon {
 		rings: Vec<Polyline>,
 		bbox: BBox,
@@ -190,6 +396,77 @@ pub mod geometry {
 				ring.extract_segments_to(segments);
 			}
 		}
+		fn contains_point(&self, point:&Point) -> bool {
+			if !self.bbox.contains_point(point) {
+				return false;
+			}
+
+			if !self.rings[0].contains_point(point) {
+				return false;
+			}
+
+			for i in 1..self.rings.len() {
+				let ring = &self.rings[i];
+				if ring.contains_point(point) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+		fn overlaps_bbox(&self, bbox:&BBox) -> bool {
+			//println!("Polygon overlap: points {:?}", self.rings[0].points.len());
+			//println!("Polygon overlap: bbox {}", bbox);
+
+			if !self.bbox.overlaps_bbox(bbox) {
+				return false;
+			}
+
+			//println!("Polygon overlap: bbox is overlaped by bbox");
+
+			if !self.rings[0].overlaps_bbox(bbox) {
+				return false;
+			}
+
+			//println!("Polygon overlap: bbox is overlaped by outer ring");
+
+			for i in 1..self.rings.len() {
+				if self.rings[i].covers_bbox(bbox) {
+					//println!("Polygon overlap: false");
+					return false;
+				}
+			}
+
+			//println!("Polygon overlap: true");
+			return true;
+		}
+		fn covers_bbox(&self, bbox:&BBox) -> bool {
+			//println!("Polygon cover: points {:?}", self.rings[0].points.len());
+			//println!("Polygon cover: bbox {}", bbox);
+
+			if !self.bbox.covers_bbox(bbox) {
+				return false;
+			}
+
+			//println!("Polygon cover: bbox is covered by bbox");
+
+			if !self.rings[0].covers_bbox(bbox) {
+				//println!("Polygon cover: outer ring does not cover by bbox :(");
+				return false;
+			}
+
+			//println!("Polygon cover: bbox is covered by outer ring");
+
+			for i in 1..self.rings.len() {
+				if self.rings[i].overlaps_bbox(bbox) {
+					//println!("Polygon cover: false");
+					return false;
+				}
+			}
+
+			//println!("Polygon cover: true");
+			return true;
+		}
 	}
 
 	pub struct LookupCell {
@@ -204,11 +481,14 @@ pub mod geometry {
 	pub struct Collection {
 		polygons: Vec<Rc<Polygon>>,
 		segments: Segments,
-		lookup_grid: Vec<LookupCell>,
+		grid_lookup: Vec<LookupCell>,
+		grid_empty: Vec<bool>,
+		grid_covered: Vec<bool>,
 		x0: f32,
 		y0: f32,
 		xs: f32,
 		ys: f32,
+		resolution: i32,
 	}
 
 	impl Collection {
@@ -216,11 +496,14 @@ pub mod geometry {
 			return Collection {
 				polygons: Vec::new(),
 				segments: Segments::new(),
-				lookup_grid: Vec::new(),
+				grid_lookup: Vec::new(),
+				grid_empty: Vec::new(),
+				grid_covered: Vec::new(),
 				x0: 0.0,
 				y0: 0.0,
 				xs: 0.0,
 				ys: 0.0,
+				resolution: 0,
 			};
 		}
 		pub fn fill_from_json(&mut self, filename: &Path) {
@@ -271,33 +554,101 @@ pub mod geometry {
 			}
 			self.segments.init_tree();
 		}
-		pub fn get_min_distance(&self, point: Point, max_distance:f32) -> f32 {
-			return self.segments.get_min_distance(&point, max_distance);
+		pub fn get_min_distance(&self, point: &Point, max_distance:f32) -> f32 {
+			return self.segments.get_min_distance(point, max_distance);
 		}
 		pub fn init_lookup(&mut self, point_min:Point, point_max:Point, resolution:usize) {
 			let size = resolution*resolution;
-			self.lookup_grid.resize_with(size, || { LookupCell::new() });
+			self.grid_lookup.resize_with(size, || { LookupCell::new() });
+			self.grid_empty.resize(size, true);
+			self.grid_covered.resize(size, false);
+			self.resolution = resolution as i32;
 
 			self.x0 = point_min.x;
 			self.y0 = point_min.y;
-			self.xs = point_max.x - point_min.x;
-			self.ys = point_max.y - point_min.y;
+			self.xs = (resolution as f32 - 1.001)/(point_max.x - point_min.x);
+			self.ys = (resolution as f32 - 1.001)/(point_max.y - point_min.y);
 			
 			for polygon in &self.polygons {
-				let x0 = (((polygon.bbox.min.x - self.x0)/self.xs      ).floor() as usize).max(0).min(resolution);
-				let y0 = (((polygon.bbox.min.y - self.y0)/self.ys      ).floor() as usize).max(0).min(resolution);
-				let x1 = (((polygon.bbox.max.x - self.x0)/self.xs + 1.0).floor() as usize).max(0).min(resolution);
-				let y1 = (((polygon.bbox.max.y - self.y0)/self.ys + 1.0).floor() as usize).max(0).min(resolution);
+				let x0 = (((polygon.bbox.x_min - self.x0) * self.xs).floor() as i32).max(-1).min(self.resolution);
+				let y0 = (((polygon.bbox.y_min - self.y0) * self.ys).floor() as i32).max(-1).min(self.resolution);
+				let x1 = (((polygon.bbox.x_max - self.x0) * self.xs).floor() as i32).max(-1).min(self.resolution);
+				let y1 = (((polygon.bbox.y_max - self.y0) * self.ys).floor() as i32).max(-1).min(self.resolution);
 
-				for x in x0..x1 {
-					for y in y0..y1 {
-						let index = x + y*resolution;
-						self.lookup_grid[index].polygons.push(polygon.clone());
+				for y in y0..=y1 {
+					if (y < 0) || (y >= self.resolution) {
+						continue;
+					}
+					for x in x0..=x1 {
+						if (x < 0) || (x >= self.resolution) {
+							continue;
+						}
+
+						//if (y != 100) || (x != 100) {
+						//	continue;
+						//}
+						let bbox = &BBox::from_coordinates(
+							self.x0 + ((x  ) as f32)/self.xs,
+							self.y0 + ((y  ) as f32)/self.ys,
+							self.x0 + ((x+1) as f32)/self.xs,
+							self.y0 + ((y+1) as f32)/self.ys,
+						);
+						if polygon.overlaps_bbox(bbox) {
+							let index = (x + y*self.resolution) as usize;
+							self.grid_lookup[index].polygons.push(polygon.clone());
+							self.grid_empty[index] = false;
+							if polygon.covers_bbox(bbox) {
+								self.grid_covered[index] = true;
+							}
+						}
 					}
 				}
 			}
 		}
+		pub fn debug(&self) {
+			println!("grid_empty {:?}", self.grid_empty);
+			println!("grid_covered {:?}", self.grid_covered);
+			//println!("grid_lookup {:?}", self.grid_lookup.map());
+		}
+		pub fn is_point_in_polygon(&self, point: &Point) -> bool {
+			let x = ((point.x - self.x0)*self.xs).floor() as i32;
+			let y = ((point.y - self.y0)*self.ys).floor() as i32;
 
+			//println!("x,y = {},{} ({},{})", x, y, point.x, point.y);
+
+			if x < 0 {
+				panic!()
+			}
+			if y < 0 {
+				panic!()
+			}
+			if x >= self.resolution {
+				panic!()
+			}
+			if y >= self.resolution {
+				panic!()
+			}
+
+			let index = (x + y*self.resolution) as usize;
+			
+			if self.grid_empty[index] {
+				return false;
+			}
+			
+			if self.grid_covered[index] {
+				return true;
+			}
+
+			let polygons = &self.grid_lookup[index].polygons;
+			//println!("{}/{}", polygons.len(), self.polygons.len());
+			for polygon in polygons {
+				if polygon.contains_point(point) {
+					return true;
+				}
+			}
+
+			return false;
+		}
 	}
 
 

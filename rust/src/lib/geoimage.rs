@@ -297,7 +297,10 @@ pub mod geoimage {
 						demercator_x((x as f32) * self.pixel_scale + self.x0),
 						demercator_y((y as f32) * self.pixel_scale + self.y0),
 					);
-					let distance = collection.get_min_distance(point, max_distance);
+					let mut distance = collection.get_min_distance(&point, max_distance);
+					if collection.is_point_in_polygon(&point) {
+						distance = -distance;
+					}
 					channel.set_pixel_value(x, y, (distance-min_distance)/(max_distance-min_distance));
 				}
 			}
