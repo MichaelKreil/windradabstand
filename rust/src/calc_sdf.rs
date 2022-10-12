@@ -18,6 +18,7 @@ pub mod geoimage;
 use json;
 use std::env;
 use std::path::Path;
+use std::time::Instant;
 
 use crate::geoimage::geoimage::*;
 use crate::geometry::geometry::*;
@@ -41,23 +42,37 @@ fn main() {
 	let arguments = parse_arguments();
 	//println!("arguments: {:?}", arguments);
 
+	let start = Instant::now();
 	let mut collection_dyn = Collection::new();
 	collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
+	println!("collection_dyn.fill_from_json: {:?}", start.elapsed());
 
+	let start = Instant::now();
 	let mut collection_fix = Collection::new();
 	collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
+	println!("collection_fix.fill_from_json: {:?}", start.elapsed());
 
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
 	image.fill_with_min_distances(0, collection_dyn, arguments.min_distance, arguments.max_distance);
 
+	let start = Instant::now();
 	let v = arguments.max_distance - arguments.min_distance;
-	image.fill_with_min_distances(1, collection_fix, -v/2.0, v/2.0);
+		image.fill_with_min_distances(1, &collection_fix, -v/2.0, v/2.0);
+	println!("image.fill_with_min_distances(1): {:?}", start.elapsed());
 
+	let start = Instant::now();
 	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
+	println!("image.export_tile_tree: {:?}", start.elapsed());
+
+	let start = Instant::now();
 	let thumb = image.scaled_down_clone(arguments.size/2);
+	println!("image.scaled_down_clone: {:?}", start.elapsed());
+
+	let start = Instant::now();
 	thumb.export_to(Path::new(&arguments.folder_bin), ".bin");
+	println!("thumb.export_to: {:?}", start.elapsed());
 }
 
 fn parse_arguments() -> Arguments {
