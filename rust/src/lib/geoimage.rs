@@ -2,7 +2,7 @@
 mod geometry;
 
 pub mod geoimage {
-	use crate::geometry::geometry::Point;
+	use crate::geometry::geometry::{Point, Collection};
 	use image;
 	use serde::{Deserialize, Serialize};
 	use std::fs::{File,create_dir_all};
@@ -10,9 +10,7 @@ pub mod geoimage {
 	use std::panic;
 	use std::path::{Path,PathBuf};
 
-	const PI: f64 = std::f64::consts::PI;
-	const MAX_DISTANCE: f64 = 2500.0;
-	const MIN_DISTANCE: f64 =    0.0;
+	const PI: f32 = std::f32::consts::PI;
 
 	pub struct LayoutItem {
 		pub index: usize,
@@ -27,57 +25,72 @@ pub mod geoimage {
 	];
 
 	#[derive(Serialize, Deserialize, PartialEq, Debug)]
+	pub struct Channel {
+		width: u32,
+		height: u32,
+		data: Vec<f32>,
+	}
+	impl Channel {
+		pub fn new(width: u32, height: u32) -> Channel {
+			let length = (width*height) as usize;
+			let mut channel = Channel{
+				width,
+				height,
+				data:Vec::with_capacity(length)
+			};
+			channel.data.resize(length, 1.0e6);
+			return channel;
+		}
+		pub fn set_pixel_value(&mut self, x: u32, y: u32, distance: f32) {
+			if x >= self.width {
+				panic!();
+			}
+
+			if y >= self.height {
+				panic!();
+			}
+
+			let index:usize = (x + y * self.width) as usize;
+			self.data[index] = distance;
+		}
+	}
+
+	#[derive(Serialize, Deserialize, PartialEq, Debug)]
 	pub struct GeoImage {
 		pub size: u32,
 		zoom: u32,
 		x_offset: u32,
 		y_offset: u32,
-		x0: f64,
-		y0: f64,
-		pixel_scale: f64,
-		data: Vec<f64>,
+		x0: f32,
+		y0: f32,
+		pixel_scale: f32,
+		channels: Vec<Channel>,
 	}
 
 	impl GeoImage {
 		pub fn new(size: u32, zoom: u32, x_offset: u32, y_offset: u32) -> GeoImage {
-			let scale = (2.0_f64).powf(zoom as f64);
-			//println!("Image::new {} {}", zoom, scale);
-			let length: usize = (size * size).try_into().unwrap();
-			//println!("size:{} length:{}", size, length);
-
-			let mut image = GeoImage {
+			let scale = (2.0_f32).powf(zoom as f32);
+			return GeoImage {
 				size,
 				zoom,
 				x_offset,
 				y_offset,
-				x0: (x_offset as f64) / scale,
-				y0: (y_offset as f64) / scale,
-				pixel_scale: 1.0 / (size as f64) / scale,
-				data: Vec::with_capacity(length),
+				x0: (x_offset as f32) / scale,
+				y0: (y_offset as f32) / scale,
+				pixel_scale: 1.0 / (size as f32) / scale,
+				channels: Vec::from([
+					Channel::new(size, size),
+					Channel::new(size, size)
+				]),
 			};
-			image.data.resize(length, MAX_DISTANCE);
-
-			return image;
 		}
 		pub fn get_pixel_as_point(&self, x: u32, y: u32) -> Point {
 			//println!("get_pixel_as_point {} {} {} {} {} {}", x, y, self.x_offset, self.y_offset, self.scale, self.size);
 
 			return Point::new(
-				demercator_x((x as f64) * self.pixel_scale + self.x0),
-				demercator_y((y as f64) * self.pixel_scale + self.y0),
+				demercator_x((x as f32) * self.pixel_scale + self.x0),
+				demercator_y((y as f32) * self.pixel_scale + self.y0),
 			);
-		}
-		pub fn set_pixel_value(&mut self, x: u32, y: u32, distance: f64) {
-			if x >= self.size {
-				panic!();
-			}
-
-			if y >= self.size {
-				panic!();
-			}
-
-			let index:usize = (x + y * self.size) as usize;
-			self.data[index] = distance;
 		}
 		fn export(&self, filename: &Path) {
 			let extension = filename.extension().unwrap().to_str().unwrap();
@@ -87,52 +100,18 @@ pub mod geoimage {
 					let mut file = File::create(filename).unwrap();
 					let _result = file.write_all(&buf);
 				},
-				"bin16" => {
-					let n = self.size as usize;
-					let mut data:Vec<i32> = Vec::new();
-					data.resize(n*n, 0);
-					for i in 0..n*n {
-						//data[i] = (8.0*self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)) as i32;
-						//data[i] = (self.data[i].min(MAX_DISTANCE).max(MIN_DISTANCE)).powi(2) as i32;
-						data[i] = ((self.data[i] - MIN_DISTANCE)*255.0/(MAX_DISTANCE - MIN_DISTANCE)) as i32;
-					}
-
-					/* horizontal
-					for i in (1..n).rev() {
-						data[i] -= data[i-1];
-					}
-					*/
-
-					for y in (1..n).rev() {
-						for x in (1..n).rev() {
-							//data[y*n+x] = data[y*n+x] - data[y*n+x-1] - data[y*n+x-n] + data[y*n+x-n-1];
-						}
-					}
-					/*
-					for i in (2..n).rev() {
-						data[i] -= data[i-1];
-					}
-					*/
-
-					let mut buf:Vec<u8> = Vec::new();
-					buf.resize(n*n, 0);
-					for i in 0..n*n {
-						let v = (data[i] + 32768) as u16;
-						let b = v.to_le_bytes();
-						buf[i+0] = b[0];
-						//buf[i*2+1] = b[1];
-					}
-
-					let mut file = File::create(filename).unwrap();
-					let _result = file.write_all(&buf);
-				},
 				"png" => {
 					let size = self.size as u32;
+					let channel0 = &self.channels[0];
+					let channel1 = &self.channels[1];
 					let img = image::ImageBuffer::from_fn(size, size, |x, y| {
-						let d = self.data[(x + y * size) as usize];
-						let v = ((d-MIN_DISTANCE)/(MAX_DISTANCE-MIN_DISTANCE)).max(0.0).min(1.0);
-						return image::Luma([
-							(v*255.0) as u8
+						let index = (x + y * size) as usize;
+						let v0 = channel0.data[index].max(0.0).min(1.0);
+						let v1 = channel1.data[index].max(0.0).min(1.0);
+						return image::Rgb([
+							(v0*255.0) as u8,
+							(v1*255.0) as u8,
+							0u8,
 						]);
 					});
 					let _result = img.save(filename);
@@ -143,18 +122,6 @@ pub mod geoimage {
 				}
 			}
 		}
-		/*
-		fn export_16(&self, filename: &Path) {
-			let size = self.size as u32;
-			let img = image::ImageBuffer::from_fn(size, size, |x, y| {
-				let d = self.data[(x + y * size) as usize];
-				let v = d.min(MAX_DISTANCE).max(-MAX_DISTANCE)*10.0 + 32768.0;
-				let i = v as u16;
-				return image::Luma([i]);
-			});
-			let _result = img.save(filename);
-		}
-		*/
 		pub fn load(filename: &Path) -> GeoImage {
 			let mut buffer: Vec<u8> = Vec::new();
 			let mut file = File::open(filename).unwrap();
@@ -168,21 +135,29 @@ pub mod geoimage {
 			}
 
 			let f1 = self.size / new_size;
-			let f2 = (f1 * f1) as f64;
+			let f2 = (f1 * f1) as f32;
 
 			let mut clone = GeoImage::new(new_size, self.zoom, self.x_offset, self.y_offset);
 
-			for y0 in 0..clone.size {
-				for x0 in 0..clone.size {
-					let mut sum = 0.0f64;
-					for yd in 0..f1 {
-						for xd in 0..f1 {
-							let index = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
-							sum += self.data[index]
+			let channel_count = self.channels.len();
+
+			for i in 0..channel_count {
+				let channel0 = &self.channels[i];
+				let channel1 = &mut clone.channels[i];
+				let clone_size = clone.size;
+
+				for y0 in 0..clone_size {
+					for x0 in 0..clone_size {
+						let mut sum = 0.0f32;
+						for yd in 0..f1 {
+							for xd in 0..f1 {
+								let index = ((y0 * f1 + yd) * self.size + (x0 * f1 + xd)) as usize;
+								sum += channel0.data[index]
+							}
 						}
+						let index0 = (y0 * clone_size + x0) as usize;
+						channel1.data[index0] = sum / f2;
 					}
-					let index0 = (y0 * clone.size + x0) as usize;
-					clone.data[index0] = sum / f2;
 				}
 			}
 
@@ -218,11 +193,16 @@ pub mod geoimage {
 				
 				let offset = item.x * half_size + item.y * half_size * size;
 				
-				for y in 0..half_size {
-					for x in 0..half_size {
-						let i0 = (y * size + x + offset) as usize;
-						let i1 = (y * half_size + x) as usize;
-						image.data[i0] = tile.data[i1];
+				for i in 0..tile.channels.len() {
+					let channel0 = &tile.channels[i];
+					let channel1 = &mut image.channels[i];
+
+					for y in 0..half_size {
+						for x in 0..half_size {
+							let i0 = (y * size + x + offset) as usize;
+							let i1 = (y * half_size + x) as usize;
+							channel1.data[i0] = channel0.data[i1];
+						}
 					}
 				}
 			}
@@ -288,25 +268,43 @@ pub mod geoimage {
 				self.y_offset*n + dy
 			);
 
-			for y1 in 0..clone.size {
-				for x1 in 0..clone.size {
-					let y0 = dy*tile_size + y1;
-					let x0 = dx*tile_size + x1;
-					let index0 = (y0 *  self.size + x0) as usize;
-					let index1 = (y1 * clone.size + x1) as usize;
-					clone.data[index1] = self.data[index0];
+			for i in 0..self.channels.len() {
+				let channel0 = &self.channels[i];
+				let channel1 = &mut clone.channels[i];
+
+				for y1 in 0..clone.size {
+					for x1 in 0..clone.size {
+						let y0 = dy*tile_size + y1;
+						let x0 = dx*tile_size + x1;
+						let index0 = (y0 *  self.size + x0) as usize;
+						let index1 = (y1 * clone.size + x1) as usize;
+						channel1.data[index1] = channel0.data[index0];
+					}
 				}
 			}
 
 			return clone;
 		}
+		pub fn fill_with_min_distances(&mut self, channel_index:usize, collection:Collection, min_distance:f32, max_distance:f32) {
+			let channel = &mut self.channels[channel_index];
+			for y in 0..channel.height {
+				for x in 0..channel.width {
+					let point = Point::new(
+						demercator_x((x as f32) * self.pixel_scale + self.x0),
+						demercator_y((y as f32) * self.pixel_scale + self.y0),
+					);
+					let distance = collection.get_min_distance(point, max_distance);
+					channel.set_pixel_value(x, y, (distance-min_distance)/(max_distance-min_distance));
+				}
+			}
+		}
 	}
 
-	fn demercator_x(x: f64) -> f64 {
+	fn demercator_x(x: f32) -> f32 {
 		return x * 360.0 - 180.0;
 	}
 
-	fn demercator_y(y: f64) -> f64 {
+	fn demercator_y(y: f32) -> f32 {
 		return (((1.0 - y * 2.0) * PI).exp().atan() * 4.0 / PI - 1.0) * 90.0;
 	}
 }

@@ -24,9 +24,12 @@ use crate::geometry::geometry::*;
 
 #[derive(Debug)]
 struct Arguments {
-	filename_geo: String,
+	filename_geo_dyn: String,
+	filename_geo_fix: String,
 	folder_png: String,
 	folder_bin: String,
+	min_distance: f32,
+	max_distance: f32,
 	zoom: u32,
 	x0: u32,
 	y0: u32,
@@ -36,23 +39,21 @@ struct Arguments {
 
 fn main() {
 	let arguments = parse_arguments();
-	println!("arguments: {:?}", arguments);
+	//println!("arguments: {:?}", arguments);
 
-	let mut collection = Collection::new();
+	let mut collection_dyn = Collection::new();
+	collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
 
-	collection.fill_from_json(Path::new(&arguments.filename_geo));
-	collection.prepare_segment_lookup();
+	let mut collection_fix = Collection::new();
+	collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
 
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-	for y in 0..size {
-		for x in 0..size {
-			let point = image.get_pixel_as_point(x, y);
-			let distance = collection.get_min_distance(point);
-			image.set_pixel_value(x, y, distance);
-		}
-	}
+	image.fill_with_min_distances(0, collection_dyn, arguments.min_distance, arguments.max_distance);
+
+	let v = arguments.max_distance - arguments.min_distance;
+	image.fill_with_min_distances(1, collection_fix, -v/2.0, v/2.0);
 
 	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
 	let thumb = image.scaled_down_clone(arguments.size/2);
@@ -67,22 +68,28 @@ fn parse_arguments() -> Arguments {
 	//println!("obj {}", obj);
 
 	return Arguments {
-		filename_geo: parse_str(obj, "filename_geo"),
-		folder_png:   parse_str(obj, "folder_png"),
-		folder_bin:   parse_str(obj, "folder_bin"),
-		zoom:         parse_u32(obj, "zoom"),
-		x0:           parse_u32(obj, "x0"),
-		y0:           parse_u32(obj, "y0"),
-		n:            parse_u32(obj, "n"),
-		size:         parse_u32(obj, "size")
+		filename_geo_dyn: parse_str(obj, "filename_geo_dyn"),
+		filename_geo_fix: parse_str(obj, "filename_geo_fix"),
+		folder_png:       parse_str(obj, "folder_png"),
+		folder_bin:       parse_str(obj, "folder_bin"),
+		min_distance:     parse_f32(obj, "min_distance"),
+		max_distance:     parse_f32(obj, "max_distance"),
+		zoom:             parse_u32(obj, "zoom"),
+		x0:               parse_u32(obj, "x0"),
+		y0:               parse_u32(obj, "y0"),
+		n:                parse_u32(obj, "n"),
+		size:             parse_u32(obj, "size")
 	};
 
 	fn parse_str(obj:&json::JsonValue, name:&str) -> String {
-		//println!("   obj {}", obj);
 		return obj[name].as_str().unwrap().to_string();
 	}
 
 	fn parse_u32(obj:&json::JsonValue, name:&str) -> u32 {
 		return obj[name].as_u32().unwrap();
+	}
+
+	fn parse_f32(obj:&json::JsonValue, name:&str) -> f32 {
+		return obj[name].as_f32().unwrap();
 	}
 }

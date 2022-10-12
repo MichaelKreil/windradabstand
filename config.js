@@ -290,7 +290,8 @@ const config = {
 		nabenhoehe: 142,
 		rotordurchmesser: 116,
 	},
-	maxRadius: 3000,
+	minRadius:    0,
+	maxRadius: 2500,
 }
 
 // prepare folders

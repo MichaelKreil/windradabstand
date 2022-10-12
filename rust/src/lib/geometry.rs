@@ -8,15 +8,15 @@ pub mod geometry {
 	use json::JsonValue;
 	use std::cmp::Ordering;
 	use std::collections::BinaryHeap;
-	use std::f64::consts::PI;
+	use std::f32::consts::PI;
 	use std::fs;
 	use std::path::Path;
 use std::rc::Rc;
 
 
 
-	const DEG2RAD: f64 = PI / 180.0;
-	const DEG2METERS: f64 = 6378137.0 * DEG2RAD;
+	const DEG2RAD: f32 = PI / 180.0;
+	const DEG2METERS: f32 = 6378137.0 * DEG2RAD;
 
 
 
@@ -75,13 +75,13 @@ use std::rc::Rc;
 				(self.min.y + self.max.y) / 2.0,
 			);
 		}
-		fn width(&self) -> f64 {
+		fn width(&self) -> f32 {
 			return self.max.x - self.min.x;
 		}
-		fn height(&self) -> f64 {
+		fn height(&self) -> f32 {
 			return self.max.y - self.min.y;
 		}
-		fn distance_to(&self, point: &Point) -> f64 {
+		fn distance_to(&self, point: &Point) -> f32 {
 			let dx = (self.min.x - point.x).max(point.x - self.max.x).max(0.0);
 			let dy = (self.min.y - point.y).max(point.y - self.max.y).max(0.0);
 
@@ -95,13 +95,13 @@ use std::rc::Rc;
 
 	#[derive(Copy, Clone, Debug)]
 	pub struct Point {
-		x: f64,
-		y: f64,
-		scale_x2: f64,
+		x: f32,
+		y: f32,
+		scale_x2: f32,
 	}
 
 	impl Point {
-		pub fn new(x: f64, y: f64) -> Point {
+		pub fn new(x: f32, y: f32) -> Point {
 			return Point {
 				x,
 				y,
@@ -110,8 +110,8 @@ use std::rc::Rc;
 		}
 		fn import_from_json(coordinates_point: &JsonValue) -> Point {
 			return Point::new(
-				coordinates_point[0].as_f64().unwrap(),
-				coordinates_point[1].as_f64().unwrap(),
+				coordinates_point[0].as_f32().unwrap(),
+				coordinates_point[1].as_f32().unwrap(),
 			);
 		}
 	}
@@ -207,23 +207,45 @@ use std::rc::Rc;
 			};
 		}
 		pub fn fill_from_json(&mut self, filename: &Path) {
-			println!("filename {}", filename.display());
+			//println!("filename {}", filename.display());
 			let contents: &str = &fs::read_to_string(filename).unwrap();
 			let data = json::parse(contents).unwrap();
 			let features = &data["features"];
 			for feature in features.members() {
-				let geometry = &feature["geometry"];
-				let coordinates = &geometry["coordinates"];
-				let geometry_type = geometry["type"].as_str().unwrap();
+				self.add_geometry(&feature["geometry"]);
+			}
+			self.prepare_segment_lookup();
+		}
 
-				match geometry_type {
-					"Polygon" => self.polygons.push(Polygon::import_from_json(coordinates)),
-					"MultiPolygon" => {
-						for polygon in coordinates.members() {
-							self.polygons.push(Polygon::import_from_json(polygon))
-						}
-					},
-					_ => panic!("{}", geometry_type),
+		fn add_geometry(&mut self, geometry:&JsonValue) {
+			if !geometry["type"].is_string() {
+				println!("{}", geometry);
+			}
+
+			let geometry_type = geometry["type"].as_str().unwrap();
+
+			match geometry_type {
+				"Polygon" => {
+					self.polygons.push(
+						Polygon::import_from_json(&geometry["coordinates"])
+					)
+				},
+				"MultiPolygon" => {
+					for polygon in geometry["coordinates"].members() {
+						self.polygons.push(
+							Polygon::import_from_json(polygon)
+						)
+					}
+				},
+				"GeometryCollection" => {
+					for sub_geometry in geometry["geometries"].members() {
+						self.add_geometry(sub_geometry);
+					}
+				},
+				"LineString" => { return },
+				_ => {
+					println!("{}", geometry);
+					panic!("unknown geometry_type: '{}'", geometry_type)
 				}
 			}
 		}
@@ -233,8 +255,8 @@ use std::rc::Rc;
 			}
 			self.segments.init_tree();
 		}
-		pub fn get_min_distance(&self, point: Point) -> f64 {
-			return self.segments.get_min_distance(&point);
+		pub fn get_min_distance(&self, point: Point, max_distance:f32) -> f32 {
+			return self.segments.get_min_distance(&point, max_distance);
 		}
 	}
 
@@ -330,12 +352,12 @@ use std::rc::Rc;
 				segments: None,
 			};
 		}
-		pub fn get_min_distance(&self, point: &Point) -> f64 {
+		pub fn get_min_distance(&self, point: &Point, max_distance:f32) -> f32 {
 			let mut heap = BinaryHeap::new();
 			let root = (self.root).as_ref().unwrap().clone();
 			heap.push(HeapNode::new(&root, point));
 
-			let mut min_distance: f64 = 3000.0;
+			let mut min_distance: f32 = max_distance;
 
 			while !heap.is_empty() {
 				let heap_node = heap.pop().unwrap();
@@ -373,7 +395,7 @@ use std::rc::Rc;
 
 	struct HeapNode<'a> {
 		tree_node: &'a SegmentTreeNode,
-		min_distance: f64,
+		min_distance: f32,
 	}
 
 	impl HeapNode<'_> {
@@ -413,8 +435,8 @@ use std::rc::Rc;
 
 
 
-	fn min_segments_distance(segments: &Vec<Rc<Segment>>, point: &Point) -> f64 {
-		let mut min_distance = f64::MAX;
+	fn min_segments_distance(segments: &Vec<Rc<Segment>>, point: &Point) -> f32 {
+		let mut min_distance = f32::MAX;
 		for segment in segments {
 			let distance = min_segment_distance(&segment, &point);
 			if distance < min_distance {
@@ -424,7 +446,7 @@ use std::rc::Rc;
 		return min_distance;
 	}
 
-	fn min_segment_distance(segment: &Segment, point: &Point) -> f64 {
+	fn min_segment_distance(segment: &Segment, point: &Point) -> f32 {
 		let pv = segment.p0; // v
 		let pw = segment.p1; // w
 

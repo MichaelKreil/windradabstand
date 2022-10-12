@@ -5,24 +5,26 @@
 const fs = require('fs');
 const config = require('../config.js');
 const { simpleCluster } = require('big-data-tools');
-const { bbox2Tiles, getTileBbox, ogrGenerateSQL, generateUnionVRT, mergeFiles } = require('../lib/geohelper.js');
-const { Progress, calcTemporaryFilename } = require('../lib/helper.js');
+const { bbox2Tiles, getTileBbox, ogrGenerateSQL, mergeFiles } = require('../lib/geohelper.js');
+const { Progress } = require('../lib/helper.js');
 const turf = require('@turf/turf');
 const child_process = require('child_process');
-const { resolve, basename } = require('path');
+const { resolve } = require('path');
 
 const FILENAME_DYNAMIC = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
 const FILENAME_FIXED   = config.getFilename.sdf('fixed.gpkg');
-const COMBINED_RENDER_LEVELS = 4;
+const COMBINED_RENDER_LEVELS = 3;
 const TILE_SIZE = config.tileSize;
 
-simpleCluster(async function (runWorker) {
+simpleCluster(true, async function (runWorker) {
+	/*
 	await wrapSpawn('cargo', [
 		'build',
 		'--release',
 		'--bins',
 		'--manifest-path', resolve(__dirname, '../rust/Cargo.toml')
 	]);
+	*/
 
 	await prepareGeometry();
 
@@ -60,7 +62,7 @@ simpleCluster(async function (runWorker) {
 		todos.sort((a,b) => a.order - b.order);
 
 		let progress = new Progress(todos.length);
-		await todos.forEachParallel((todo, i) => {
+		await todos.forEachParallel(1, (todo, i) => {
 			progress(i);
 			return runWorker(todo)
 		});
@@ -108,6 +110,8 @@ simpleCluster(async function (runWorker) {
 				filename_geo_fix: filenameGeoJSONFix,
 				folder_png: resolve(config.folders.sdf, 'png'),
 				folder_bin: resolve(config.folders.sdf, 'sdf'),
+				min_distance: config.minRadius,
+				max_distance: config.maxRadius,
 				zoom: todo.z,
 				x0: todo.x,
 				y0: todo.y,
@@ -138,20 +142,22 @@ function getTileFilename(x, y, z) {
 }
 
 async function wrapSpawn(cmd, args) {
-	return new Promise(res => {
+	return new Promise((res, rej) => {
 		let cp = child_process.spawn(cmd, args);
 		cp.stdout.pipe(process.stdout);
 		cp.stderr.pipe(process.stderr);
 		cp.on('error', error => {
 			console.error(cmd);
 			console.error(args);
-			throw error;
+			console.error({error});
+			rej();
 		})
 		cp.on('exit', (code, signal) => {
 			if (code === 0) return res();
-
-			console.log({code, signal});
-			throw Error();
+			console.error(cmd);
+			console.error(args);
+			console.error({code, signal});
+			rej();
 		})
 	})
 }
@@ -168,6 +174,8 @@ async function wrapExec(cmd) {
 }
 
 async function prepareGeometry() {
+	if (fs.existsSync(FILENAME_FIXED)) return;
+
 	const { ruleTypes } = JSON.parse(fs.readFileSync(config.getFilename.bufferedGeometry('index.json')));
 
 	let filenamesFixed = [];
