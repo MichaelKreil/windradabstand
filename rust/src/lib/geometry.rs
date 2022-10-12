@@ -11,7 +11,7 @@ pub mod geometry {
 	use std::f32::consts::PI;
 	use std::fs;
 	use std::path::Path;
-use std::rc::Rc;
+	use std::rc::Rc;
 
 
 
@@ -192,11 +192,23 @@ use std::rc::Rc;
 		}
 	}
 
-
+	pub struct LookupCell {
+		polygons: Vec<Rc<Polygon>>,
+	}
+	impl LookupCell {
+		pub fn new() -> LookupCell {
+			return LookupCell{polygons:Vec::new()};
+		}
+	}
 
 	pub struct Collection {
-		polygons: Vec<Polygon>,
+		polygons: Vec<Rc<Polygon>>,
 		segments: Segments,
+		lookup_grid: Vec<LookupCell>,
+		x0: f32,
+		y0: f32,
+		xs: f32,
+		ys: f32,
 	}
 
 	impl Collection {
@@ -204,6 +216,11 @@ use std::rc::Rc;
 			return Collection {
 				polygons: Vec::new(),
 				segments: Segments::new(),
+				lookup_grid: Vec::new(),
+				x0: 0.0,
+				y0: 0.0,
+				xs: 0.0,
+				ys: 0.0,
 			};
 		}
 		pub fn fill_from_json(&mut self, filename: &Path) {
@@ -216,7 +233,6 @@ use std::rc::Rc;
 			}
 			self.prepare_segment_lookup();
 		}
-
 		fn add_geometry(&mut self, geometry:&JsonValue) {
 			if !geometry["type"].is_string() {
 				println!("{}", geometry);
@@ -227,13 +243,13 @@ use std::rc::Rc;
 			match geometry_type {
 				"Polygon" => {
 					self.polygons.push(
-						Polygon::import_from_json(&geometry["coordinates"])
+						Rc::new(Polygon::import_from_json(&geometry["coordinates"]))
 					)
 				},
 				"MultiPolygon" => {
 					for polygon in geometry["coordinates"].members() {
 						self.polygons.push(
-							Polygon::import_from_json(polygon)
+							Rc::new(Polygon::import_from_json(polygon))
 						)
 					}
 				},
@@ -258,6 +274,30 @@ use std::rc::Rc;
 		pub fn get_min_distance(&self, point: Point, max_distance:f32) -> f32 {
 			return self.segments.get_min_distance(&point, max_distance);
 		}
+		pub fn init_lookup(&mut self, point_min:Point, point_max:Point, resolution:usize) {
+			let size = resolution*resolution;
+			self.lookup_grid.resize_with(size, || { LookupCell::new() });
+
+			self.x0 = point_min.x;
+			self.y0 = point_min.y;
+			self.xs = point_max.x - point_min.x;
+			self.ys = point_max.y - point_min.y;
+			
+			for polygon in &self.polygons {
+				let x0 = (((polygon.bbox.min.x - self.x0)/self.xs      ).floor() as usize).max(0).min(resolution);
+				let y0 = (((polygon.bbox.min.y - self.y0)/self.ys      ).floor() as usize).max(0).min(resolution);
+				let x1 = (((polygon.bbox.max.x - self.x0)/self.xs + 1.0).floor() as usize).max(0).min(resolution);
+				let y1 = (((polygon.bbox.max.y - self.y0)/self.ys + 1.0).floor() as usize).max(0).min(resolution);
+
+				for x in x0..x1 {
+					for y in y0..y1 {
+						let index = x + y*resolution;
+						self.lookup_grid[index].polygons.push(polygon.clone());
+					}
+				}
+			}
+		}
+
 	}
 
 

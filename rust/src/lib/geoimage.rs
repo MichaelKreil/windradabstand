@@ -84,13 +84,17 @@ pub mod geoimage {
 				]),
 			};
 		}
-		pub fn get_pixel_as_point(&self, x: u32, y: u32) -> Point {
-			//println!("get_pixel_as_point {} {} {} {} {} {}", x, y, self.x_offset, self.y_offset, self.scale, self.size);
-
+		fn get_pixel_as_point(&self, x: u32, y: u32) -> Point {
 			return Point::new(
 				demercator_x((x as f32) * self.pixel_scale + self.x0),
 				demercator_y((y as f32) * self.pixel_scale + self.y0),
 			);
+		}
+		pub fn get_point_min(&self) -> Point {
+			return self.get_pixel_as_point(0, self.size);
+		}
+		pub fn get_point_max(&self) -> Point {
+			return self.get_pixel_as_point(self.size, 0);
 		}
 		fn export(&self, filename: &Path) {
 			let extension = filename.extension().unwrap().to_str().unwrap();
@@ -285,10 +289,10 @@ pub mod geoimage {
 
 			return clone;
 		}
-		pub fn fill_with_min_distances(&mut self, channel_index:usize, collection:Collection, min_distance:f32, max_distance:f32) {
+		pub fn fill_with_min_distances(&mut self, channel_index:usize, collection:&Collection, min_distance:f32, max_distance:f32) {
 			let channel = &mut self.channels[channel_index];
-			for y in 0..channel.height {
-				for x in 0..channel.width {
+			for y in 0..self.size {
+				for x in 0..self.size {
 					let point = Point::new(
 						demercator_x((x as f32) * self.pixel_scale + self.x0),
 						demercator_y((y as f32) * self.pixel_scale + self.y0),

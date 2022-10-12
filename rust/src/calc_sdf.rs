@@ -43,35 +43,48 @@ fn main() {
 	//println!("arguments: {:?}", arguments);
 
 	let start = Instant::now();
-	let mut collection_dyn = Collection::new();
-	collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
+		let mut collection_dyn = Collection::new();
+		collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
 	println!("collection_dyn.fill_from_json: {:?}", start.elapsed());
 
 	let start = Instant::now();
-	let mut collection_fix = Collection::new();
-	collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
+		let mut collection_fix = Collection::new();
+		collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
 	println!("collection_fix.fill_from_json: {:?}", start.elapsed());
 
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-	image.fill_with_min_distances(0, collection_dyn, arguments.min_distance, arguments.max_distance);
+	let point0 = image.get_point_min();
+	let point1 = image.get_point_max();
 
 	let start = Instant::now();
-	let v = arguments.max_distance - arguments.min_distance;
+		collection_dyn.init_lookup(point0, point1, 256);
+	println!("collection_dyn.init_lookup: {:?}", start.elapsed());
+
+	let start = Instant::now();
+		collection_fix.init_lookup(point0, point1, 256);
+	println!("collection_dyn.init_lookup: {:?}", start.elapsed());
+
+	let start = Instant::now();
+		image.fill_with_min_distances(0, &collection_dyn, arguments.min_distance, arguments.max_distance);
+	println!("image.fill_with_min_distances(0): {:?}", start.elapsed());
+
+	let start = Instant::now();
+		let v = arguments.max_distance - arguments.min_distance;
 		image.fill_with_min_distances(1, &collection_fix, -v/2.0, v/2.0);
 	println!("image.fill_with_min_distances(1): {:?}", start.elapsed());
 
 	let start = Instant::now();
-	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
+		image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
 	println!("image.export_tile_tree: {:?}", start.elapsed());
 
 	let start = Instant::now();
-	let thumb = image.scaled_down_clone(arguments.size/2);
+		let thumb = image.scaled_down_clone(arguments.size/2);
 	println!("image.scaled_down_clone: {:?}", start.elapsed());
 
 	let start = Instant::now();
-	thumb.export_to(Path::new(&arguments.folder_bin), ".bin");
+		thumb.export_to(Path::new(&arguments.folder_bin), ".bin");
 	println!("thumb.export_to: {:?}", start.elapsed());
 }
 
