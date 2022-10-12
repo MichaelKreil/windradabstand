@@ -5,24 +5,26 @@
 const fs = require('fs');
 const config = require('../config.js');
 const { simpleCluster } = require('big-data-tools');
-const { bbox2Tiles, getTileBbox, mercator, ogrGenerateSQL, bbox4326To3857, bboxGeo2WebPixel, bboxWebPixel2Geo } = require('../lib/geohelper.js');
-const { ensureFolder, Progress } = require('../lib/helper.js');
+const { bbox2Tiles, getTileBbox, ogrGenerateSQL, generateUnionVRT, mergeFiles } = require('../lib/geohelper.js');
+const { Progress, calcTemporaryFilename } = require('../lib/helper.js');
 const turf = require('@turf/turf');
-const { spawnSync, execSync } = require('child_process');
-const { resolve } = require('path');
+const child_process = require('child_process');
+const { resolve, basename } = require('path');
 
-const FILENAME_LAYER1 = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
-const FILENAME_LAYER2 = config.getFilename.rulesGeoBasis('gebaeude.gpkg');
+const FILENAME_DYNAMIC = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
+const FILENAME_FIXED   = config.getFilename.sdf('fixed.gpkg');
 const COMBINED_RENDER_LEVELS = 4;
 const TILE_SIZE = config.tileSize;
 
 simpleCluster(async function (runWorker) {
-	wrapSpawn('cargo', [
+	await wrapSpawn('cargo', [
 		'build',
 		'--release',
 		'--bins',
 		'--manifest-path', resolve(__dirname, '../rust/Cargo.toml')
 	]);
+
+	await prepareGeometry();
 
 	const zoomLevel = config.maxMapZoomLevel - COMBINED_RENDER_LEVELS;
 	const BBOX = config.bbox;
@@ -34,10 +36,10 @@ simpleCluster(async function (runWorker) {
 	let tilesTar = resolve(config.folders.tiles, 'tiles.tar');
 	
 	console.log('1/2 optipng')
-	wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"`);
+	await wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"`);
 	
 	console.log('2/2 tar')
-	wrapExec(`rm "${tilesTar}"; cd "${pngFolder}"; tar -cf "${tilesTar}" *`);
+	await wrapExec(`rm "${tilesTar}"; cd "${pngFolder}"; tar -cf "${tilesTar}" *`);
 
 	console.log('Finished');
 
@@ -62,7 +64,7 @@ simpleCluster(async function (runWorker) {
 			progress(i);
 			return runWorker(todo)
 		});
-		
+
 		console.log('');
 	}
 
@@ -85,17 +87,25 @@ simpleCluster(async function (runWorker) {
 			bbox:bboxOuter
 		})
 
-		let filenameGeoJSON = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}.geojson`);
+		let filenameGeoJSONDyn = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-dyn.geojson`);
+		let filenameGeoJSONFix = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-fix.geojson`);
 
-		wrapSpawn('ogr2ogr', [
+		await wrapSpawn('ogr2ogr', [
 			'-sql', sql,
-			filenameGeoJSON,
-			FILENAME_LAYER1
+			filenameGeoJSONDyn,
+			FILENAME_DYNAMIC
 		])
 
-		wrapSpawn(resolve(__dirname, '../rust/target/release/calc_sdf'), [
+		await wrapSpawn('ogr2ogr', [
+			'-sql', sql,
+			filenameGeoJSONFix,
+			FILENAME_FIXED
+		])
+
+		await wrapSpawn(resolve(__dirname, '../rust/target/release/calc_sdf'), [
 			JSON.stringify({
-				filename_geo: filenameGeoJSON,
+				filename_geo_dyn: filenameGeoJSONDyn,
+				filename_geo_fix: filenameGeoJSONFix,
 				folder_png: resolve(config.folders.sdf, 'png'),
 				folder_bin: resolve(config.folders.sdf, 'sdf'),
 				zoom: todo.z,
@@ -110,7 +120,7 @@ simpleCluster(async function (runWorker) {
 	}
 
 	async function mergeTile(todo) {
-		wrapSpawn(resolve(__dirname, '../rust/target/release/merge'), [
+		await wrapSpawn(resolve(__dirname, '../rust/target/release/merge'), [
 			JSON.stringify({
 				folder_png: resolve(config.folders.sdf, 'png'),
 				folder_bin: resolve(config.folders.sdf, 'sdf'),
@@ -127,19 +137,26 @@ function getTileFilename(x, y, z) {
 	return config.getFilename.sdf(['png', z, y, x].join('/') + '.png');
 }
 
-function wrapSpawn(cmd, args) {
-	let result = spawnSync(cmd, args);
-	if (result.error) throw Error(result.error);
-	if (result.status === 0) return;
-	
-	console.error(cmd);
-	console.error(args);
-	console.error(result.stdout.toString());
-	console.error(result.stderr.toString());
-	throw Error();
+async function wrapSpawn(cmd, args) {
+	return new Promise(res => {
+		let cp = child_process.spawn(cmd, args);
+		cp.stdout.pipe(process.stdout);
+		cp.stderr.pipe(process.stderr);
+		cp.on('error', error => {
+			console.error(cmd);
+			console.error(args);
+			throw error;
+		})
+		cp.on('exit', (code, signal) => {
+			if (code === 0) return res();
+
+			console.log({code, signal});
+			throw Error();
+		})
+	})
 }
 
-function wrapExec(cmd) {
+async function wrapExec(cmd) {
 	try {
 		execSync(cmd, { stdio: 'inherit' });
 	} catch (e) {
@@ -148,4 +165,23 @@ function wrapExec(cmd) {
 		console.log(e);
 		throw e;
 	}
+}
+
+async function prepareGeometry() {
+	const { ruleTypes } = JSON.parse(fs.readFileSync(config.getFilename.bufferedGeometry('index.json')));
+
+	let filenamesFixed = [];
+
+	ruleTypes.forEach(ruleType => {
+		if (ruleType.slug === 'wohngebaeude') return;
+		ruleType.regions.forEach(region => {
+			let filename = region.filenameBase + '.gpkg';
+			if (!fs.existsSync(filename)) return;
+			filenamesFixed.push(filename)
+		})
+	})
+
+	console.log('merge files to generate fixed geometries');
+	
+	await mergeFiles(filenamesFixed, FILENAME_FIXED);
 }
