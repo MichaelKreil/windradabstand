@@ -45,21 +45,24 @@ simpleCluster(async function (runWorker) {
 		console.log(`process level ${z} using: ${action}`);
 		let todos = [];
 		let tilesBbox = bbox2Tiles(BBOX, z);
+		let center = [(tilesBbox[0] + tilesBbox[2]) / 2, (tilesBbox[1] + tilesBbox[3]) / 2];
 		for (let y = tilesBbox[1]; y < tilesBbox[3]; y++) {
 			for (let x = tilesBbox[0]; x < tilesBbox[2]; x++) {
 				let filename = getTileFilename(x, y, z);
 				if (fs.existsSync(filename)) continue;
-				todos.push({ action, x, y, z, filename })
+				let order = Math.pow(x - center[0], 2) + Math.pow(y - center[1], 2);
+				todos.push({ action, x, y, z, filename, order })
 			}
 		}
 
-		todos.sort(() => Math.random() - 0.5);
+		todos.sort((a,b) => a.order - b.order);
 
 		let progress = new Progress(todos.length);
 		await todos.forEachParallel((todo, i) => {
 			progress(i);
 			return runWorker(todo)
 		});
+		
 		console.log('');
 	}
 
