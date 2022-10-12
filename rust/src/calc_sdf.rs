@@ -59,11 +59,11 @@ fn main() {
 	let point1 = image.get_point_max();
 
 	let start = Instant::now();
-		collection_dyn.init_lookup(point0, point1, 256);
+		collection_dyn.init_lookup(point0, point1, 1024);
 	println!("collection_dyn.init_lookup: {:?}", start.elapsed());
 
 	let start = Instant::now();
-		collection_fix.init_lookup(point0, point1, 256);
+		collection_fix.init_lookup(point0, point1, 1024);
 	println!("collection_dyn.init_lookup: {:?}", start.elapsed());
 
 	let start = Instant::now();
