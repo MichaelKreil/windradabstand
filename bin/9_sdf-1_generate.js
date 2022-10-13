@@ -89,15 +89,23 @@ simpleCluster(async function (runWorker) {
 		if (fs.existsSync(filenameGeoJSONFix)) fs.rmSync(filenameGeoJSONFix);
 
 		await wrapSpawn('ogr2ogr', [
+			'-skipfailures',
 			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxOuter }),
 			'-clipdst', ...bboxOuter,
+			'-explodecollections',
+			'-nln', 'layer',
+			'-nlt', 'MultiPolygon',
 			filenameGeoJSONDyn,
 			FILENAME_DYNAMIC
 		])
 
 		await wrapSpawn('ogr2ogr', [
+			'-skipfailures',
 			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxInner, union:true }),
 			'-clipdst', ...bboxInner,
+			'-explodecollections',
+			'-nln', 'layer',
+			'-nlt', 'MultiPolygon',
 			filenameGeoJSONFix,
 			FILENAME_FIXED
 		])

@@ -19,6 +19,7 @@ simpleCluster(async runWorker => {
 
 	let todos = [];
 	ruleTypes.forEach(ruleType => {
+		if (ruleType.slug === 'wohngebaeude') return;
 		ruleType.regions.forEach(region => {
 			let bundesland = bundeslaender.find(b => b.ags === region.ags);
 			todos.push({
@@ -94,8 +95,10 @@ simpleCluster(async runWorker => {
 			'-sql', ogrGenerateSQL({
 				dropProperties: true,
 				bbox: todo.bundesland.bbox,
+				makeValid: true,
 			}),
 			'-clipdst', todo.bundesland.filename,
+			'-explodecollections',
 			'-nlt', 'MULTIPOLYGON',
 			'-nln', 'layer',
 			'-lco', 'GEOMETRY_NAME=geometry',
