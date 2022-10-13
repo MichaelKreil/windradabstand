@@ -325,10 +325,6 @@ pub mod geoimage {
 				let xc = demercator_x(((xi as f32) + (size as f32)/2.0) * env.pixel_scale + env.x0);
 				let yc = demercator_y(((yi as f32) + (size as f32)/2.0) * env.pixel_scale + env.y0);
 
-				if size > 64 {
-					//println!("x: {}, y: {}, s:{}, points:{}", xi, yi, size, geometry.point_count());
-				}
-
 				if size == 1 {
 					let point = Point::new(xc, yc);
 
@@ -363,7 +359,64 @@ pub mod geoimage {
 			}
 		}
 		pub fn draw_geometry(&mut self, channel_index:usize, collection:&Collection) {
+			struct Env<'a> {
+				channel: &'a mut Channel,
+				x0: f32,
+				y0: f32,
+				pixel_scale: f32,
+			}
+			let mut env = Env {
+				channel: &mut self.channels[channel_index],
+				x0: self.x0,
+				y0: self.y0,
+				pixel_scale: self.pixel_scale,
+			};
+		
+			recursion(&mut env, &collection.geometry, 0, 0, self.size);
 
+			fn recursion(env:&mut Env, geometry:&Geometry, xi:u32, yi:u32, size:u32) {
+
+				if size == 1 {
+					let n = 4;
+					let nf = n as f32;
+					let mut sum = 0;
+					for xa in 0..n {
+						for ya in 0..n {
+							let xc = demercator_x(((xi as f32) + (xa as f32 + 0.5)/nf) * env.pixel_scale + env.x0);
+							let yc = demercator_y(((yi as f32) + (ya as f32 + 0.5)/nf) * env.pixel_scale + env.y0);
+							let point = Point::new(xc, yc);
+							if geometry.contains_point(&point) {
+								sum += 1;
+							}
+						}
+					}
+					env.channel.set_pixel_value(xi, yi, 1.0 - (sum as f32)/(nf*nf));
+				} else {
+					let half_size = size/2;
+					let xc = demercator_x(((xi + half_size) as f32) * env.pixel_scale + env.x0);
+					let yc = demercator_y(((yi + half_size) as f32) * env.pixel_scale + env.y0);
+
+					if size < 16 {
+						{
+							recursion(env, &geometry, xi          , yi, half_size);
+							recursion(env, &geometry, xi+half_size, yi, half_size);
+							recursion(env, &geometry, xi          , yi+half_size, half_size);
+							recursion(env, &geometry, xi+half_size, yi+half_size, half_size);
+						}
+					} else {
+						{
+							let geometry_top = geometry.clone_cut_bot(yc);
+							recursion(env, &geometry_top.clone_cut_rig(xc), xi          , yi, half_size);
+							recursion(env, &geometry_top.clone_cut_lef(xc), xi+half_size, yi, half_size);
+						}
+						{
+							let geometry_bot = geometry.clone_cut_top(yc);
+							recursion(env, &geometry_bot.clone_cut_rig(xc), xi          , yi+half_size, half_size);
+							recursion(env, &geometry_bot.clone_cut_lef(xc), xi+half_size, yi+half_size, half_size);
+						}
+					}
+				}
+			}
 		}
 	}
 

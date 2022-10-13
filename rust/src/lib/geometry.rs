@@ -421,7 +421,7 @@ pub mod geometry {
 			return self.clone_cut(&|p:Point| -> bool { p.x < x });
 		}
 		pub fn clone_cut_rig(&self, x:f32) -> Geometry {
-			return self.clone_cut(&|p:Point| -> bool { p.x < x });
+			return self.clone_cut(&|p:Point| -> bool { p.x > x });
 		}
 		pub fn contains_point(&self, point: &Point) -> bool {
 			return self.polygons.iter().any(|polygon| polygon.contains_point(point));
