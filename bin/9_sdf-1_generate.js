@@ -82,7 +82,7 @@ simpleCluster(true, async function (runWorker) {
 	async function renderTile(todo) {	
 		
 		const bboxInner = getTileBbox(todo.x, todo.y, todo.z);
-		const bbox = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius/1000));
+		const bboxOuter = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius/1000));
 
 		const filenameGeoJSONDyn = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-dyn.geojson`);
 		const filenameGeoJSONFix = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-fix.geojson`);
@@ -91,15 +91,15 @@ simpleCluster(true, async function (runWorker) {
 		if (fs.existsSync(filenameGeoJSONFix)) fs.rmSync(filenameGeoJSONFix);
 
 		await wrapSpawn('ogr2ogr', [
-			'-sql', ogrGenerateSQL({ dropProperties:true, bbox }),
-			'-clipdst', ...bbox,
+			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxOuter }),
+			'-clipdst', ...bboxOuter,
 			filenameGeoJSONDyn,
 			FILENAME_DYNAMIC
 		])
 
 		await wrapSpawn('ogr2ogr', [
-			'-sql', ogrGenerateSQL({ dropProperties:true, bbox, union:true }),
-			'-clipdst', ...bbox,
+			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxInner, union:true }),
+			'-clipdst', ...bboxInner,
 			filenameGeoJSONFix,
 			FILENAME_FIXED
 		])
