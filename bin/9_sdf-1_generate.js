@@ -16,15 +16,13 @@ const FILENAME_FIXED   = config.getFilename.sdf('fixed.gpkg');
 const COMBINED_RENDER_LEVELS = 3;
 const TILE_SIZE = config.tileSize;
 
-simpleCluster(true, async function (runWorker) {
-	/*
+simpleCluster(async function (runWorker) {
 	await wrapSpawn('cargo', [
 		'build',
 		'--release',
 		'--bins',
 		'--manifest-path', resolve(__dirname, '../rust/Cargo.toml')
 	]);
-	*/
 
 	await prepareGeometry();
 
@@ -62,7 +60,7 @@ simpleCluster(true, async function (runWorker) {
 		todos.sort((a,b) => a.order - b.order);
 
 		let progress = new Progress(todos.length);
-		await todos.forEachParallel(1, (todo, i) => {
+		await todos.forEachParallel((todo, i) => {
 			progress(i);
 			return runWorker(todo)
 		});
