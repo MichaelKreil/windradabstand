@@ -171,11 +171,11 @@ async function wrapSpawn(cmd, args) {
 
 async function wrapExec(cmd) {
 	try {
-		execSync(cmd, { stdio: 'inherit' });
+		child_process.execSync(cmd, { stdio: 'inherit' });
 	} catch (e) {
-		console.log('stdout', e.stdout.toString());
-		console.log('stderr', e.stderr.toString());
 		console.log(e);
+		if (e.stdout) console.log('stdout', e.stdout.toString());
+		if (e.stderr) console.log('stderr', e.stderr.toString());
 		throw e;
 	}
 }
