@@ -55,26 +55,13 @@ fn main() {
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
-	let point0 = image.get_point_min();
-	let point1 = image.get_point_max();
-
 	let start = Instant::now();
-		collection_dyn.init_lookup(point0, point1, 1024);
-	println!("collection_dyn.init_lookup: {:?}", start.elapsed());
-
-	let start = Instant::now();
-		collection_fix.init_lookup(point0, point1, 256);
-	println!("collection_fix.init_lookup: {:?}", start.elapsed());
-	//collection_fix.debug();
-
-	let start = Instant::now();
-		image.fill_with_min_distances(0, &collection_dyn, arguments.min_distance, arguments.max_distance);
+		image.draw_distances(0, &collection_dyn, arguments.min_distance, arguments.max_distance);
 	println!("image.fill_with_min_distances(dyn): {:?}", start.elapsed());
 
 	let start = Instant::now();
-		let v = arguments.max_distance - arguments.min_distance;
-		image.fill_with_min_distances(1, &collection_fix, -v/2.0, v/2.0);
-	println!("image.fill_with_min_distances(fix): {:?}", start.elapsed());
+		image.draw_geometry(1, &collection_fix);
+	println!("image.render(fix): {:?}", start.elapsed());
 
 	let start = Instant::now();
 		image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");

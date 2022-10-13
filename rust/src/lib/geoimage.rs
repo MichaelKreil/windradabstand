@@ -2,7 +2,7 @@
 mod geometry;
 
 pub mod geoimage {
-	use crate::geometry::geometry::{Point, Collection};
+	use crate::geometry::geometry::{Point, Collection, Geometry};
 	use image;
 	use serde::{Deserialize, Serialize};
 	use std::fs::{File,create_dir_all};
@@ -289,21 +289,81 @@ pub mod geoimage {
 
 			return clone;
 		}
-		pub fn fill_with_min_distances(&mut self, channel_index:usize, collection:&Collection, min_distance:f32, max_distance:f32) {
-			let channel = &mut self.channels[channel_index];
-			for y in 0..self.size {
-				for x in 0..self.size {
-					let point = Point::new(
-						demercator_x((x as f32) * self.pixel_scale + self.x0),
-						demercator_y((y as f32) * self.pixel_scale + self.y0),
-					);
-					let mut distance = collection.get_min_distance(&point, max_distance);
-					if collection.is_point_in_polygon(&point) {
+		pub fn draw_distances(&mut self, channel_index:usize, collection:&Collection, min_distance:f32, max_distance:f32) {
+			struct Env<'a> {
+				channel: &'a mut Channel,
+				collection: &'a Collection,
+				min_distance:f32,
+				max_distance:f32,
+				x0: f32,
+				y0: f32,
+				pixel_scale: f32,
+			}
+			let mut env = Env {
+				channel: &mut self.channels[channel_index],
+				collection,
+				min_distance,
+				max_distance,
+				x0: self.x0,
+				y0: self.y0,
+				pixel_scale: self.pixel_scale,
+			};
+
+			let x_lef = demercator_x(env.x0);
+			let x_rig = demercator_x((self.size as f32) * env.pixel_scale + env.x0);
+			let y_bot = demercator_y((self.size as f32) * env.pixel_scale + env.y0);
+			let y_top = demercator_y(env.y0);
+
+			let mut geometry = collection.geometry.clone_cut_top(y_top);
+			geometry = geometry.clone_cut_bot(y_bot);
+			geometry = geometry.clone_cut_lef(x_lef);
+			geometry = geometry.clone_cut_rig(x_rig);
+		
+			recursion(&mut env, &geometry, 0, 0, self.size);
+
+			fn recursion(env:&mut Env, geometry:&Geometry, xi:u32, yi:u32, size:u32) {
+				let xc = demercator_x(((xi as f32) + (size as f32)/2.0) * env.pixel_scale + env.x0);
+				let yc = demercator_y(((yi as f32) + (size as f32)/2.0) * env.pixel_scale + env.y0);
+
+				if size > 64 {
+					//println!("x: {}, y: {}, s:{}, points:{}", xi, yi, size, geometry.point_count());
+				}
+
+				if size == 1 {
+					let point = Point::new(xc, yc);
+
+					let mut distance = env.collection.get_min_distance(&point, env.max_distance);
+					if geometry.contains_point(&point) {
 						distance = -distance;
 					}
-					channel.set_pixel_value(x, y, (distance-min_distance)/(max_distance-min_distance));
+					env.channel.set_pixel_value(xi, yi, (distance-env.min_distance)/(env.max_distance-env.min_distance));
+				} else {
+					let half_size = size/2;
+
+					if size < 128 {
+						{
+							recursion(env, &geometry, xi          , yi, half_size);
+							recursion(env, &geometry, xi+half_size, yi, half_size);
+							recursion(env, &geometry, xi          , yi+half_size, half_size);
+							recursion(env, &geometry, xi+half_size, yi+half_size, half_size);
+						}
+					} else {
+						{
+							let geometry_top = geometry.clone_cut_bot(yc);
+							recursion(env, &geometry_top.clone_cut_rig(xc), xi          , yi, half_size);
+							recursion(env, &geometry_top.clone_cut_lef(xc), xi+half_size, yi, half_size);
+						}
+						{
+							let geometry_bot = geometry.clone_cut_top(yc);
+							recursion(env, &geometry_bot.clone_cut_rig(xc), xi          , yi+half_size, half_size);
+							recursion(env, &geometry_bot.clone_cut_lef(xc), xi+half_size, yi+half_size, half_size);
+						}
+					}
 				}
 			}
+		}
+		pub fn draw_geometry(&mut self, channel_index:usize, collection:&Collection) {
+
 		}
 	}
 

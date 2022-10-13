@@ -22,27 +22,27 @@ pub mod geometry {
 
 
 	#[derive(Debug)]
-	struct BBox {
+	pub struct Bbox {
 		x_min: f32,
 		y_min: f32,
 		x_max: f32,
 		y_max: f32,
 	}
 
-	impl BBox {
-		fn new() -> BBox {
-			BBox {
+	impl Bbox {
+		fn new() -> Bbox {
+			Bbox {
 				x_min: 180.0,
 				y_min:  90.0,
 				x_max:-180.0,
 				y_max: -90.0,
 			}
 		}
-		fn from_coordinates(x_min:f32, y_min:f32, x_max:f32, y_max:f32) -> BBox {
-			return BBox {x_min, y_min, x_max, y_max}
+		pub fn from_coordinates(x_min:f32, y_min:f32, x_max:f32, y_max:f32) -> Bbox {
+			return Bbox {x_min, y_min, x_max, y_max}
 		}
-		fn from_segments(segments: &Vec<Rc<Segment>>) -> BBox {
-			let mut bbox = BBox::new();
+		fn from_segments(segments: &Vec<Rc<Segment>>) -> Bbox {
+			let mut bbox = Bbox::new();
 			for segment in segments {
 				bbox.add_point(&segment.p0);
 				bbox.add_point(&segment.p1);
@@ -63,7 +63,7 @@ pub mod geometry {
 				self.y_max = point.y
 			};
 		}
-		fn add_bbox(&mut self, bbox: &BBox) {
+		fn add_bbox(&mut self, bbox: &Bbox) {
 			if self.x_min > bbox.x_min {
 				self.x_min = bbox.x_min
 			};
@@ -77,7 +77,7 @@ pub mod geometry {
 				self.y_max = bbox.y_max
 			};
 		}
-		fn center(&self) -> Point {
+		pub fn center(&self) -> Point {
 			return Point::new(
 				(self.x_min + self.x_max) / 2.0,
 				(self.y_min + self.y_max) / 2.0,
@@ -110,7 +110,7 @@ pub mod geometry {
 			}
 			return true;
 		}
-		fn overlaps_bbox(&self, bbox: &BBox) -> bool {
+		fn overlaps_bbox(&self, bbox: &Bbox) -> bool {
 			if (bbox.x_min > self.x_max) || (bbox.x_max < self.x_min) {
 				return false;
 			}
@@ -119,7 +119,7 @@ pub mod geometry {
 			}
 			return true;
 		}
-		fn covers_bbox(&self, bbox: &BBox) -> bool {
+		fn covers_bbox(&self, bbox: &Bbox) -> bool {
 			if (bbox.x_min < self.x_min) || (bbox.x_max > self.x_max) {
 				return false;
 			}
@@ -129,7 +129,7 @@ pub mod geometry {
 			return true;
 		}
 	}
-	impl fmt::Display for BBox {
+	impl fmt::Display for Bbox {
 		fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 			write!(
 				f,
@@ -160,6 +160,13 @@ pub mod geometry {
 				scale_x2: (y * DEG2RAD).cos().powi(2),
 			};
 		}
+		pub fn clone(&self) -> Point {
+			return Point {
+				x: self.x,
+				y: self.y,
+				scale_x2: self.scale_x2,
+			};
+		}
 		fn import_from_json(coordinates_point: &JsonValue) -> Point {
 			return Point::new(
 				coordinates_point[0].as_f32().unwrap(),
@@ -172,15 +179,23 @@ pub mod geometry {
 	#[derive(Debug)]
 	struct Polyline {
 		points: Vec<Point>,
-		bbox: BBox,
+		bbox: Bbox,
 	}
 
 	impl Polyline {
 		fn new() -> Polyline {
 			return Polyline {
 				points: Vec::new(),
-				bbox: BBox::new(),
+				bbox: Bbox::new(),
 			};
+		}
+		fn from_points(points: Vec<Point>) -> Polyline {
+			let mut polyline = Polyline {
+				points,
+				bbox: Bbox::new(),
+			};
+			polyline.update_bbox();
+			return polyline;
 		}
 		fn import_from_json(coordinates_line: &JsonValue) -> Polyline {
 			let mut polyline = Polyline::new();
@@ -191,6 +206,27 @@ pub mod geometry {
 			}
 			polyline.update_bbox();
 			return polyline;
+		}
+		fn clone_cut<F>(&self, filter:F) -> Polyline where F: Fn(Point) -> bool {
+			let mut outside:Vec<bool> = Vec::new();
+			for i in 0..self.points.len()-1 {
+				outside.insert(i, filter(self.points[i]));
+			}
+
+			let n = outside.len();
+			let mut points:Vec<Point> = Vec::new();
+			for i in 0..n {
+				let drop:bool = outside[i] && outside[(i+1) % n] && outside[(i+n-1) % n];
+				if !drop {
+					points.push(self.points[i].clone());
+				}
+			}
+
+			if points.len() > 0 {
+				points.push(points[0]);
+			}
+
+			return Polyline::from_points(points);
 		}
 		fn update_bbox(&mut self) {
 			let bbox = &mut self.bbox;
@@ -231,133 +267,8 @@ pub mod geometry {
 			//If the number of crossings was odd, the point is in the polygon
 			return odd;
 		}
-		fn overlaps_bbox(&self, bbox:&BBox) -> bool {
-			//println!("Polyline overlap: points {:?}", self.points.len());
-
-			if !self.bbox.overlaps_bbox(bbox) {
-				return false;
-			}
-			
-			//println!("Polyline overlap: bbox is overlaped by bbox");
-
-			if self.contains_point(&bbox.top_left()) {
-				//println!("Polyline overlap: ring contains bbox corner");
-				return true;
-			}
-
-			if self.intersects_bbox(bbox) {
-				//println!("Polyline overlap: intersection found :)");
-				return true;
-			} else {
-				//println!("Polyline overlap: no intersection :(");
-				return false;
-			}
-		}
-		fn covers_bbox(&self, bbox:&BBox) -> bool {
-			//println!("Polyline cover: points {:?}", self.points.len());
-
-			if !self.bbox.covers_bbox(bbox) {
-				return false;
-			}
-
-			//println!("Polyline cover: bbox is covered by bbox");
-
-			if !self.contains_point(&bbox.top_left()) {
-				//println!("Polyline cover: ring does not contain bbox corner");
-				return false;
-			}
-
-			if self.intersects_bbox(bbox) {
-				//println!("Polyline cover: intersection found :(");
-				return false;
-			} else {
-				//println!("Polyline cover: no intersection :)");
-				return true;
-			}
-		}
-		fn intersects_bbox(&self, bbox:&BBox) -> bool {
-			//let x0 = bbox.x_min;
-			//let y0 = bbox.y_min;
-			//let x1 = bbox.x_max;
-			//let y1 = bbox.y_max;
-			let pa = &Point::new(bbox.x_min, bbox.y_min);
-			let pb = &Point::new(bbox.x_min, bbox.y_max);
-			let pc = &Point::new(bbox.x_max, bbox.y_max);
-			let pd = &Point::new(bbox.x_max, bbox.y_min);
-
-			for i in 0..self.points.len()-1 {
-				let p0 = &self.points[i];
-				let p1 = &self.points[i+1];
-				/*
-				if intersect_vert(x0, y0, y1, p0, p1) {
-					return true;
-				}
-				if intersect_vert(x1, y0, y1, p0, p1) {
-					return true;
-				}
-				if intersect_hori(y0, x0, x1, p0, p1) {
-					return true;
-				}
-				if intersect_hori(y1, x0, x1, p0, p1) {
-					return true;
-				}
-				*/
-				if intersects(pa, pb, p0, p1) {
-					return true;
-				}
-				if intersects(pb, pc, p0, p1) {
-					return true;
-				}
-				if intersects(pc, pd, p0, p1) {
-					return true;
-				}
-				if intersects(pd, pa, p0, p1) {
-					return true;
-				}
-			}
-			return false;
-
-			fn intersect_vert(x:f32, y0:f32, y1:f32, p0:&Point, p1:&Point) -> bool {
-				if (p0.x < x) == (p1.x < x) { // Beide auf der gleichen Seite
-					return false;
-				}
-				if (p0.y < y0) && (p1.y < y0) { // Beide zu weit unten
-					return false;
-				}
-				if (p0.y > y1) && (p1.y > y1) { // Beide zu weit oben
-					return false;
-				}
-				// Schnittpunkt berechnen
-				let y = (x - p0.x) * (p1.y - p0.y) / (p1.x - p0.x) + p0.y;
-				return (y >= y0) && (y <= y1);
-			}
-
-			fn intersect_hori(y:f32, x0:f32, x1:f32, p0:&Point, p1:&Point) -> bool {
-				if (p0.y < y) == (p1.y < y) { // Beide auf der gleichen Seite
-					return false;
-				}
-				if (p0.x < x0) && (p1.x < x0) { // Beide zu weit links
-					return false;
-				}
-				if (p0.x > x1) && (p1.x > x1) { // Beide zu weit rechts
-					return false;
-				}
-				// Schnittpunkt berechnen
-				let x = (y - p0.y) * (p1.x - p0.x) / (p1.y - p0.y) + p0.x;
-				return (x >= x0) && (x <= x1);
-			}
-
-			fn intersects(a0:&Point, a1:&Point, b0:&Point, b1:&Point) -> bool {
-				let dx0 = a1.x - a0.x;
-				let dx1 = b1.x - b0.x;
-				let dy0 = a1.y - a0.y;
-				let dy1 = b1.y - b0.y;
-				let p0 = dy1 * (b1.x - a0.x) - dx1 * (b1.y - a0.y);
-				let p1 = dy1 * (b1.x - a1.x) - dx1 * (b1.y - a1.y);
-				let p2 = dy0 * (a1.x - b0.x) - dx0 * (a1.y - b0.y);
-				let p3 = dy0 * (a1.x - b1.x) - dx0 * (a1.y - b1.y);
-				return (p0 * p1 <= 0.0) && (p2 * p3 <= 0.0);
-			}
+		pub fn point_count(&self) -> u32 {
+			return self.points.len() as u32;
 		}
 	}
 
@@ -365,15 +276,23 @@ pub mod geometry {
 	#[derive(Debug)]
 	struct Polygon {
 		rings: Vec<Polyline>,
-		bbox: BBox,
+		bbox: Bbox,
 	}
 
 	impl Polygon {
 		fn new() -> Polygon {
 			return Polygon {
 				rings: Vec::new(),
-				bbox: BBox::new(),
+				bbox: Bbox::new(),
 			};
+		}
+		fn from_rings(rings: Vec<Polyline>) -> Polygon {
+			let mut polygon = Polygon {
+				rings,
+				bbox: Bbox::new(),
+			};
+			polygon.update_bbox();
+			return polygon;
 		}
 		fn import_from_json(coordinates_polygon: &JsonValue) -> Polygon {
 			let mut polygon = Polygon::new();
@@ -384,6 +303,16 @@ pub mod geometry {
 			}
 			polygon.update_bbox();
 			return polygon;
+		}
+		fn clone_cut<F>(&self, filter:&F) -> Polygon where F: Fn(Point) -> bool {
+			let mut rings:Vec<Polyline> = Vec::new();
+			for ring in &self.rings {
+				let ring_clone = ring.clone_cut(filter);
+				if ring_clone.points.len() > 0 {
+					rings.push(ring_clone);
+				}
+			}
+			return Polygon::from_rings(rings);
 		}
 		fn update_bbox(&mut self) {
 			let bbox = &mut self.bbox;
@@ -414,109 +343,33 @@ pub mod geometry {
 
 			return true;
 		}
-		fn overlaps_bbox(&self, bbox:&BBox) -> bool {
-			//println!("Polygon overlap: points {:?}", self.rings[0].points.len());
-			//println!("Polygon overlap: bbox {}", bbox);
-
-			if !self.bbox.overlaps_bbox(bbox) {
-				return false;
+		pub fn point_count(&self) -> u32 {
+			let mut sum:u32 = 0;
+			for ring in &self.rings {
+				sum += ring.point_count();
 			}
-
-			//println!("Polygon overlap: bbox is overlaped by bbox");
-
-			if !self.rings[0].overlaps_bbox(bbox) {
-				return false;
-			}
-
-			//println!("Polygon overlap: bbox is overlaped by outer ring");
-
-			for i in 1..self.rings.len() {
-				if self.rings[i].covers_bbox(bbox) {
-					//println!("Polygon overlap: false");
-					return false;
-				}
-			}
-
-			//println!("Polygon overlap: true");
-			return true;
-		}
-		fn covers_bbox(&self, bbox:&BBox) -> bool {
-			//println!("Polygon cover: points {:?}", self.rings[0].points.len());
-			//println!("Polygon cover: bbox {}", bbox);
-
-			if !self.bbox.covers_bbox(bbox) {
-				return false;
-			}
-
-			//println!("Polygon cover: bbox is covered by bbox");
-
-			if !self.rings[0].covers_bbox(bbox) {
-				//println!("Polygon cover: outer ring does not cover by bbox :(");
-				return false;
-			}
-
-			//println!("Polygon cover: bbox is covered by outer ring");
-
-			for i in 1..self.rings.len() {
-				if self.rings[i].overlaps_bbox(bbox) {
-					//println!("Polygon cover: false");
-					return false;
-				}
-			}
-
-			//println!("Polygon cover: true");
-			return true;
+			return sum;
 		}
 	}
 
-	pub struct LookupCell {
-		polygons: Vec<Rc<Polygon>>,
+	pub struct Geometry {
+		polygons: Vec<Polygon>,
 	}
-	impl LookupCell {
-		pub fn new() -> LookupCell {
-			return LookupCell{polygons:Vec::new()};
-		}
-	}
-
-	pub struct Collection {
-		polygons: Vec<Rc<Polygon>>,
-		segments: Segments,
-		grid_lookup: Vec<LookupCell>,
-		grid_empty: Vec<bool>,
-		grid_covered: Vec<bool>,
-		x0: f32,
-		y0: f32,
-		xs: f32,
-		ys: f32,
-		resolution: i32,
-	}
-
-	impl Collection {
-		pub fn new() -> Collection {
-			return Collection {
-				polygons: Vec::new(),
-				segments: Segments::new(),
-				grid_lookup: Vec::new(),
-				grid_empty: Vec::new(),
-				grid_covered: Vec::new(),
-				x0: 0.0,
-				y0: 0.0,
-				xs: 0.0,
-				ys: 0.0,
-				resolution: 0,
+	impl Geometry {
+		pub fn new() -> Geometry {
+			return Geometry {
+				polygons: Vec::new()
 			};
 		}
 		pub fn fill_from_json(&mut self, filename: &Path) {
-			//println!("filename {}", filename.display());
 			let contents: &str = &fs::read_to_string(filename).unwrap();
 			let data = json::parse(contents).unwrap();
 			let features = &data["features"];
 			for feature in features.members() {
-				self.add_geometry(&feature["geometry"]);
+				self.add_json_geometry(&feature["geometry"]);
 			}
-			self.prepare_segment_lookup();
 		}
-		fn add_geometry(&mut self, geometry:&JsonValue) {
+		fn add_json_geometry(&mut self, geometry:&JsonValue) {
 			if !geometry["type"].is_string() {
 				println!("{}", geometry);
 			}
@@ -526,19 +379,19 @@ pub mod geometry {
 			match geometry_type {
 				"Polygon" => {
 					self.polygons.push(
-						Rc::new(Polygon::import_from_json(&geometry["coordinates"]))
+						Polygon::import_from_json(&geometry["coordinates"])
 					)
 				},
 				"MultiPolygon" => {
 					for polygon in geometry["coordinates"].members() {
 						self.polygons.push(
-							Rc::new(Polygon::import_from_json(polygon))
+							Polygon::import_from_json(polygon)
 						)
 					}
 				},
 				"GeometryCollection" => {
 					for sub_geometry in geometry["geometries"].members() {
-						self.add_geometry(sub_geometry);
+						self.add_json_geometry(sub_geometry);
 					}
 				},
 				"LineString" => { return },
@@ -548,106 +401,61 @@ pub mod geometry {
 				}
 			}
 		}
-		pub fn prepare_segment_lookup(&mut self) {
+		pub fn clone_cut<F>(&self, filter:&F) -> Geometry where F: Fn(Point) -> bool {
+			let mut polygons:Vec<Polygon> = Vec::new();
 			for polygon in &self.polygons {
+				let clone = polygon.clone_cut(filter);
+				if clone.rings.len() > 0 {
+					polygons.push(clone);
+				}
+			}
+			return Geometry { polygons }
+		}
+		pub fn clone_cut_top(&self, y:f32) -> Geometry {
+			return self.clone_cut(&|p:Point| -> bool { p.y > y });
+		}
+		pub fn clone_cut_bot(&self, y:f32) -> Geometry {
+			return self.clone_cut(&|p:Point| -> bool { p.y < y });
+		}
+		pub fn clone_cut_lef(&self, x:f32) -> Geometry {
+			return self.clone_cut(&|p:Point| -> bool { p.x < x });
+		}
+		pub fn clone_cut_rig(&self, x:f32) -> Geometry {
+			return self.clone_cut(&|p:Point| -> bool { p.x < x });
+		}
+		pub fn contains_point(&self, point: &Point) -> bool {
+			return self.polygons.iter().any(|polygon| polygon.contains_point(point));
+		}
+		pub fn point_count(&self) -> u32 {
+			let mut sum:u32 = 0;
+			for polygon in &self.polygons {
+				sum += polygon.point_count();
+			}
+			return sum;
+		}
+	}
+
+	pub struct Collection {
+		pub geometry: Geometry,
+		segments: Segments
+	}
+
+	impl Collection {
+		pub fn new() -> Collection {
+			return Collection {
+				geometry: Geometry::new(),
+				segments: Segments::new(),
+			};
+		}
+		pub fn fill_from_json(&mut self, filename: &Path) {
+			self.geometry.fill_from_json(filename);
+			for polygon in &self.geometry.polygons {
 				polygon.extract_segments_to(&mut self.segments);
 			}
 			self.segments.init_tree();
 		}
 		pub fn get_min_distance(&self, point: &Point, max_distance:f32) -> f32 {
 			return self.segments.get_min_distance(point, max_distance);
-		}
-		pub fn init_lookup(&mut self, point_min:Point, point_max:Point, resolution:usize) {
-			let size = resolution*resolution;
-			self.grid_lookup.resize_with(size, || { LookupCell::new() });
-			self.grid_empty.resize(size, true);
-			self.grid_covered.resize(size, false);
-			self.resolution = resolution as i32;
-
-			self.x0 = point_min.x;
-			self.y0 = point_min.y;
-			self.xs = (resolution as f32 - 1.001)/(point_max.x - point_min.x);
-			self.ys = (resolution as f32 - 1.001)/(point_max.y - point_min.y);
-			
-			for polygon in &self.polygons {
-				let x0 = (((polygon.bbox.x_min - self.x0) * self.xs).floor() as i32).max(-1).min(self.resolution);
-				let y0 = (((polygon.bbox.y_min - self.y0) * self.ys).floor() as i32).max(-1).min(self.resolution);
-				let x1 = (((polygon.bbox.x_max - self.x0) * self.xs).floor() as i32).max(-1).min(self.resolution);
-				let y1 = (((polygon.bbox.y_max - self.y0) * self.ys).floor() as i32).max(-1).min(self.resolution);
-
-				for y in y0..=y1 {
-					if (y < 0) || (y >= self.resolution) {
-						continue;
-					}
-					for x in x0..=x1 {
-						if (x < 0) || (x >= self.resolution) {
-							continue;
-						}
-
-						//if (y != 100) || (x != 100) {
-						//	continue;
-						//}
-						let bbox = &BBox::from_coordinates(
-							self.x0 + ((x  ) as f32)/self.xs,
-							self.y0 + ((y  ) as f32)/self.ys,
-							self.x0 + ((x+1) as f32)/self.xs,
-							self.y0 + ((y+1) as f32)/self.ys,
-						);
-						if polygon.overlaps_bbox(bbox) {
-							let index = (x + y*self.resolution) as usize;
-							self.grid_lookup[index].polygons.push(polygon.clone());
-							self.grid_empty[index] = false;
-							if polygon.covers_bbox(bbox) {
-								self.grid_covered[index] = true;
-							}
-						}
-					}
-				}
-			}
-		}
-		pub fn debug(&self) {
-			println!("grid_empty {:?}", self.grid_empty);
-			println!("grid_covered {:?}", self.grid_covered);
-			//println!("grid_lookup {:?}", self.grid_lookup.map());
-		}
-		pub fn is_point_in_polygon(&self, point: &Point) -> bool {
-			let x = ((point.x - self.x0)*self.xs).floor() as i32;
-			let y = ((point.y - self.y0)*self.ys).floor() as i32;
-
-			//println!("x,y = {},{} ({},{})", x, y, point.x, point.y);
-
-			if x < 0 {
-				panic!()
-			}
-			if y < 0 {
-				panic!()
-			}
-			if x >= self.resolution {
-				panic!()
-			}
-			if y >= self.resolution {
-				panic!()
-			}
-
-			let index = (x + y*self.resolution) as usize;
-			
-			if self.grid_empty[index] {
-				return false;
-			}
-			
-			if self.grid_covered[index] {
-				return true;
-			}
-
-			let polygons = &self.grid_lookup[index].polygons;
-			//println!("{}/{}", polygons.len(), self.polygons.len());
-			for polygon in polygons {
-				if polygon.contains_point(point) {
-					return true;
-				}
-			}
-
-			return false;
 		}
 	}
 
@@ -691,7 +499,7 @@ pub mod geometry {
 			self.root = Some(Rc::new(node));
 		}
 		fn create_node(&self, segments: &Vec<Rc<Segment>>) -> SegmentTreeNode {
-			let bbox = BBox::from_segments(segments);
+			let bbox = Bbox::from_segments(segments);
 			let center = bbox.center();
 
 			let mut segments1: Vec<Rc<Segment>> = Vec::new();
@@ -775,7 +583,7 @@ pub mod geometry {
 
 
 	struct SegmentTreeNode {
-		bbox: BBox,
+		bbox: Bbox,
 		is_leaf: bool,
 		left: Option<Rc<SegmentTreeNode>>,
 		right: Option<Rc<SegmentTreeNode>>,
