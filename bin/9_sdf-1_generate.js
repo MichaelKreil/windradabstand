@@ -12,7 +12,7 @@ const child_process = require('child_process');
 const { resolve } = require('path');
 
 const FILENAME_DYNAMIC = config.getFilename.rulesGeoBasis('wohngebaeude.gpkg');
-const FILENAME_FIXED   = config.getFilename.sdf('fixed.gpkg');
+const FILENAME_FIXED = config.getFilename.sdf('fixed.gpkg');
 const COMBINED_RENDER_LEVELS = 3;
 const TILE_SIZE = config.tileSize;
 
@@ -34,10 +34,10 @@ simpleCluster(async function (runWorker) {
 
 	let pngFolder = resolve(config.folders.sdf, 'png');
 	let tilesTar = resolve(config.folders.tiles, 'tiles.tar');
-	
+
 	console.log('1/2 optipng')
 	await wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"`);
-	
+
 	console.log('2/2 tar')
 	await wrapExec(`rm "${tilesTar}"; cd "${pngFolder}"; tar -cf "${tilesTar}" *`);
 
@@ -57,7 +57,7 @@ simpleCluster(async function (runWorker) {
 			}
 		}
 
-		todos.sort((a,b) => a.order - b.order);
+		todos.sort((a, b) => a.order - b.order);
 
 		let progress = new Progress(todos.length);
 		await todos.forEachParallel((todo, i) => {
@@ -77,10 +77,10 @@ simpleCluster(async function (runWorker) {
 			throw Error();
 	}
 
-	async function renderTile(todo) {	
-		
+	async function renderTile(todo) {
+
 		const bboxInner = getTileBbox(todo.x, todo.y, todo.z);
-		const bboxOuter = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius/1000));
+		const bboxOuter = turf.bbox(turf.buffer(turf.bboxPolygon(bboxInner), config.maxRadius / 1000));
 
 		const filenameGeoJSONDyn = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-dyn.geojson`);
 		const filenameGeoJSONFix = config.getFilename.sdfGeoJSON(`${todo.z}-${todo.y}-${todo.x}-fix.geojson`);
@@ -90,7 +90,7 @@ simpleCluster(async function (runWorker) {
 
 		await wrapSpawn('ogr2ogr', [
 			'-skipfailures',
-			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxOuter }),
+			'-sql', ogrGenerateSQL({ dropProperties: true, bbox: bboxOuter }),
 			'-clipdst', ...bboxOuter,
 			'-explodecollections',
 			'-nln', 'layer',
@@ -98,9 +98,9 @@ simpleCluster(async function (runWorker) {
 			filenameGeoJSONDyn,
 			FILENAME_DYNAMIC
 		])
-		
+
 		await wrapSpawn('ogr2ogr', [
-			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxInner }),
+			'-sql', ogrGenerateSQL({ dropProperties: true, bbox: bboxInner }),
 			'-clipdst', ...bboxInner,
 			'-explodecollections',
 			'-nln', 'layer',
@@ -108,7 +108,7 @@ simpleCluster(async function (runWorker) {
 			filenameGeoJSONFix,
 			FILENAME_FIXED
 		])
-		
+
 		await wrapSpawn(resolve(__dirname, '../rust/target/release/calc_sdf'), [
 			JSON.stringify({
 				filename_geo_dyn: filenameGeoJSONDyn,
@@ -124,7 +124,7 @@ simpleCluster(async function (runWorker) {
 				size: TILE_SIZE,
 			})
 		])
-		
+
 		fs.rmSync(filenameGeoJSONDyn);
 		fs.rmSync(filenameGeoJSONFix);
 	}
@@ -155,14 +155,14 @@ async function wrapSpawn(cmd, args) {
 		cp.on('error', error => {
 			console.error(cmd);
 			console.error(args);
-			console.error({error});
+			console.error({ error });
 			reject();
 		})
 		cp.on('exit', (code, signal) => {
 			if (code === 0) return resolve();
 			console.error(cmd);
 			console.error(args);
-			console.error({code, signal});
+			console.error({ code, signal });
 			reject();
 		})
 	})
@@ -196,6 +196,6 @@ async function prepareGeometry() {
 	})
 
 	console.log('merge files to generate fixed geometries');
-	
+
 	await mergeFiles(filenamesFixed, FILENAME_FIXED);
 }
