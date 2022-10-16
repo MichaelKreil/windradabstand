@@ -59,7 +59,7 @@ app.get(/\/tiles\/(.*\.png)/, (req, res) => {
 	let filename = req.params[0];
 	res
 		.set('Content-Type', 'image/png')
-		.end(tiles.get(filename));
+		.end(tiles(filename));
 })
 
 app.listen(port, console.log(`listening on port ${port}`))
