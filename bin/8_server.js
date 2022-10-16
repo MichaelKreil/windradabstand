@@ -52,7 +52,6 @@ if (serverMode === 'main') {
 app.use('/data', serveStatic('data'));
 app.use('/scripts', serveStatic('scripts'));
 //app.use('/assets', serveStatic('assets'));
-app.use('/', serveStatic('.', false))
 
 const tiles = getFileTarDB(config.getFilename.tiles('tiles.tar'));
 app.get(/\/tiles\/(.*\.png)/, (req, res) => {
@@ -61,6 +60,8 @@ app.get(/\/tiles\/(.*\.png)/, (req, res) => {
 		.set('Content-Type', 'image/png')
 		.end(tiles(filename));
 })
+
+app.use('/', serveStatic('.', false))
 
 app.listen(port, console.log(`listening on port ${port}`))
 
@@ -140,7 +141,12 @@ function serveStatic(source, recursive = true) {
 		let file = files.get(req.url);
 
 		if (!file) {
-			if (!serverMode) console.log(`can not find file "${req.url}"`)
+			if (!serverMode) {
+				console.log(`can not find file "${req.url}"`)
+				console.log(`   in: serveStatic(${source}, ${recursive})`)
+				console.log(`   req.url:`, req.url)
+				console.log(`   file:`, file)
+			}
 			return next();
 		}
 
