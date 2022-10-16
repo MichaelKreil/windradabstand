@@ -189,6 +189,7 @@ async function prepareGeometry() {
 
 	ruleTypes.forEach(ruleType => {
 		if (ruleType.slug === 'wohngebaeude') return;
+		if (ruleType.slug === 'wohngebiete') return;
 		ruleType.regions.forEach(region => {
 			let filename = region.filenameBase + '.gpkg';
 			if (!fs.existsSync(filename)) return;
