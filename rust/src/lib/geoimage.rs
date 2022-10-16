@@ -390,7 +390,7 @@ pub mod geoimage {
 							}
 						}
 					}
-					env.channel.set_pixel_value(xi, yi, 1.0 - (sum as f32)/(nf*nf));
+					env.channel.set_pixel_value(xi, yi, (sum as f32)/(nf*nf));
 				} else {
 					let half_size = size/2;
 					let xc = demercator_x(((xi + half_size) as f32) * env.pixel_scale + env.x0);
