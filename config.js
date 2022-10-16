@@ -10,7 +10,7 @@ const { resolve } = require('path');
 const config = {
 	bbox: [ 5.8, 47.2, 15.1, 55.1 ],
 	maxMapZoomLevel: 13,
-	tileSize: 256,
+	tileSize: 512,
 	folders: {
 		static: 'data/static',
 		wind: 'data/1_wind',
