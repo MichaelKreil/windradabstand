@@ -53,6 +53,7 @@ simpleCluster(async function (runWorker) {
 				let filename = getTileFilename(x, y, z);
 				if (fs.existsSync(filename)) continue;
 				let order = Math.pow(x - center[0], 2) + Math.pow(y - center[1], 2);
+				order = order < 2 ? order : 4 + Math.sin(order);
 				todos.push({ action, x, y, z, filename, order })
 			}
 		}
