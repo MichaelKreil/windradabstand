@@ -23,7 +23,7 @@ struct Arguments {
 
 fn main() {
 	let args = parse_arguments();
-	println!("args: {:?}", args);
+	//println!("args: {:?}", args);
 
 	let x = args.x0*2;
 	let y = args.y0*2;
