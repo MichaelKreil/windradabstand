@@ -98,10 +98,9 @@ simpleCluster(async function (runWorker) {
 			filenameGeoJSONDyn,
 			FILENAME_DYNAMIC
 		])
-
+		
 		await wrapSpawn('ogr2ogr', [
-			'-skipfailures',
-			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxInner, union:true }),
+			'-sql', ogrGenerateSQL({ dropProperties:true, bbox: bboxInner }),
 			'-clipdst', ...bboxInner,
 			'-explodecollections',
 			'-nln', 'layer',
@@ -109,7 +108,7 @@ simpleCluster(async function (runWorker) {
 			filenameGeoJSONFix,
 			FILENAME_FIXED
 		])
-
+		
 		await wrapSpawn(resolve(__dirname, '../rust/target/release/calc_sdf'), [
 			JSON.stringify({
 				filename_geo_dyn: filenameGeoJSONDyn,
@@ -130,8 +129,8 @@ simpleCluster(async function (runWorker) {
 		fs.rmSync(filenameGeoJSONFix);
 	}
 
-	async function mergeTile(todo) {
-		await wrapSpawn(resolve(__dirname, '../rust/target/release/merge'), [
+	function mergeTile(todo) {
+		return wrapSpawn(resolve(__dirname, '../rust/target/release/merge'), [
 			JSON.stringify({
 				folder_png: resolve(config.folders.sdf, 'png'),
 				folder_bin: resolve(config.folders.sdf, 'sdf'),
@@ -149,7 +148,7 @@ function getTileFilename(x, y, z) {
 }
 
 async function wrapSpawn(cmd, args) {
-	return new Promise((res, rej) => {
+	return new Promise((resolve, reject) => {
 		let cp = child_process.spawn(cmd, args);
 		cp.stdout.pipe(process.stdout);
 		cp.stderr.pipe(process.stderr);
@@ -157,14 +156,14 @@ async function wrapSpawn(cmd, args) {
 			console.error(cmd);
 			console.error(args);
 			console.error({error});
-			rej();
+			reject();
 		})
 		cp.on('exit', (code, signal) => {
-			if (code === 0) return res();
+			if (code === 0) return resolve();
 			console.error(cmd);
 			console.error(args);
 			console.error({code, signal});
-			rej();
+			reject();
 		})
 	})
 }
