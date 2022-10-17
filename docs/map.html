@@ -140,6 +140,7 @@
 					map = _map;
 					container = document.createElement('div');
 					container.className = 'maplibregl-ctrl';
+					container.style = 'width:calc(100vw - 50px)';
 
 					slider = document.createElement('input');
 					Object.assign(slider, {
@@ -148,6 +149,7 @@
 						value: opt.minValue,
 						min: opt.minValue,
 						max: opt.maxValue,
+						style: 'width:100%',
 					})
 					slider.addEventListener('input', e => {
 						if (requesting) return;
