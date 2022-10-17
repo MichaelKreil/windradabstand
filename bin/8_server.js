@@ -49,9 +49,7 @@ if (serverMode === 'main') {
 // add CORS
 //app.use(cors())
 
-app.use('/data', serveStatic('data'));
-app.use('/scripts', serveStatic('scripts'));
-//app.use('/assets', serveStatic('assets'));
+app.get('/scripts/*', serveStatic('scripts'));
 
 const tiles = getFileTarDB(config.getFilename.tiles('tiles.tar'));
 app.get(/\/tiles\/(.*\.png)/, (req, res) => {
@@ -61,7 +59,7 @@ app.get(/\/tiles\/(.*\.png)/, (req, res) => {
 		.end(tiles(filename));
 })
 
-app.use('/', serveStatic('.', false))
+app.get('/*', serveStatic('.', false))
 
 app.listen(port, console.log(`listening on port ${port}`))
 
@@ -93,18 +91,18 @@ function serveStatic(source, recursive = true) {
 		})
 	}
 
-	function scanFiles(folder) {
-		fs.readdirSync(folder).forEach(name => {
+	function scanFiles(subFolder) {
+		fs.readdirSync(subFolder).forEach(name => {
 			if (name === '.DS_Store') return;
 
-			let fullname = resolve(folder, name);
+			let fullname = resolve(subFolder, name);
 			if (fs.statSync(fullname).isDirectory()) {
 				if (recursive) scanFiles(fullname);
 				return;
 			}
 
 			let encoding = 'raw', match;
-			let urlName = relative(source, fullname);
+			let urlName = relative(folder, fullname);
 			if (match = urlName.match(/(.*)\.gz/i)) {
 				urlName = match[1];
 				encoding = 'gz';
@@ -112,7 +110,7 @@ function serveStatic(source, recursive = true) {
 				urlName = match[1];
 				encoding = 'br';
 			}
-			urlName = ('/' + urlName).replace(/\/{2,}/, '/');
+			if (urlName[0] !== '/') urlName = ('/' + urlName);
 			addFile(urlName, fullname, encoding);
 
 			if (urlName.endsWith('/index.html')) {
@@ -145,7 +143,7 @@ function serveStatic(source, recursive = true) {
 				console.log(`can not find file "${req.url}"`)
 				console.log(`   in: serveStatic(${source}, ${recursive})`)
 				console.log(`   req.url:`, req.url)
-				console.log(`   file:`, file)
+				console.log(`   files:`, files)
 			}
 			return next();
 		}
@@ -161,8 +159,6 @@ function serveStatic(source, recursive = true) {
 		} else if (file.raw) {
 			res.send(file.raw());
 		}
-
-		return next();
 	}
 }
 
