@@ -31,14 +31,14 @@ pub mod geoimage {
 		data: Vec<f32>,
 	}
 	impl Channel {
-		pub fn new(width: u32, height: u32) -> Channel {
+		pub fn new(width: u32, height: u32, value:f32) -> Channel {
 			let length = (width*height) as usize;
 			let mut channel = Channel{
 				width,
 				height,
 				data:Vec::with_capacity(length)
 			};
-			channel.data.resize(length, 1.0e6);
+			channel.data.resize(length, value);
 			return channel;
 		}
 		pub fn set_pixel_value(&mut self, x: u32, y: u32, distance: f32) {
@@ -79,8 +79,8 @@ pub mod geoimage {
 				y0: (y_offset as f32) / scale,
 				pixel_scale: 1.0 / (size as f32) / scale,
 				channels: Vec::from([
-					Channel::new(size, size),
-					Channel::new(size, size)
+					Channel::new(size, size, 1.0e6),
+					Channel::new(size, size, 0.0)
 				]),
 			};
 		}
