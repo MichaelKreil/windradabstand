@@ -33,9 +33,10 @@
 			margin: 1em auto;
 			font-size: 16px;
 		}
-		#mapContainer {
-			margin: auto;
+		.container {
+			width: 100%;
 			max-width: 800px;
+			margin: auto;
 		}
 	</style>
 </head>
@@ -43,6 +44,7 @@
 <body>
 	<div class="page">
 		<h1>Windenergie wirksam verhindert</h1>
+		<!--
 		<p class="description">
 			16 Jahre konservative Politik haben ihre Spuren hinterlassen. Der Strom aus Windenergie wird nicht aussreichen, um unsere Klimaziele einzuhalten.
 		</p>
@@ -56,11 +58,17 @@
 		<p>Diese Abstandsregeln sind inzwischen zum zentralen Streitthema geworden, denn es ist klar: Wer den Ausbau von regenerativen Energien in Deutschland verhindern will, muss einfach nur jedem Gemeinderat ein Mitspracherecht geben.</p>
 
 		<p>Nun ist es zum ersten Mal gelungen, auf der Basis der Abstandsregelungen aller Bundesländer in Kombination mit den amtlichen Daten für Wohngebäude, Straßen, Stromleitungen, Bahntrassen, Naturschutzgebieten usw. deutschlandweit auszurechnen, wo der Bau von Windräder verhindert wurde.</p>
+-->
+		<p>Die Karte hat jetzt einen Schieberegler, der direkt die Auswirkung der Abstände zu Wohngebäuden darstellen kann.</p>
 
 		<h2>Rote Karte für den Windkraftausbau</h2>
 		
-		<iframe src="map.html" style="height: 80vh;" allowfullscreen></iframe>
+		<div class="container">
+			<iframe src="map.html" style="height:80vh;border:none;width:100%" allowfullscreen></iframe>
+		</div>
 
+		<p>Im Laufe der Woche würde ich beginnen, Statistiken für die einzelnen Bundesländer zu berechnen.</p>
+<!--
 		<p>Wenn man in die Karte näher reinzoomt, erscheinen die bisher gebauten Windräder. Viele Windräder liegen in Gebieten, wo sie gegen die Abstandsregelungen verstoßen. Das bedeutet, dass sie nach Ablauf der Genehmigungen nicht weiter betrieben oder aufgerüstet werden dürfen. Sie müssen abgerissen werden.</p>
 
 		<p><i>… hier Statistiken der Bundesländer einfügen …</i></p>
@@ -72,6 +80,7 @@
 		<p>Warum konnte noch niemand so eine Karte zeigen? Weil die Daten bisher nicht vorlagen. Auch hier hatte die Politik einen Weg gefunden, die notwendige Transparenz zu verhindern, in dem sie diese von Steuerzahler*innen finanzierte Daten unter Verschluss hielt. Die Begründung lautet, dass die Verwaltung Urheberrechte darauf hat, weil sie mit dem Verkauf an Unternehmen damit Geld verdienen möchte. Die Lage der Wohngebäude in Deutschland, die man für die Berechnung der Abstandsregelungen benötigt, wird zwar von der Hälfte der Bundesländen kostenfrei rausgegeben, aber die anderen verlangen Geld dafür. Allein Bayern möchet dafür stolze 40.000 €. In Summe würde die Datengrundlage für die Karte mehrere Hunderttausend Euro kosten.</p>
 
 		<p>Da sich einige Bundesländer weigern, diese Daten rauszugeben, verstoße ich mit dieser Veröffentlichung gegen behauptete Urheberrechte. Die Staatsanwaltschaft München ermittelt bereits. Gemeinsam mit der Unterstützung der GFF, der Wikimedia-Foundation und dem CCC freuen wir uns auf das Verfahren, mit dem wir endlich die Nichtigkeiten von staatlichen Urheberrechten erklagen und die Notwendigkeit von OpenData bestätigen lassen wollen.</p>
+		-->
 	</div>
 </body>
 </html>
