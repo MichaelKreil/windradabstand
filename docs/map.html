@@ -15,10 +15,83 @@
 			height: 100vh;
 			margin: 0;
 			padding: 0;
+			overflow-x: hidden;
+			overflow-y: hidden;
 		}
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
 		}
+		.maplibregl-ctrl-attrib {
+			box-shadow: 0 0 5px #000;
+		}
+		.maplibregl-ctrl-bottom-left {
+			width: 100%;
+			height: 80px;
+			background-color: #fff;
+			position: absolute;
+			bottom: 0px;
+			pointer-events: all;
+		}
+		.maplibregl-ctrl-bottom-right {
+			bottom: 80px;
+		}
+
+		.slider-container {
+			width: 100%;
+			padding: 0px;
+			height: 80px;
+			box-sizing: border-box;
+			position: relative;
+			user-select: none;
+		}
+		.slider-container * {
+			position: absolute;
+			pointer-events: none;
+		}
+
+		.slider-track {
+			top: 30px;
+			height: 3px;
+			border-radius: 2px;
+			background-color: #000;
+		}
+			.slider-thumb {
+				top: 5px;
+				width: 40px;
+				height: 30px;
+				margin-left: -20px;
+				cursor: pointer;
+			}
+				.slider-sign {
+					top: 0px;
+					left: 0px;
+					width: 40px;
+					height: 20px;
+					background: #000;
+					border-radius: 3px;
+					color: #fff;
+					font-size: 10px;
+					text-align: center;
+				}
+				.slider-mark {
+					top: 20px;
+					left: 14px;
+					width: 0px;
+					height: 0px;
+					background: transparent;
+					border: 6px solid transparent;
+					border-top: 6px solid #000;
+				}
+
+			.slider-label {
+				top: 30px;
+				font-size: 10px;
+				opacity: 0.5;
+				border-left: 1px solid #000;
+				border-right: 1px solid #000;
+				line-height: 1em;
+				padding: 0 2px;
+			}
 	</style>
 </head>
 
@@ -132,39 +205,117 @@
 			}
 
 			function SliderControl(opt) {
-				let map, container, slider, requesting, lastValue;
+				const labels = [
+					{ value: 400, y:2, text:'HH, NI, ST, SH' },
+					{ value: 450, y:1, text:'Bremen' },
+					{ value: 500, y:0, text:'RLP' },
+					{ value: 600, y:0, text:'TH' },
+					{ value: 650, y:1, text:'SL' },
+					{ value: 700, y:0, text:'BW' },
+					{ value: 800, y:0, text:'MV' },
+					{ value:1000, y:0, text:'BB, HE, NRW, SN' },
+					{ value:2000, y:0, text:'BY', right:true },
+				];
+				let value = opt.minValue;
+				let map;
 				return {
 					onAdd, onRemove,
 				}
 				function onAdd(_map) {
 					map = _map;
-					container = document.createElement('div');
-					container.className = 'maplibregl-ctrl';
-					container.style = 'width:calc(100vw - 50px)';
 
-					slider = document.createElement('input');
-					Object.assign(slider, {
-						type: 'range',
-						step: 1,
-						value: opt.minValue,
-						min: opt.minValue,
-						max: opt.maxValue,
-						style: 'width:100%',
-					})
-					slider.addEventListener('input', e => {
-						if (requesting) return;
-						requestAnimationFrame(() => {
-							requesting = false;
-							let value = slider.value;
-							if (value === lastValue) return;
-							lastValue = value;
-							opt.handle(value);
-						});
-						requesting = true;
-					})
-					slider.dispatchEvent(new Event('input'));
+					const paddingHori = 25;
 
-					container.append(slider);
+					const container = createDomNode('div', {className:'slider-container'});
+
+					const track = createDomNode('div', {className:'slider-track'}, container);
+					const thumb = createDomNode('div', {className:'slider-thumb'}, container);
+					const sign  = createDomNode('div', {className:'slider-sign' }, thumb);
+					const mark  = createDomNode('div', {className:'slider-mark' }, thumb);
+					
+					track.style.left  = paddingHori + 'px';
+					track.style.right = paddingHori + 'px';
+
+					labels.forEach(label => {
+						label.node = createDomNode('div', {className:'slider-label'}, container);
+						label.node.innerText = label.text;
+						label.pos = (label.value - opt.minValue)/(opt.maxValue - opt.minValue);
+
+						if (label.right) {
+							label.node.style.borderLeft = 'none';	
+						} else {
+							label.node.style.borderRight = 'none';
+						}
+						label.node.style.paddingTop = (5 + label.y*13)+'px';
+					})
+
+					let trackWidth, pointerDown = false, pointerX;
+
+					updateSize();
+					opt.handle(value);
+					setTimeout(updateSize,0);
+					setTimeout(updateSize,100);
+					window.addEventListener('resize', updateSize);
+
+					function updateSize() {
+						trackWidth = container.offsetWidth - 2*paddingHori;
+						labels.forEach(label => {
+							let x = Math.round(trackWidth*label.pos);
+							if (label.right) {
+								label.node.style.right = paddingHori+trackWidth-x+'px';
+							} else {
+								label.node.style.left = paddingHori+x+'px';
+							}
+						})
+						updatePosition();
+					}
+
+					function updatePosition() {
+						let x = Math.round(trackWidth*(value - opt.minValue)/(opt.maxValue - opt.minValue));
+						thumb.style.left = x + paddingHori + 'px';
+						sign.innerText = value+'m';
+
+						labels.forEach(label => {
+							let d = 1 - Math.abs(label.value - value)/50;
+							if (d < 0) d = 0;
+							label.node.style.opacity = d*0.7 + 0.3;
+						})
+					}
+
+					container.addEventListener('pointerdown', e => {
+						console.log('pointerdown');
+						pointerDown = true;
+						dragTo(e.pageX);
+					})
+
+					container.addEventListener('pointermove', e => {
+						console.log('pointermove');
+						if (pointerDown) dragTo(e.pageX);
+					})
+
+					container.addEventListener('pointerup', e => {
+						console.log('pointerup');
+						pointerDown = false
+					})
+
+					container.addEventListener('pointerout', e => {
+						console.log('pointerout');
+						pointerDown = false
+					})
+
+					function dragTo(x) {
+						let v = (x-paddingHori)/trackWidth;
+						if (v < 0) v = 0;
+						if (v > 1) v = 1;
+						v = opt.minValue + v*(opt.maxValue - opt.minValue);
+						v = Math.round(v/50)*50;
+
+						if (v === value) return;
+						value = v;
+						updatePosition();
+						opt.handle(v);
+					}
+
 					return container;
 				}
 
@@ -173,7 +324,12 @@
 					this._map = undefined;
 				}
 			}
-
+			function createDomNode(tagName, attr, parent) {
+				let node = document.createElement(tagName);
+				if (attr) Object.assign(node, attr);
+				if (parent) parent.append(node);
+				return node;
+			}
 		})()
 	</script>
 </body>
