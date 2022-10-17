@@ -120,16 +120,16 @@
 				style: 'https://karten.party/styles/positron/style.json',
 				center: [10, 51],
 				bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-				maxBounds: [ 1.8, 46.2, 19.1, 56.1 ],
+				maxBounds: [ 1.8, 45.2, 19.1, 57.1 ],
 				maxZoom: 13,
 				minPitch: 0,
 				maxPitch: 0,
 				hash: true,
 				dragRotate: false,
-				touchZoomRotate: false,
 				touchPitch: false,
 				attributionControl: false
 			});
+			map.touchZoomRotate.disableRotation();
 			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
 			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
 
