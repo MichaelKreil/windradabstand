@@ -10,13 +10,25 @@
 	<script src="/scripts/maplibre-gl.js"></script>
 	<link href="/scripts/maplibre-gl.css" rel="stylesheet" />
 	<style>
-		html, body, #map {
+		html {
+			height: -webkit-fill-available;
+		}
+		body {
 			width: 100vw;
-			height: 100vh;
+			min-height: 100vh;
+  			min-height: -webkit-fill-available;
 			margin: 0;
 			padding: 0;
 			overflow-x: hidden;
 			overflow-y: hidden;
+			position: relative;
+		}
+		#map {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
 		}
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
