@@ -25,30 +25,30 @@ echo "✅"
 
 
 
-echo -n "check buffered.tar … "
+echo -n "check tiles.tar … "
 
 if [ "$myname" == "$mainname" ]
 then
-	if [[ ! -f "${folder}/buffered.tar" ]]
+	if [[ ! -f "${folder}/tiles.tar" ]]
 	then
 		echo -n "is missing: please generate one ❗️"
 		exit 1
 	fi
 else
-	if [[ ! -f "${folder}/buffered.tar" ]]
+	if [[ ! -f "${folder}/tiles.tar" ]]
 	then
 		echo -n "is missing … start download … "
-		wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
-		mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
+		wget -q "${mainurl}/tiles.tar" -O "${folder}/tiles.tar.tmp"
+		mv "${folder}/tiles.tar.tmp" "${folder}/tiles.tar"
 	else
-		filesize1="$(ls -l "${folder}/buffered.tar" | awk '{printf "%s",$5}')"
-		filesize2="$(curl -sI "${mainurl}/buffered.tar" | grep -i 'Content-Length' | awk '{printf "%i",$2}')"
+		filesize1="$(ls -l "${folder}/tiles.tar" | awk '{printf "%s",$5}')"
+		filesize2="$(curl -sI "${mainurl}/tiles.tar" | grep -i 'Content-Length' | awk '{printf "%i",$2}')"
 		echo -n "compare filesizes ${filesize1}/${filesize2} … "
 		if [ "$filesize1" != "$filesize2" ]
 		then
 			echo -n "unequal … start download … "
-			wget -q "${mainurl}/buffered.tar" -O "${folder}/buffered.tar.tmp"
-			mv "${folder}/buffered.tar.tmp" "${folder}/buffered.tar"
+			wget -q "${mainurl}/tiles.tar" -O "${folder}/tiles.tar.tmp"
+			mv "${folder}/tiles.tar.tmp" "${folder}/tiles.tar"
 		fi
 	fi
 fi
