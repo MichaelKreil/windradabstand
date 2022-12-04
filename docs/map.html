@@ -180,6 +180,7 @@
 
 				map.addControl(new maplibregl.FullscreenControl());
 				map.on("load", async () => {
+					map.fitBounds([[5.989, 47.302], [15.017, 54.983]], { padding: 5 });
 					map.addSource("tilesSource", {
 						type: "raster",
 						tiles: [
