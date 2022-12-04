@@ -202,19 +202,27 @@
 						paint: {
 							"raster-sdf-limit": sdfLimit,
 							"raster-sdf-width": sdfWidth,
-							"raster-opacity": 0.6,
+							"raster-opacity": 0.7,
 						},
 					});
+					let textLayers = map.getStyle().layers.filter(l => l.type === 'symbol');
+					textLayers.forEach(l => {
+						//map.moveLayer(l.id);
+						//if (l.paint['text-halo-width']) l.paint['text-halo-width'] = 0;
+						//map.setPaintProperty(l.id, 'text-halo-color', 'hsla(0,0%,100%,0.1)');
+						//map.setPaintProperty(l.id, 'text-color', 'hsl(0,0%,0%)');
+					});
+					console.log(textLayers);
+					//console.log(map.moveLayer);
 					let sliderControl = new SliderControl({
-						minValue: 400,
+						minValue: 0,
 						maxValue: 2000,
 						handle: (v) => {
 							//console.log(v);
-							map.setPaintProperty(
-								"tilesLayer",
-								"raster-sdf-limit",
-								(v - minDistance) / (maxDistance - minDistance)
-							);
+							v = (v - minDistance) / (maxDistance - minDistance);
+							if (v < 0) v = 0;
+							if (v > 1) v = 1;
+							map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
 							map.triggerRepaint();
 						},
 					});
@@ -238,17 +246,17 @@
 
 				function SliderControl(opt) {
 					const labels = [
-						{ value: 400, y: 2, text: "HH, NI, ST, SH" },
-						{ value: 450, y: 1, text: "Bremen" },
+						{ value: 400, y: 2, text: "Hamburg, Nieders., S.-Anhalt, Schleswig-H." },
+						{ value: 450, y: 1, text: "Brem." },
 						{ value: 500, y: 0, text: "RLP" },
-						{ value: 600, y: 0, text: "TH" },
-						{ value: 650, y: 1, text: "SL" },
-						{ value: 700, y: 0, text: "BW" },
+						{ value: 600, y: 1, text: "Thür." },
+						{ value: 650, y: 0, text: "Saarl." },
+						{ value: 700, y: 1, text: "BW" },
 						{ value: 800, y: 0, text: "MV" },
-						{ value: 1000, y: 0, text: "BB, HE, NRW, SN" },
-						{ value: 2000, y: 0, text: "BY", right: true },
+						{ value: 1000, y: 0, text: "Branden., He., NRW, Sachsen" },
+						{ value: 2000, y: 0, text: "Bayern", right: true },
 					];
-					let value = opt.minValue;
+					let value = 1000;
 					let map;
 					return {
 						onAdd,
@@ -318,7 +326,7 @@
 							sign.innerText = value + "m";
 
 							labels.forEach((label) => {
-								let d = 1 - Math.abs(label.value - value) / 50;
+								let d = 1 - (label.value - value) / 50;
 								if (d < 0) d = 0;
 								label.node.style.opacity = d * 0.7 + 0.3;
 							});
