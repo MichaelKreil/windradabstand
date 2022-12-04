@@ -5,7 +5,7 @@ cd ../docs/tiles
 set -e
 
 echo "1/4 pngquant"
-find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "pngquant -f --ext .png --quality=95-100 --speed 1 --strip {}/*.png"
+find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "pngquant -f --ext .png --quality=60-80 --speed 1 --strip {}/*.png"
 
 echo "2/4 optipng"
 find . -mindepth 3 -maxdepth 3 -type d | shuf | parallel --progress --bar "optipng -quiet {}/*.png"
