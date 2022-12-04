@@ -14,4 +14,4 @@ echo "3/4 tar"
 tar -cf buffered.tar buffered
 
 echo "4/4 cleanup"
-rm -r buffered
+# rm -r buffered
