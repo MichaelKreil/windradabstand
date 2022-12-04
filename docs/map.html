@@ -7,8 +7,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Die Verhinderung der Windenergie</title>
 
-	<script src="/scripts/maplibre-gl.js"></script>
-	<link href="/scripts/maplibre-gl.css" rel="stylesheet" />
+	<script src="maplibre-gl.js"></script>
+	<link href="maplibre-gl.css" rel="stylesheet" />
 	<style>
 		html {
 			height: -webkit-fill-available;
@@ -111,13 +111,10 @@
 	<div id="map"></div>
 	<script>
 		(() => {
-			//const URL = 'http://168.119.98.135:8080/'
-			//const URL = 'http://192.168.178.23:8080/'
-			const URL = '/'
 			let container = document.getElementById('map');
 			let map = new maplibregl.Map({
 				container,
-				style: 'https://static.datenhub.net/maps/styles/positron/style.json',
+				style: 'https://cdn.michael-kreil.de/map/style/positron/style.json',
 				bounds: [ 5.8, 45.5, 15.1, 55.1 ],
 				maxBounds: [ 0.8, 43.7, 20.1, 57.1 ],
 				maxZoom: 13,
@@ -172,7 +169,7 @@
 			map.on('load', async () => {
 				map.addSource('tilesSource', {
 					type: 'raster',
-					tiles: [ URL+'tiles/{z}/{y}/{x}.png' ],
+					tiles: [ 'https://cdn.michael-kreil.de/data/windradabstand/{z}/{y}/{x}.png' ],
 					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
 					minzoom: 0,
 					maxzoom: 13,
