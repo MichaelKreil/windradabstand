@@ -1,72 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, user-scalable=no"
+		/>
+		<title>Die Verhinderung der Windenergie</title>
 
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<title>Die Verhinderung der Windenergie</title>
+		<script src="maplibre-gl.js"></script>
+		<link href="maplibre-gl.css" rel="stylesheet" />
+		<style>
+			html {
+				height: -webkit-fill-available;
+			}
+			body {
+				width: 100vw;
+				min-height: 100vh;
+				min-height: -webkit-fill-available;
+				margin: 0;
+				padding: 0;
+				overflow-x: hidden;
+				overflow-y: hidden;
+				position: relative;
+			}
+			#map {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+			}
+			.maplibregl-ctrl-attrib-inner {
+				line-height: 1.2em;
+			}
+			.maplibregl-ctrl-attrib {
+				box-shadow: 0 0 5px #000;
+			}
+			.maplibregl-ctrl-bottom-left {
+				width: 100%;
+				height: 80px;
+				background-color: #fff;
+				position: absolute;
+				bottom: 0px;
+				pointer-events: all;
+			}
+			.maplibregl-ctrl-bottom-right {
+				bottom: 80px;
+			}
 
-	<script src="maplibre-gl.js"></script>
-	<link href="maplibre-gl.css" rel="stylesheet" />
-	<style>
-		html {
-			height: -webkit-fill-available;
-		}
-		body {
-			width: 100vw;
-			min-height: 100vh;
-  			min-height: -webkit-fill-available;
-			margin: 0;
-			padding: 0;
-			overflow-x: hidden;
-			overflow-y: hidden;
-			position: relative;
-		}
-		#map {
-			position: absolute;
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-		}
-		.maplibregl-ctrl-attrib-inner {
-			line-height: 1.2em;
-		}
-		.maplibregl-ctrl-attrib {
-			box-shadow: 0 0 5px #000;
-		}
-		.maplibregl-ctrl-bottom-left {
-			width: 100%;
-			height: 80px;
-			background-color: #fff;
-			position: absolute;
-			bottom: 0px;
-			pointer-events: all;
-		}
-		.maplibregl-ctrl-bottom-right {
-			bottom: 80px;
-		}
+			.slider-container {
+				width: 100%;
+				padding: 0px;
+				height: 80px;
+				box-sizing: border-box;
+				position: relative;
+				user-select: none;
+			}
+			.slider-container * {
+				position: absolute;
+				pointer-events: none;
+			}
 
-		.slider-container {
-			width: 100%;
-			padding: 0px;
-			height: 80px;
-			box-sizing: border-box;
-			position: relative;
-			user-select: none;
-		}
-		.slider-container * {
-			position: absolute;
-			pointer-events: none;
-		}
-
-		.slider-track {
-			top: 30px;
-			height: 3px;
-			border-radius: 2px;
-			background-color: #000;
-		}
+			.slider-track {
+				top: 30px;
+				height: 3px;
+				border-radius: 2px;
+				background-color: #000;
+			}
 			.slider-thumb {
 				top: 5px;
 				width: 40px;
@@ -74,26 +76,26 @@
 				margin-left: -20px;
 				cursor: pointer;
 			}
-				.slider-sign {
-					top: 0px;
-					left: 0px;
-					width: 40px;
-					height: 20px;
-					background: #000;
-					border-radius: 3px;
-					color: #fff;
-					font-size: 10px;
-					text-align: center;
-				}
-				.slider-mark {
-					top: 20px;
-					left: 14px;
-					width: 0px;
-					height: 0px;
-					background: transparent;
-					border: 6px solid transparent;
-					border-top: 6px solid #000;
-				}
+			.slider-sign {
+				top: 0px;
+				left: 0px;
+				width: 40px;
+				height: 20px;
+				background: #000;
+				border-radius: 3px;
+				color: #fff;
+				font-size: 10px;
+				text-align: center;
+			}
+			.slider-mark {
+				top: 20px;
+				left: 14px;
+				width: 0px;
+				height: 0px;
+				background: transparent;
+				border: 6px solid transparent;
+				border-top: 6px solid #000;
+			}
 
 			.slider-label {
 				top: 30px;
@@ -104,241 +106,287 @@
 				line-height: 1em;
 				padding: 0 2px;
 			}
-	</style>
-</head>
+		</style>
+	</head>
 
-<body>
-	<div id="map"></div>
-	<script>
-		(() => {
-			let container = document.getElementById('map');
-			let map = new maplibregl.Map({
-				container,
-				style: 'https://cdn.michael-kreil.de/map/style/positron/white.json',
-				bounds: [ 5.8, 45.5, 15.1, 55.1 ],
-				maxBounds: [ 0.8, 43.7, 20.1, 57.1 ],
-				maxZoom: 13,
-				minPitch: 0,
-				maxPitch: 0,
-				hash: true,
-				dragRotate: false,
-				touchPitch: false,
-				attributionControl: false
-			});
-			map.touchZoomRotate.disableRotation();
-			map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-left');
-			map.addControl(new maplibregl.GeolocateControl({showAccuracyCircle:false}), 'top-left');
+	<body>
+		<div id="map"></div>
+		<script>
+			(() => {
+				let container = document.getElementById("map");
+				let map = new maplibregl.Map({
+					container,
+					style: "https://cdn.michael-kreil.de/map/style/positron/white.json",
+					bounds: [5.8, 45.5, 15.1, 55.1],
+					maxBounds: [0.8, 43.7, 20.1, 57.1],
+					maxZoom: 13,
+					minPitch: 0,
+					maxPitch: 0,
+					hash: true,
+					dragRotate: false,
+					touchPitch: false,
+					attributionControl: false,
+				});
+				map.touchZoomRotate.disableRotation();
+				map.addControl(
+					new maplibregl.NavigationControl({ showCompass: false }),
+					"top-left"
+				);
+				map.addControl(
+					new maplibregl.GeolocateControl({ showAccuracyCircle: false }),
+					"top-left"
+				);
 
-			let attributionControl = new maplibregl.AttributionControl({ compact: true,
-				customAttribution: [
-					'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
+				let attributionControl = new maplibregl.AttributionControl({
+					compact: true,
+					customAttribution: [
+						"Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG",
 
-					'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/',
-					'Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html',
-					'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs',
-					'Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/',
-					'Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289',
-					'Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true',
-					'Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start',
-					'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b',
-					'Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html',
-					'Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9',
-					'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/',
-					'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191',
-					'Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html',
-					'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html',
-					'Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html',
-					'Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen',
-					
-					'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
-				].map(e => {
-					e = e.split(';');
-					return e[1] ? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>` :  `© ${e[0]}`
-				}).join(' | ')
-			})
-			map.addControl(attributionControl);
-			attributionControl._updateCompactMinimize();
+						"Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/",
+						"Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html",
+						"Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs",
+						"Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/",
+						"Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289",
+						"Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true",
+						"Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start",
+						"Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b",
+						"Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html",
+						"Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9",
+						"Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/",
+						"Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191",
+						"Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html",
+						"Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html",
+						"Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html",
+						"Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen",
 
-			const maxDistance = 2500;
-			const minDistance =    0;
-			const distance = 1000;
-			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
-			const sdfWidth = 1/(maxDistance - minDistance);
-			
-			map.addControl(new maplibregl.FullscreenControl());
-			map.on('load', async () => {
-				map.addSource('tilesSource', {
-					type: 'raster',
-					tiles: [ 'https://cdn.michael-kreil.de/data/windradabstand/{z}/{y}/{x}.png' ],
-					bounds: [ 5.8, 47.2, 15.1, 55.1 ],
-					minzoom: 0,
-					maxzoom: 13,
-					tileSize: 256,
-				})
-				map.addLayer({
-					id: 'tilesLayer',
-					type: 'raster',
-					source: 'tilesSource',
-					paint: {
-						'raster-sdf-limit':sdfLimit,
-						'raster-sdf-width':sdfWidth,
-						'raster-opacity': 0.6,
-					},
-				})
-				let sliderControl = new SliderControl({
-					minValue: 400,
-					maxValue: 2000,
-					handle: v => {
-						//console.log(v);
-						map.setPaintProperty('tilesLayer', 'raster-sdf-limit', (v - minDistance) / (maxDistance - minDistance));
-						map.triggerRepaint();
-					}
-				})
-				map.addControl(sliderControl, 'bottom-left');
-			})
+						"Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload",
+					]
+						.map((e) => {
+							e = e.split(";");
+							return e[1]
+								? `<a href="${e[1]}" target="_blank">© ${e[0]}</a>`
+								: `© ${e[0]}`;
+						})
+						.join(" | "),
+				});
+				map.addControl(attributionControl);
+				attributionControl._updateCompactMinimize();
 
-			function loadViaAjax(url) {
-				return new Promise((res, rej) => {
-					let req = new XMLHttpRequest();
-					req.open('GET', url, true);
-					req.onload = () => {
-						if (req.status < 200 || req.status >= 400) {
-							console.log(req);
-							return rej(req.status);
-						}
-						res(req.response);
-					}
-					req.send();
-				})
-			}
+				const maxDistance = 2500;
+				const minDistance = 0;
+				const distance = 1000;
+				const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
+				const sdfWidth = 1 / (maxDistance - minDistance);
 
-			function SliderControl(opt) {
-				const labels = [
-					{ value: 400, y:2, text:'HH, NI, ST, SH' },
-					{ value: 450, y:1, text:'Bremen' },
-					{ value: 500, y:0, text:'RLP' },
-					{ value: 600, y:0, text:'TH' },
-					{ value: 650, y:1, text:'SL' },
-					{ value: 700, y:0, text:'BW' },
-					{ value: 800, y:0, text:'MV' },
-					{ value:1000, y:0, text:'BB, HE, NRW, SN' },
-					{ value:2000, y:0, text:'BY', right:true },
-				];
-				let value = opt.minValue;
-				let map;
-				return {
-					onAdd, onRemove,
-				}
-				function onAdd(_map) {
-					map = _map;
+				map.addControl(new maplibregl.FullscreenControl());
+				map.on("load", async () => {
+					map.addSource("tilesSource", {
+						type: "raster",
+						tiles: [
+							"https://cdn.michael-kreil.de/data/windradabstand/{z}/{y}/{x}.png",
+						],
+						bounds: [5.8, 47.2, 15.1, 55.1],
+						minzoom: 0,
+						maxzoom: 13,
+						tileSize: 256,
+					});
+					map.addLayer({
+						id: "tilesLayer",
+						type: "raster",
+						source: "tilesSource",
+						paint: {
+							"raster-sdf-limit": sdfLimit,
+							"raster-sdf-width": sdfWidth,
+							"raster-opacity": 0.6,
+						},
+					});
+					let sliderControl = new SliderControl({
+						minValue: 400,
+						maxValue: 2000,
+						handle: (v) => {
+							//console.log(v);
+							map.setPaintProperty(
+								"tilesLayer",
+								"raster-sdf-limit",
+								(v - minDistance) / (maxDistance - minDistance)
+							);
+							map.triggerRepaint();
+						},
+					});
+					map.addControl(sliderControl, "bottom-left");
+				});
 
-					const paddingHori = 25;
-
-					const container = createDomNode('div', {className:'slider-container'});
-
-					const track = createDomNode('div', {className:'slider-track'}, container);
-					const thumb = createDomNode('div', {className:'slider-thumb'}, container);
-					const sign  = createDomNode('div', {className:'slider-sign' }, thumb);
-					const mark  = createDomNode('div', {className:'slider-mark' }, thumb);
-					
-					track.style.left  = paddingHori + 'px';
-					track.style.right = paddingHori + 'px';
-
-					labels.forEach(label => {
-						label.node = createDomNode('div', {className:'slider-label'}, container);
-						label.node.innerText = label.text;
-						label.pos = (label.value - opt.minValue)/(opt.maxValue - opt.minValue);
-
-						if (label.right) {
-							label.node.style.borderLeft = 'none';	
-						} else {
-							label.node.style.borderRight = 'none';
-						}
-						label.node.style.paddingTop = (5 + label.y*13)+'px';
-					})
-
-					let trackWidth, pointerDown = false, pointerX;
-
-					updateSize();
-					opt.handle(value);
-					setTimeout(updateSize,0);
-					setTimeout(updateSize,100);
-					window.addEventListener('resize', updateSize);
-
-					function updateSize() {
-						trackWidth = container.offsetWidth - 2*paddingHori;
-						labels.forEach(label => {
-							let x = Math.round(trackWidth*label.pos);
-							if (label.right) {
-								label.node.style.right = paddingHori+trackWidth-x+'px';
-							} else {
-								label.node.style.left = paddingHori+x+'px';
+				function loadViaAjax(url) {
+					return new Promise((res, rej) => {
+						let req = new XMLHttpRequest();
+						req.open("GET", url, true);
+						req.onload = () => {
+							if (req.status < 200 || req.status >= 400) {
+								console.log(req);
+								return rej(req.status);
 							}
-						})
-						updatePosition();
-					}
-
-					function updatePosition() {
-						let x = Math.round(trackWidth*(value - opt.minValue)/(opt.maxValue - opt.minValue));
-						thumb.style.left = x + paddingHori + 'px';
-						sign.innerText = value+'m';
-
-						labels.forEach(label => {
-							let d = 1 - Math.abs(label.value - value)/50;
-							if (d < 0) d = 0;
-							label.node.style.opacity = d*0.7 + 0.3;
-						})
-					}
-
-					container.addEventListener('pointerdown', e => {
-						console.log('pointerdown');
-						pointerDown = true;
-						dragTo(e.pageX);
-					})
-
-					container.addEventListener('pointermove', e => {
-						console.log('pointermove');
-						if (pointerDown) dragTo(e.pageX);
-					})
-
-					container.addEventListener('pointerup', e => {
-						console.log('pointerup');
-						pointerDown = false
-					})
-
-					container.addEventListener('pointerout', e => {
-						console.log('pointerout');
-						pointerDown = false
-					})
-
-					function dragTo(x) {
-						let v = (x-paddingHori)/trackWidth;
-						if (v < 0) v = 0;
-						if (v > 1) v = 1;
-						v = opt.minValue + v*(opt.maxValue - opt.minValue);
-						v = Math.round(v/50)*50;
-
-						if (v === value) return;
-						value = v;
-						updatePosition();
-						opt.handle(v);
-					}
-
-					return container;
+							res(req.response);
+						};
+						req.send();
+					});
 				}
 
-				function onRemove() {
-					this._container.parentNode.removeChild(this._container);
-					this._map = undefined;
+				function SliderControl(opt) {
+					const labels = [
+						{ value: 400, y: 2, text: "HH, NI, ST, SH" },
+						{ value: 450, y: 1, text: "Bremen" },
+						{ value: 500, y: 0, text: "RLP" },
+						{ value: 600, y: 0, text: "TH" },
+						{ value: 650, y: 1, text: "SL" },
+						{ value: 700, y: 0, text: "BW" },
+						{ value: 800, y: 0, text: "MV" },
+						{ value: 1000, y: 0, text: "BB, HE, NRW, SN" },
+						{ value: 2000, y: 0, text: "BY", right: true },
+					];
+					let value = opt.minValue;
+					let map;
+					return {
+						onAdd,
+						onRemove,
+					};
+					function onAdd(_map) {
+						map = _map;
+
+						const paddingHori = 25;
+
+						const container = createDomNode("div", {
+							className: "slider-container",
+						});
+
+						const track = createDomNode(
+							"div",
+							{ className: "slider-track" },
+							container
+						);
+						const thumb = createDomNode(
+							"div",
+							{ className: "slider-thumb" },
+							container
+						);
+						const sign = createDomNode(
+							"div",
+							{ className: "slider-sign" },
+							thumb
+						);
+						const mark = createDomNode(
+							"div",
+							{ className: "slider-mark" },
+							thumb
+						);
+
+						track.style.left = paddingHori + "px";
+						track.style.right = paddingHori + "px";
+
+						labels.forEach((label) => {
+							label.node = createDomNode(
+								"div",
+								{ className: "slider-label" },
+								container
+							);
+							label.node.innerText = label.text;
+							label.pos =
+								(label.value - opt.minValue) / (opt.maxValue - opt.minValue);
+
+							if (label.right) {
+								label.node.style.borderLeft = "none";
+							} else {
+								label.node.style.borderRight = "none";
+							}
+							label.node.style.paddingTop = 5 + label.y * 13 + "px";
+						});
+
+						let trackWidth,
+							pointerDown = false,
+							pointerX;
+
+						updateSize();
+						opt.handle(value);
+						setTimeout(updateSize, 0);
+						setTimeout(updateSize, 100);
+						window.addEventListener("resize", updateSize);
+
+						function updateSize() {
+							trackWidth = container.offsetWidth - 2 * paddingHori;
+							labels.forEach((label) => {
+								let x = Math.round(trackWidth * label.pos);
+								if (label.right) {
+									label.node.style.right = paddingHori + trackWidth - x + "px";
+								} else {
+									label.node.style.left = paddingHori + x + "px";
+								}
+							});
+							updatePosition();
+						}
+
+						function updatePosition() {
+							let x = Math.round(
+								(trackWidth * (value - opt.minValue)) /
+									(opt.maxValue - opt.minValue)
+							);
+							thumb.style.left = x + paddingHori + "px";
+							sign.innerText = value + "m";
+
+							labels.forEach((label) => {
+								let d = 1 - Math.abs(label.value - value) / 50;
+								if (d < 0) d = 0;
+								label.node.style.opacity = d * 0.7 + 0.3;
+							});
+						}
+
+						container.addEventListener("pointerdown", (e) => {
+							console.log("pointerdown");
+							pointerDown = true;
+							dragTo(e.pageX);
+						});
+
+						container.addEventListener("pointermove", (e) => {
+							console.log("pointermove");
+							if (pointerDown) dragTo(e.pageX);
+						});
+
+						container.addEventListener("pointerup", (e) => {
+							console.log("pointerup");
+							pointerDown = false;
+						});
+
+						container.addEventListener("pointerout", (e) => {
+							console.log("pointerout");
+							pointerDown = false;
+						});
+
+						function dragTo(x) {
+							let v = (x - paddingHori) / trackWidth;
+							if (v < 0) v = 0;
+							if (v > 1) v = 1;
+							v = opt.minValue + v * (opt.maxValue - opt.minValue);
+							v = Math.round(v / 50) * 50;
+
+							if (v === value) return;
+							value = v;
+							updatePosition();
+							opt.handle(v);
+						}
+
+						return container;
+					}
+
+					function onRemove() {
+						this._container.parentNode.removeChild(this._container);
+						this._map = undefined;
+					}
 				}
-			}
-			function createDomNode(tagName, attr, parent) {
-				let node = document.createElement(tagName);
-				if (attr) Object.assign(node, attr);
-				if (parent) parent.append(node);
-				return node;
-			}
-		})()
-	</script>
-</body>
+				function createDomNode(tagName, attr, parent) {
+					let node = document.createElement(tagName);
+					if (attr) Object.assign(node, attr);
+					if (parent) parent.append(node);
+					return node;
+				}
+			})();
+		</script>
+	</body>
 </html>
