@@ -121,7 +121,7 @@
 				let map = new maplibregl.Map({
 					container,
 					style: "https://cdn.michael-kreil.de/map/style/positron/white.json",
-					bounds: [5.8, 45.5, 15.1, 55.1],
+					//bounds: [5.8, 45.5, 15.1, 55.1],
 					maxBounds: [0.8, 43.7, 20.1, 57.1],
 					maxZoom: 13,
 					minPitch: 0,
@@ -184,7 +184,7 @@
 
 				map.addControl(new maplibregl.FullscreenControl());
 				map.on("load", async () => {
-					map.fitBounds([[5.989, 47.302], [15.017, 54.983]], { padding: 5 });
+					map.fitBounds([[5.989, 47.302], [15.017, 54.983]], { padding: {top: 5, bottom:85, left: 5, right: 5} });
 					map.addSource("tilesSource", {
 						type: "raster",
 						tiles: [
