@@ -202,17 +202,9 @@
 						paint: {
 							"raster-sdf-limit": sdfLimit,
 							"raster-sdf-width": sdfWidth,
-							"raster-opacity": 0.7,
+							"raster-opacity": 1.0,
 						},
 					});
-					let textLayers = map.getStyle().layers.filter(l => l.type === 'symbol');
-					textLayers.forEach(l => {
-						//map.moveLayer(l.id);
-						//if (l.paint['text-halo-width']) l.paint['text-halo-width'] = 0;
-						//map.setPaintProperty(l.id, 'text-halo-color', 'hsla(0,0%,100%,0.1)');
-						//map.setPaintProperty(l.id, 'text-color', 'hsl(0,0%,0%)');
-					});
-					console.log(textLayers);
 					//console.log(map.moveLayer);
 					let sliderControl = new SliderControl({
 						minValue: 0,
