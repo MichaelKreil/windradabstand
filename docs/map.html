@@ -83,6 +83,7 @@
 			height: 3px;
 			border-radius: 2px;
 			background-color: #000;
+			z-index: 100;
 		}
 
 		.slider-thumb {
@@ -345,6 +346,7 @@
 							(opt.maxValue - opt.minValue)
 						);
 						thumb.style.left = x + paddingHori + "px";
+						track.style.background = 'linear-gradient(to right, #d50d2e, #d50d2e '+x+'px, #000 '+x+'px)';
 						sign.innerText = value + "m";
 
 						labels.forEach((label) => {
