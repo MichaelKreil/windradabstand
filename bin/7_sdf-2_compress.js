@@ -13,7 +13,7 @@ async function start() {
 	let tilesTar = resolve(config.folders.tiles, 'tiles.tar');
 
 	console.log('1/2 convert to webp')
-	await wrapExec(`cd "${pngFolder}"; find . -mindepth 3 -maxdepth 3 -type f | parallel --progress --bar "cwebp -quiet -near_lossless 0 -m 6 -noalpha {.}.png -o {.}.webp"`);
+	await wrapExec(`cd "${pngFolder}"; find . -mindepth 3 -maxdepth 3 -type f | parallel --progress --bar "cwebp -quiet -near_lossless 100 -m 6 -noalpha {.}.png -o {.}.webp"`);
 
 	console.log('2/2 delete png')
 	await wrapExec(`cd "${pngFolder}"; find . -mindepth 2 -maxdepth 2 -type d | shuf | parallel -j 1 --progress --bar "rm {}/*.png"`);
