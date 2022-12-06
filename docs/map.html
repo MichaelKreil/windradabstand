@@ -131,6 +131,9 @@
 	<div id="map"></div>
 	<script>
 		(() => {
+			const maxDistance = 2500;
+			const minDistance = 0;
+			const distance = 1000;
 			let container = document.getElementById("map");
 			let map = new maplibregl.Map({
 				container,
@@ -197,18 +200,6 @@
 			map.addControl(attributionControl);
 			attributionControl._updateCompactMinimize();
 
-			map.addControl(new SliderControl({
-				minValue: 400,
-				maxValue: 2000,
-				handle: (v) => {
-					//console.log(v);
-					v = (v - minDistance) / (maxDistance - minDistance);
-					if (v < 0) v = 0;
-					if (v > 1) v = 1;
-					map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
-					map.triggerRepaint();
-				},
-			}), "bottom-left");
 			map.addControl(new SearchControl(), "top-right");
 
 			map.addControl(new maplibregl.FullscreenControl());
@@ -222,9 +213,6 @@
 				"top-left"
 			);
 
-			const maxDistance = 2500;
-			const minDistance = 0;
-			const distance = 1000;
 			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
 			const sdfWidth = 1 / (maxDistance - minDistance);
 
@@ -251,6 +239,19 @@
 						"raster-opacity": 1.0,
 					},
 				});
+
+				map.addControl(new SliderControl({
+					minValue: 400,
+					maxValue: 2000,
+					handle: (v) => {
+						//console.log(v);
+						v = (v - minDistance) / (maxDistance - minDistance);
+						if (v < 0) v = 0;
+						if (v > 1) v = 1;
+						map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
+						map.triggerRepaint();
+					},
+				}), "bottom-left");
 			});
 
 			function loadViaAjax(url) {
