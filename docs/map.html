@@ -190,12 +190,37 @@
 							return l[1]
 								? `<a href="${l[1]}" target="_blank">© ${l[0]}</a>`
 								: `${l[0]}`;
-						}).join(', ')+'<br>'
+						}).join(', ') + '<br>'
 					})
 					.join(" "),
 			});
 			map.addControl(attributionControl);
 			attributionControl._updateCompactMinimize();
+
+			map.addControl(new SliderControl({
+				minValue: 400,
+				maxValue: 2000,
+				handle: (v) => {
+					//console.log(v);
+					v = (v - minDistance) / (maxDistance - minDistance);
+					if (v < 0) v = 0;
+					if (v > 1) v = 1;
+					map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
+					map.triggerRepaint();
+				},
+			}), "bottom-left");
+			map.addControl(new SearchControl(), "top-right");
+
+			map.addControl(new maplibregl.FullscreenControl());
+
+			map.addControl(
+				new maplibregl.GeolocateControl({ showAccuracyCircle: false }),
+				"top-left"
+			);
+			map.addControl(
+				new maplibregl.NavigationControl({ showCompass: false }),
+				"top-left"
+			);
 
 			const maxDistance = 2500;
 			const minDistance = 0;
@@ -226,30 +251,6 @@
 						"raster-opacity": 1.0,
 					},
 				});
-				map.addControl(new SliderControl({
-					minValue: 400,
-					maxValue: 2000,
-					handle: (v) => {
-						//console.log(v);
-						v = (v - minDistance) / (maxDistance - minDistance);
-						if (v < 0) v = 0;
-						if (v > 1) v = 1;
-						map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
-						map.triggerRepaint();
-					},
-				}), "bottom-left");
-				map.addControl(new SearchControl(), "top-right");
-
-				map.addControl(new maplibregl.FullscreenControl());
-
-				map.addControl(
-					new maplibregl.GeolocateControl({ showAccuracyCircle: false }),
-					"top-left"
-				);
-				map.addControl(
-					new maplibregl.NavigationControl({ showCompass: false }),
-					"top-left"
-				);
 			});
 
 			function loadViaAjax(url) {
