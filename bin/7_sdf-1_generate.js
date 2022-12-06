@@ -161,17 +161,6 @@ async function wrapSpawn(cmd, args) {
 	})
 }
 
-async function wrapExec(cmd) {
-	try {
-		child_process.execSync(cmd, { stdio: 'inherit' });
-	} catch (e) {
-		console.log(e);
-		if (e.stdout) console.log('stdout', e.stdout.toString());
-		if (e.stderr) console.log('stderr', e.stderr.toString());
-		throw e;
-	}
-}
-
 async function prepareGeometry() {
 	if (fs.existsSync(FILENAME_FIXED)) return;
 
