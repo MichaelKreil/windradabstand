@@ -186,6 +186,7 @@
 				map.addControl(new maplibregl.FullscreenControl());
 				map.on("load", async () => {
 					map.fitBounds([[5.86, 47.27], [15.04, 55.05]], { padding: {top: 5, bottom:85, left: 5, right: 5} });
+					//map.getStyle().layers.forEach(l => map.removeLayer(l.id))
 					map.addSource("tilesSource", {
 						type: "raster",
 						tiles: [
@@ -206,7 +207,6 @@
 							"raster-opacity": 1.0,
 						},
 					});
-					//console.log(map.moveLayer);
 					let sliderControl = new SliderControl({
 						minValue: 0,
 						maxValue: 2000,
