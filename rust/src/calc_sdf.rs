@@ -43,43 +43,48 @@ fn main() {
 	//println!("arguments: {:?}", arguments);
 
 	//let start = Instant::now();
-		let mut collection_dyn = Collection::new();
-		collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
+	let mut collection_dyn = Collection::new();
+	collection_dyn.fill_from_json(Path::new(&arguments.filename_geo_dyn));
 	//println!("collection_dyn.fill_from_json: {:?}", start.elapsed());
 
 	//let start = Instant::now();
-		let mut collection_fix = Collection::new();
-		collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
+	let mut collection_fix = Collection::new();
+	collection_fix.fill_from_json(Path::new(&arguments.filename_geo_fix));
 	//println!("collection_fix.fill_from_json: {:?}", start.elapsed());
 
 	let size = arguments.size * arguments.n;
 	let mut image = GeoImage::new(size, arguments.zoom, arguments.x0, arguments.y0);
 
 	//let start = Instant::now();
-		image.draw_distances(0, &collection_dyn, arguments.min_distance, arguments.max_distance);
+	image.draw_distances(
+		0,
+		&collection_dyn,
+		arguments.min_distance,
+		arguments.max_distance,
+	);
 	//println!("image.fill_with_min_distances(dyn): {:?}", start.elapsed());
 
 	//let start = Instant::now();
-		image.draw_geometry(1, &collection_fix);
+	image.draw_geometry(1, &collection_fix);
 	//println!("image.render(fix): {:?}", start.elapsed());
 
 	//let start = Instant::now();
-		image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
+	image.export_tile_tree(arguments.size, Path::new(&arguments.folder_png), ".png");
 	//println!("image.export_tile_tree: {:?}", start.elapsed());
 
 	//let start = Instant::now();
-		let thumb = image.scaled_down_clone(arguments.size/2);
+	let thumb = image.scaled_down_clone(arguments.size / 2);
 	//println!("image.scaled_down_clone: {:?}", start.elapsed());
 
 	//let start = Instant::now();
-		thumb.export_to(Path::new(&arguments.folder_bin), ".bin");
+	thumb.export_to(Path::new(&arguments.folder_bin), ".bin");
 	//println!("thumb.export_to: {:?}", start.elapsed());
 }
 
 fn parse_arguments() -> Arguments {
 	let args: Vec<String> = env::args().collect();
 	//println!("args {:?}", args);
-	let json_string:&String = &args.get(1).unwrap().to_string();
+	let json_string: &String = &args.get(1).unwrap().to_string();
 	let obj = &json::parse(json_string).unwrap();
 	//println!("obj {}", obj);
 
@@ -94,18 +99,18 @@ fn parse_arguments() -> Arguments {
 		x0:               parse_u32(obj, "x0"),
 		y0:               parse_u32(obj, "y0"),
 		n:                parse_u32(obj, "n"),
-		size:             parse_u32(obj, "size")
+		size:             parse_u32(obj, "size"),
 	};
 
-	fn parse_str(obj:&json::JsonValue, name:&str) -> String {
+	fn parse_str(obj: &json::JsonValue, name: &str) -> String {
 		return obj[name].as_str().unwrap().to_string();
 	}
 
-	fn parse_u32(obj:&json::JsonValue, name:&str) -> u32 {
+	fn parse_u32(obj: &json::JsonValue, name: &str) -> u32 {
 		return obj[name].as_u32().unwrap();
 	}
 
-	fn parse_f32(obj:&json::JsonValue, name:&str) -> f32 {
+	fn parse_f32(obj: &json::JsonValue, name: &str) -> f32 {
 		return obj[name].as_f32().unwrap();
 	}
 }
