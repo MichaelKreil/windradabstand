@@ -86,33 +86,33 @@
 		}
 
 		.slider-thumb {
-			top: 5px;
-			width: 40px;
-			height: 30px;
-			margin-left: -20px;
+			top: 2px;
+			width: 50px;
+			height: 35px;
+			margin-left: -25px;
 			cursor: pointer;
 		}
 
 		.slider-sign {
 			top: 0px;
 			left: 0px;
-			width: 40px;
-			height: 20px;
-			background: #000;
-			border-radius: 3px;
+			width: 50px;
+			height: 22px;
+			background: #d50d2e;
+			border-radius: 10px;
 			color: #fff;
-			font-size: 10px;
+			font-size: 12px;
 			text-align: center;
 		}
 
 		.slider-mark {
-			top: 20px;
-			left: 14px;
+			top: 22px;
+			left: 19px;
 			width: 0px;
 			height: 0px;
 			background: transparent;
 			border: 6px solid transparent;
-			border-top: 6px solid #000;
+			border-top: 6px solid #d50d2e;
 		}
 
 		.slider-label {
@@ -371,7 +371,7 @@
 						if (v < 0) v = 0;
 						if (v > 1) v = 1;
 						v = opt.minValue + v * (opt.maxValue - opt.minValue);
-						v = Math.round(v / 10) * 10;
+						v = Math.round(v / 50) * 50;
 
 						if (v === value) return;
 						value = v;
