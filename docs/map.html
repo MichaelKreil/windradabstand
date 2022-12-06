@@ -227,7 +227,7 @@
 					},
 				});
 				map.addControl(new SliderControl({
-					minValue: 0,
+					minValue: 400,
 					maxValue: 2000,
 					handle: (v) => {
 						//console.log(v);
@@ -269,15 +269,15 @@
 
 			function SliderControl(opt) {
 				const labels = [
-					{ value: 400, y: 2, text: "Hamburg, Nieders., S.-Anhalt, Schleswig-H." },
-					{ value: 450, y: 1, text: "Brem." },
-					{ value: 500, y: 0, text: "RLP" },
-					{ value: 600, y: 1, text: "Thür." },
-					{ value: 650, y: 0, text: "Saarl." },
-					{ value: 700, y: 1, text: "BW" },
-					{ value: 800, y: 0, text: "MV" },
-					{ value: 1000, y: 0, text: "Branden., He., NRW, Sachsen" },
-					{ value: 2000, y: 0, text: "Bayern", right: true },
+					{ value: 400, y: 2, short: "HH, NI, ST, SH", long: "Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein" },
+					{ value: 450, y: 1, short: "HB", long: "Bremen" },
+					{ value: 500, y: 0, short: "RLP", long: "Rheinland Pfalz" },
+					{ value: 600, y: 1, short: "TH", long: "Thüringen" },
+					{ value: 650, y: 0, short: "SL", long: "Saarland" },
+					{ value: 700, y: 1, short: "BW", long: "Baden-Württemberg" },
+					{ value: 800, y: 0, short: "MV", long: "Mecklenburg-Vorpommern" },
+					{ value: 1000, y: 0, short: "BB, HE, NRW, SN", long: "Brandenburg, Hessen, NRW, Sachsen" },
+					{ value: 2000, y: 0, short: "Bayern", long: "Bayern", right: true },
 				];
 				let value = 1000;
 				let map;
@@ -285,7 +285,7 @@
 				function onAdd(_map) {
 					map = _map;
 
-					const paddingHori = 0;
+					const paddingHori = 20;
 
 					const container = createDomNode("div", { className: "slider-container" });
 
@@ -303,7 +303,7 @@
 							{ className: "slider-label" },
 							container
 						);
-						label.node.innerText = label.text;
+						label.node.innerText = label.short;
 						label.pos =
 							(label.value - opt.minValue) / (opt.maxValue - opt.minValue);
 
