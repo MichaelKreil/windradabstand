@@ -241,7 +241,9 @@
 			const sdfWidth = 1 / (maxDistance - minDistance);
 
 			map.on("load", async () => {
-				//map.getStyle().layers.forEach(l => map.removeLayer(l.id))
+				map.getStyle().layers.forEach(l => {
+					if (l['source-layer'] === 'place') map.setLayerZoomRange(l.id, 5, l.maxzoom);
+				})
 				map.addSource("tilesSource", {
 					type: "raster",
 					tiles: [
