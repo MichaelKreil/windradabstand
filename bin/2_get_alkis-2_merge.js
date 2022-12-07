@@ -287,13 +287,7 @@ async function start() {
 			if (!fs.existsSync(filename)) return;
 
 			let buffer = fs.readFileSync(filename);
-			if (buffer.length === 0) return;
-
-			try {
-				return await gunzip(buffer);
-			} catch (e) {
-				throw Error('Error in Buffer. Delete file and try again:', filename);
-			}
+			return (buffer.length > 0) && buffer;
 		}
 	}
 

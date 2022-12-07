@@ -10,7 +10,7 @@ const { } = require('big-data-tools');
 
 
 const MAXLEVEL = 15
-const URL = 'https://adv-smart.de/tiles/smarttiles_de_public_v1/'
+const URL = 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/tiles/v1/bm_web_de_3857/'
 const BBOX = [5.8, 47.2, 15.1, 55.1]
 const headers = {
 	'Referer': 'https://adv-smart.de/map-editor/map',
@@ -35,15 +35,7 @@ todos.forEachParallel(4, async ({ x, y, z }, i) => {
 	const url = `${URL}${z}/${x}/${y}.pbf`
 	const filename = config.getFilename.alkisCache(`${z}/${x}/${y}.pbf`)
 
-	const buffer = await fetchCached(filename, url, headers);
-
-	if (buffer.length === 0) return;
-
-	try {
-		await gunzip(buffer);
-	} catch (e) {
-		throw Error('Error in Buffer. Delete file and try again:', filename);
-	}
+	await fetchCached(filename, url, headers);
 })
 
 function deg2tile(lon_deg, lat_deg, zoom) {
