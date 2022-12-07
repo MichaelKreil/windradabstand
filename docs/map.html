@@ -87,18 +87,17 @@
 		}
 
 		.slider-thumb {
-			top: 2px;
+			top: 4px;
 			width: 50px;
-			height: 35px;
+			height: 36px;
 			margin-left: -25px;
 			cursor: pointer;
 		}
 
 		.slider-sign {
-			top: 0px;
+			top: 1px;
 			left: 0px;
 			width: 50px;
-			height: 22px;
 			background: #d50d2e;
 			border-radius: 10px;
 			color: #fff;
@@ -107,7 +106,7 @@
 		}
 
 		.slider-mark {
-			top: 22px;
+			top: 20px;
 			left: 19px;
 			width: 0px;
 			height: 0px;
@@ -118,9 +117,8 @@
 
 		.slider-label {
 			top: 30px;
-			opacity: 0.5;
-			border-left: 1px solid rgba(0,0,0,0.5);
-			border-right: 1px solid rgba(0,0,0,0.5);
+			border-left: 1px solid rgba(0, 0, 0, 0.25);
+			border-right: 1px solid rgba(0, 0, 0, 0.25);
 			line-height: 1em;
 			padding: 0px;
 		}
@@ -130,8 +128,27 @@
 			padding: 0px 2px;
 			white-space: nowrap;
 			pointer-events: auto;
-			background: rgba(255,255,255,0.8);
+			background: rgba(255, 255, 255, 0.7);
 			z-index: 100;
+			color: rgba(0, 0, 0, 0.5);
+		}
+
+		.slider-label.highlight1 {
+			border-left: 1px solid rgba(213, 13, 46, 0.5);
+			border-right: 1px solid rgba(213, 13, 46, 0.5);
+		}
+
+		.slider-label.highlight1 .slider-label-text {
+			color: rgba(213, 13, 46, 0.5);
+		}
+
+		.slider-label.highlight2 {
+			border-left: 1px solid rgba(213, 13, 46, 1);
+			border-right: 1px solid rgba(213, 13, 46, 1);
+		}
+
+		.slider-label.highlight2 .slider-label-text {
+			color: rgba(213, 13, 46, 1);
 		}
 	</style>
 </head>
@@ -278,13 +295,13 @@
 				const labels = [
 					{ value: 400, y: 4, short: "HH, NI, ST, SH", long: "Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein" },
 					{ value: 450, y: 3, short: "HB", long: "Bremen" },
-					{ value: 500, y: 2, short: "RLP", long: "Rheinland Pf." },
+					{ value: 500, y: 2, short: "RLP", long: "Rheinland P." },
 					{ value: 600, y: 1, short: "TH", long: "Thüringen" },
 					{ value: 650, y: 0, short: "SL", long: "Saarland" },
 					{ value: 700, y: 3, short: "BW", long: "Baden-Württemberg" },
 					{ value: 800, y: 2, short: "MV", long: "Mecklenburg-Vorpommern" },
-					{ value: 1000, y: 0, short: "BB, HE, NRW, SN", long: "Brandenburg, Hessen, NRW, Sachsen" },
-					{ value: 2000, y: 1, short: "Bayern", long: "Bayern", right: true },
+					{ value: 1000, y: 1, short: "BB, HE, NRW, SN", long: "Brandenburg, Hessen, NRW, Sachsen" },
+					{ value: 2000, y: 0, short: "Bayern", long: "Bayern", right: true },
 				];
 				let value = 1000;
 				let map;
@@ -292,7 +309,7 @@
 				function onAdd(_map) {
 					map = _map;
 
-					const paddingHori = 20;
+					const paddingHori = 25;
 
 					const container = createDomNode("div", { className: "slider-container" });
 
@@ -371,9 +388,16 @@
 						sign.innerText = value + "m";
 
 						labels.forEach((label) => {
-							let d = 1 - (label.value - value) / 50;
-							if (d < 0) d = 0;
-							label.node.style.opacity = d * 0.7 + 0.3;
+							if (value < label.value) {
+								label.node.classList.remove('highlight1');
+								label.node.classList.remove('highlight2');
+							} else if (value > label.value) {
+								label.node.classList.add('highlight1');
+								label.node.classList.remove('highlight2');
+							} else {
+								label.node.classList.remove('highlight1');
+								label.node.classList.add('highlight2');
+							}
 						});
 					}
 
