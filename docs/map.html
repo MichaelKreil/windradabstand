@@ -118,12 +118,18 @@
 
 		.slider-label {
 			top: 30px;
-			font-size: 10px;
 			opacity: 0.5;
 			border-left: 1px solid #000;
 			border-right: 1px solid #000;
 			line-height: 1em;
-			padding: 0 2px;
+			padding: 0px;
+		}
+
+		.slider-label-text {
+			font-size: 10px;
+			padding: 0px 2px;
+			white-space: nowrap;
+			pointer-events: auto;
 		}
 	</style>
 </head>
@@ -297,21 +303,38 @@
 					track.style.right = paddingHori + "px";
 
 					labels.forEach((label) => {
+
 						label.node = createDomNode(
 							"div",
 							{ className: "slider-label" },
 							container
 						);
-						label.node.innerText = label.short;
+						label.textNode = createDomNode(
+							"div",
+							{ className: "slider-label-text" },
+							label.node
+						);
+						label.textNode.innerText = label.short;
+
 						label.pos =
 							(label.value - opt.minValue) / (opt.maxValue - opt.minValue);
 
 						if (label.right) {
 							label.node.style.borderLeft = "none";
+							label.textNode.style.right = "0px";
 						} else {
 							label.node.style.borderRight = "none";
 						}
-						label.node.style.paddingTop = 5 + label.y * 13 + "px";
+						label.offset = label.y * 13;
+						label.node.style.height = 18 + label.offset + "px";
+						label.textNode.style.marginTop = 5 + label.offset + "px";
+						label.textNode.addEventListener('pointerdown', e => {
+							e.preventDefault();
+							e.stopPropagation();
+							//console.log('click');
+							value = label.value;
+							updatePosition();
+						})
 					});
 
 					let trackWidth,
@@ -342,7 +365,7 @@
 							(opt.maxValue - opt.minValue)
 						);
 						thumb.style.left = x + paddingHori + "px";
-						track.style.background = 'linear-gradient(to right, #d50d2e, #d50d2e '+x+'px, #000 '+x+'px)';
+						track.style.background = 'linear-gradient(to right, #d50d2e, #d50d2e ' + x + 'px, #000 ' + x + 'px)';
 						sign.innerText = value + "m";
 
 						labels.forEach((label) => {
@@ -353,15 +376,22 @@
 					}
 
 					container.addEventListener('pointerdown', e => {
+						//console.log('pointerdown', e);
 						dragTo(e.pageX);
 					});
 					container.addEventListener('pointermove', e => {
-						//console.log('pointermove', e.buttons);
-						if (e.buttons > 0) dragTo(e.pageX);
+						//console.log('pointermove', e);
+						if (e.buttons > 0) {
+							dragTo(e.pageX);
+							e.preventDefault();
+						}
 					});
 					container.addEventListener('touchmove', e => {
 						//console.log('touchmove', e);
-						if (e.touches[0]) dragTo(e.touches[0].pageX);
+						if (e.touches[0]) {
+							dragTo(e.touches[0].pageX);
+							e.preventDefault();
+						}
 					});
 
 					function dragTo(x) {
