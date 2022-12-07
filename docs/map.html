@@ -47,7 +47,7 @@
 
 		.maplibregl-ctrl-bottom-left {
 			width: 100%;
-			height: 80px;
+			height: 100px;
 			background-color: #fff;
 			position: absolute;
 			bottom: 0px;
@@ -55,7 +55,7 @@
 		}
 
 		.maplibregl-ctrl-bottom-right {
-			bottom: 80px;
+			bottom: 100px;
 		}
 
 		.search-container input {
@@ -67,7 +67,7 @@
 		.slider-container {
 			width: 100%;
 			padding: 0px;
-			height: 80px;
+			height: 100px;
 			box-sizing: border-box;
 			position: relative;
 			user-select: none;
@@ -119,8 +119,8 @@
 		.slider-label {
 			top: 30px;
 			opacity: 0.5;
-			border-left: 1px solid #000;
-			border-right: 1px solid #000;
+			border-left: 1px solid rgba(0,0,0,0.5);
+			border-right: 1px solid rgba(0,0,0,0.5);
 			line-height: 1em;
 			padding: 0px;
 		}
@@ -130,6 +130,8 @@
 			padding: 0px 2px;
 			white-space: nowrap;
 			pointer-events: auto;
+			background: rgba(255,255,255,0.8);
+			z-index: 100;
 		}
 	</style>
 </head>
@@ -147,7 +149,7 @@
 				//style: "https://cdn.michael-kreil.de/map/style/positron/white.json",
 				style: "https://static.datenhub.net/maps/styles/positron/white.json",
 				bounds: [5.86, 47.27, 15.04, 55.05],
-				fitBoundsOptions: { padding: { top: 5, bottom: 85, left: 5, right: 5 } },
+				fitBoundsOptions: { padding: { top: 5, bottom: 105, left: 5, right: 5 } },
 				maxBounds: [0.8, 43.7, 20.1, 57.1],
 				maxZoom: 13,
 				minPitch: 0,
@@ -274,15 +276,15 @@
 
 			function SliderControl(opt) {
 				const labels = [
-					{ value: 400, y: 2, short: "HH, NI, ST, SH", long: "Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein" },
-					{ value: 450, y: 1, short: "HB", long: "Bremen" },
-					{ value: 500, y: 0, short: "RLP", long: "Rheinland Pfalz" },
+					{ value: 400, y: 4, short: "HH, NI, ST, SH", long: "Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein" },
+					{ value: 450, y: 3, short: "HB", long: "Bremen" },
+					{ value: 500, y: 2, short: "RLP", long: "Rheinland Pf." },
 					{ value: 600, y: 1, short: "TH", long: "Thüringen" },
 					{ value: 650, y: 0, short: "SL", long: "Saarland" },
-					{ value: 700, y: 1, short: "BW", long: "Baden-Württemberg" },
-					{ value: 800, y: 0, short: "MV", long: "Mecklenburg-Vorpommern" },
+					{ value: 700, y: 3, short: "BW", long: "Baden-Württemberg" },
+					{ value: 800, y: 2, short: "MV", long: "Mecklenburg-Vorpommern" },
 					{ value: 1000, y: 0, short: "BB, HE, NRW, SN", long: "Brandenburg, Hessen, NRW, Sachsen" },
-					{ value: 2000, y: 0, short: "Bayern", long: "Bayern", right: true },
+					{ value: 2000, y: 1, short: "Bayern", long: "Bayern", right: true },
 				];
 				let value = 1000;
 				let map;
@@ -314,7 +316,7 @@
 							{ className: "slider-label-text" },
 							label.node
 						);
-						label.textNode.innerText = label.short;
+						label.textNode.innerText = label.long;
 
 						label.pos =
 							(label.value - opt.minValue) / (opt.maxValue - opt.minValue);
@@ -326,7 +328,7 @@
 							label.node.style.borderRight = "none";
 						}
 						label.offset = label.y * 13;
-						label.node.style.height = 18 + label.offset + "px";
+						label.node.style.height = 16 + label.offset + "px";
 						label.textNode.style.marginTop = 5 + label.offset + "px";
 						label.textNode.addEventListener('pointerdown', e => {
 							e.preventDefault();
