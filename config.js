@@ -271,12 +271,12 @@ const config = {
 
 		// gewaesser
 		{ slug: 'gewaesser', name: 'Gewässer', default: 0 },
-		{ slug: 'gewaesser_1ha', name: 'stehende Gewässer größer 1 ha' },
+		{ slug: 'gewaesser_1ha', name: 'stehende Gewässer größer 1 ha', default: 0 },
 
 		// verkehrsflaeche
 		{ slug: 'verkehrsflaeche', name: 'Verkehrsfläche', default: 0 },
-		{ slug: 'militaerisch', name: 'Militärische Nutzung' },
-		{ slug: 'flugplaetze', name: 'Flughäfen, Flugplätze, Landeplätze, Segelfluggelände, ...' },
+		{ slug: 'militaerisch', name: 'Militärische Nutzung', default: 0 },
+		{ slug: 'flugplaetze', name: 'Flughäfen, Flugplätze, Landeplätze, Segelfluggelände, ...', default: 0 },
 		
 		// sonstiges
 		{ slug: 'seismisch', name: 'seismische Messstationen', default: 0 },
