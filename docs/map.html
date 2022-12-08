@@ -193,8 +193,10 @@
 			let attributionControl = new maplibregl.AttributionControl({
 				compact: true,
 				customAttribution: [
-					'Die Karte markiert alle Flächen in rot, die innerhalb des unten gewählten Mindestabstands zu Wohngebäuden liegen - auf denen nach dieser Regel also keine Windanlagen gebaut werden könnten.',
-					'Da einige Bundesländer Mindestabstände vorschreiben, die von der Höhe der Anlage abhängen, nehmen wir die typische Höhe für Neuanlagen von 200 m an.',
+					'Die Karte markiert alle Flächen in rot, auf denen nach einem vereinfachten Modell aktuell keine Windanlagen gebaut werden könnten.',
+					'Mit dem Schieberegler unten kann im Rahmen dieses Modells der Mindestabstand zu Wohngebäuden verändert werden.',
+					'Zusätzlich werden aber auch weitere bundesländereigenen Mindestabstandsregelungen berücksichtigt, z.B. zu Wohngebieten, Gewerbegebieten, Campingplätzen, Erholungsgebieten, Naturschutz- und ähnlichen Gebieten, Straßen, Bahnstrecken, Freileitungen, Gewässern, Flugplätzen, Verkehrsflächen und seismischem Messstationen.',
+					'Da einige Bundesländer Mindestabstände vorschreiben, die von der Höhe der Anlagen abhängen, nehmen wir eine typische Höhe für Neuanlagen von 200 m an.',
 					'',
 					'<b>Kartenhintergrund:</b>',
 					'<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap Mitwirkende</a>',
