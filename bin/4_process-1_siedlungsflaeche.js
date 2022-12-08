@@ -59,6 +59,7 @@ function initLookup() {
 		'Sportanlage',
 		'Tagebau, Grube, Steinbruch',
 		'Umspannstation',
+		'Vergnügung',
 		'Versorgungsanlage',
 		'Wasserwerk',
 		'Werft',
