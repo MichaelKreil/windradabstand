@@ -38,7 +38,9 @@
 			right: 0;
 			bottom: 0;
 		}
-
+		.maplibregl-cooperative-gesture-screen {
+			padding-bottom: 131px;
+		}
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
 			padding: 5px 5px 5px 0px;
@@ -177,7 +179,7 @@
 				style: "https://cdn.michael-kreil.de/map/style/positron/white.json",
 				//style: 'https://static.datenhub.net/maps/styles/positron/white.json',
 				bounds: [5.86, 47.27, 15.04, 55.05],
-				fitBoundsOptions: { padding: { top: 5, bottom: 105, left: 5, right: 5 } },
+				fitBoundsOptions: { padding: { top: 5, bottom: 120, left: 5, right: 5 } },
 				maxBounds: [0.8, 43.7, 20.1, 57.1],
 				maxZoom: 13,
 				minPitch: 0,
@@ -193,20 +195,20 @@
 			let attributionControl = new maplibregl.AttributionControl({
 				compact: true,
 				customAttribution: [
-					'Die Karte markiert alle Flächen in rot, die innerhalb des unten gewählten Mindestabstands zu Wohngebäuden liegen - auf denen nach dieser Regel also keine Windanlagen gebaut werden könnten.',
-					'Da einige Bundesländer Mindestabstände vorschreiben, die von der Höhe der Anlage abhängen, nehmen wir die typische Höhe für Neuanlagen von 200 m an.',
-					'',
-					'<b>Kartenhintergrund:</b>',
-					'<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap Mitwirkende</a>',
-					'<b>Naturschutzgebiete etc.:</b>',
-					'<a href="https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG" target="_blank">© Bundesamt für Naturschutz</a>',
-					'<b>Infrastruktur, Gebäudeumrisse, etc. (ALKIS):</b>',
-					'<a href="http://basemap.de/web-vektor/" target="_blank">© Bundesamt für Kartographie und Geodäsie (BKG), basemap.de Web Vektor</a>',
-					'<b>Daten zu bestehenden Windrädern:</b>',
-					'<a href="https://www.marktstammdatenregister.de/MaStR/Datendownload" target="_blank">© Bundesnetzagentur</a>',
-					'<b>Berechnung und Frontend:</b>',
-					'<a href="https://github.com/MichaelKreil/windradabstand" target="_blank">github.com/MichaelKreil/windradabstand</a>',
-				].join('<br>'),
+					'Die Karte markiert alle Flächen in rot, auf denen nach einem vereinfachten Modell aktuell keine Windanlagen gebaut werden könnten.',
+					'Mit dem Schieberegler unten kann im Rahmen dieses Modells der Mindestabstand zu Wohngebäuden verändert werden.',
+					'Zusätzlich werden aber auch weitere bundesländereigene, feste Mindestabstandsregelungen berücksichtigt, wie z.B. zu Wohn-, Gewerbe-, Erholungsgebieten, Campingplätzen, Natur- und andere Schutzgebieten, Straßen, Bahnstrecken, Freileitungen, Gewässern, Flugplätzen, Verkehrsflächen und seismischem Messstationen.',
+					'Da einige Bundesländer Mindestabstände vorschreiben, die von der Höhe der Anlagen abhängen, nehmen wir eine typische Höhe für Neuanlagen von 200 m an.',
+					'<br><br>',
+					'<b>Kartenhintergrund:</b><br>',
+					'<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap Mitwirkende</a><br>',
+					'<b>Naturschutzgebiete etc.:</b><br>',
+					'<a href="https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG" target="_blank">© Bundesamt für Naturschutz</a><br>',
+					'<b>Infrastruktur, Gebäudeumrisse, etc. (ALKIS):</b><br>',
+					'<a href="http://basemap.de/web-vektor/" target="_blank">© Bundesamt für Kartographie und Geodäsie (BKG), basemap.de Web Vektor</a><br>',
+					'<b>Quellcode für Berechnung und Frontend:</b><br>',
+					'<a href="https://github.com/michaelkreil/windradabstand" target="_blank">github.com/michaelkreil/windradabstand</a>',
+				].join(' '),
 			});
 
 			map.addControl(new maplibregl.FullscreenControl(), 'bottom-right');
