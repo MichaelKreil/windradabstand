@@ -447,7 +447,6 @@
 										data = data.map(e => ({ name: e[0], order: e[1], bbox: e[2] }));
 										data.sort((a, b) => b.order - a.order);
 										places = data;
-										console.log(data);
 									} catch (error) {
 										return error;
 									}
@@ -459,6 +458,19 @@
 						},
 						resultItem: {
 							highlight: true,
+						},
+						events: {
+							input: {
+								selection: (event) => {
+									const place = event.detail.selection.value;
+									autoCompleteJS.input.value = place.name;
+									let bounds = [
+										[place.bbox[0] / 1000, place.bbox[1] / 1000],
+										[place.bbox[2] / 1000, place.bbox[3] / 1000]
+									];
+									map.fitBounds(bounds);
+								}
+							}
 						}
 					});
 				}
