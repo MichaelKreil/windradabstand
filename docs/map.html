@@ -49,11 +49,7 @@
 
 		.maplibregl-ctrl-bottom-left {
 			width: 100%;
-			height: 100px;
-			background-color: #fff;
-			position: absolute;
-			bottom: 0px;
-			pointer-events: all;
+			z-index: 10;
 		}
 
 		.maplibregl-ctrl-bottom-right {
@@ -68,12 +64,15 @@
 		}
 
 		.slider-container {
+			float: left;
+			background-color: #fff;
 			width: 100%;
 			padding: 0px;
 			height: 100px;
 			box-sizing: border-box;
 			position: relative;
 			user-select: none;
+			pointer-events: all;
 		}
 
 		.slider-container * {
@@ -185,59 +184,22 @@
 			let attributionControl = new maplibregl.AttributionControl({
 				compact: true,
 				customAttribution: [
-					'Kartenhintergrund',
-					[
-						'OpenStreetMap Mitwirkende;https://www.openstreetmap.org/copyright'
-					],
-					'Naturschutzgebiete etc.',
-					[
-						'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
-					],
-					'Infrastruktur und Gebäudeumrisse',
-					[
-						'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/',
-						'Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html',
-						'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs',
-						'Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/',
-						'Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289',
-						'Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true',
-						'Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start',
-						'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b',
-						'Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html',
-						'Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9',
-						'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/',
-						'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191',
-						'Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html',
-						'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html',
-						'Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html',
-						'Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen',
-					],
-					'Daten zu bestehenden Windrädern',
-					[
-						'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
-					],
-				]
-					.map(e => {
-						if (typeof e === 'string') return `<b>${e}:</b>`;
-						return (
-							e
-								.map(l => {
-									l = l.split(';');
-									return l[1]
-										? `<a href="${l[1]}" target="_blank">© ${l[0]}</a>`
-										: `${l[0]}`;
-								})
-								.join(', ') + '<br>'
-						);
-					})
-					.join(' '),
+					'<b>Kartenhintergrund:</b>',
+					'<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap Mitwirkende</a>',
+					'<b>Naturschutzgebiete etc.:</b>',
+					'<a href="https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG" target="_blank">© Bundesamt für Naturschutz</a>',
+					'<b>Infrastruktur, Gebäudeumrisse, etc. (ALKIS):</b>',
+					'<a href="http://basemap.de/web-vektor/" target="_blank">© Bundesamt für Kartographie und Geodäsie (BKG), basemap.de Web Vektor</a>',
+					'<b>Daten zu bestehenden Windrädern:</b>',
+					'<a href="https://www.marktstammdatenregister.de/MaStR/Datendownload" target="_blank">© Bundesnetzagentur</a>',
+					'<b>Berechnung und Frontend:</b>',
+					'<a href="https://github.com/MichaelKreil/windradabstand" target="_blank">github.com/MichaelKreil/windradabstand</a>',
+				].join('<br>'),
 			});
-			map.addControl(attributionControl);
-			attributionControl._updateCompactMinimize();
+
+			map.addControl(new maplibregl.FullscreenControl(), 'bottom-right');
 
 			map.addControl(new SearchControl(), 'top-right');
-
-			map.addControl(new maplibregl.FullscreenControl());
 
 			map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
 
@@ -282,6 +244,8 @@
 					}),
 					'bottom-left'
 				);
+				map.addControl(attributionControl, 'bottom-left');
+				attributionControl._updateCompactMinimize();
 			});
 
 			function loadViaAjax(url) {
@@ -481,7 +445,7 @@
 										let data = await fetch('places.json');
 										data = await data.json();
 										data = data.map(e => ({ name: e[0], order: e[1], bbox: e[2] }));
-										data.sort((a,b) => b.order - a.order);
+										data.sort((a, b) => b.order - a.order);
 										places = data;
 										console.log(data);
 									} catch (error) {
