@@ -41,6 +41,7 @@
 
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
+			padding: 5px 5px 5px 0px;
 		}
 
 		.maplibregl-ctrl-attrib {
@@ -190,6 +191,9 @@
 			let attributionControl = new maplibregl.AttributionControl({
 				compact: true,
 				customAttribution: [
+					'Die Karte markiert alle Flächen in rot, auf denen kein Bau von Windkraftanlagen erlaubt wäre, anhängig vom unten gewählten Mindestabstand zu Wohngebäuden.',
+					'Da einige Bundesländer Mindestabstände vorschreiben, die von der Höhe der Anlage abhängen, nehmen wir die typische Höhe für Neuanlagen von 200 m an.',
+					'',
 					'<b>Kartenhintergrund:</b>',
 					'<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap Mitwirkende</a>',
 					'<b>Naturschutzgebiete etc.:</b>',
