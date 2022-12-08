@@ -4,6 +4,7 @@
 *.png
 *.tar
 /_documents
+/bin/rsync_down.sh
 /data/1_*
 /data/2_*
 /data/3_*
