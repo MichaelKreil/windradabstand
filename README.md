@@ -54,5 +54,5 @@ Web-Verzeichnis:
 - [map.html](docs/map.html) Die eigentliche Karte inklusive CSS und JavaScript.
 - [screenshot.html](docs/screenshot.html) Kleine Hilfsdatei, um einen Screenshot für die Printgrafik zu generieren.
 - [places.json](docs/places.json) JSON mit Orten, nach denen gesucht werden kann.
-- [maplibre-gl.css](docs/maplibre-gl.css), [maplibre-gl.js](docs/maplibre-gl.js), [maplibre-gl.js.map](docs/maplibre-gl.js.map) speziell "angepasste" (gehackte) Version von Maplibre. Der Fragment-Shader für Raster-Tiles wurde umgearbeitet, um Distance-Field darstellen zu können.
+- [maplibre-gl.css](docs/maplibre-gl.css), [maplibre-gl.js](docs/maplibre-gl.js), [maplibre-gl.js.map](docs/maplibre-gl.js.map) speziell "angepasste" (gehackte) Version von Maplibre. Der Fragment-Shader für Raster-Tiles wurde umgearbeitet, um Distance-Field darstellen zu können. Der entsprechende Branch `raster_sdf` befindet sich im Fork: [github.com/michaelkreil/maplibre-gl-js/tree/raster_sdf](https://github.com/MichaelKreil/maplibre-gl-js/tree/raster_sdf)
 - [autoComplete.css](docs/autoComplete.css), [autoComplete.min.js](docs/autoComplete.min.js) AutoComplete-Bibliothek für die Ortssuche.
