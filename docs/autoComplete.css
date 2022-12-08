@@ -1,0 +1,79 @@
+.autoComplete_wrapper {
+	display: inline-block;
+	position: relative;
+}
+
+.autoComplete_wrapper > input {
+	color: #555;
+	border-radius: 8px;
+	outline: none;
+	background-color: #fff;
+}
+
+.autoComplete_wrapper > input::placeholder {
+	color: rgba(123, 123, 123, 0.5);
+	transition: all 0.1s;
+}
+
+.autoComplete_wrapper > ul {
+	position: absolute;
+	max-height: 226px;
+	overflow-y: scroll;
+	top: 100%;
+	left: 0;
+	right: 0;
+	padding: 0;
+	margin: 5px 0 0 0;
+	border-radius: 6px;
+	background-color: #fff;
+	box-shadow: 0 3px 6px rgba(149, 157, 165, 0.15);
+	border: 1px solid rgba(33, 33, 33, 0.07);
+	z-index: 100000;
+	outline: none;
+}
+
+.autoComplete_wrapper > ul[hidden],
+.autoComplete_wrapper > ul:empty {
+	display: block;
+	opacity: 0;
+	transform: scale(0);
+}
+
+.autoComplete_wrapper > ul > li {
+	margin: 3px;
+	padding: 3px 5px;
+	list-style: none;
+	text-align: left;
+	color: #555;
+	border-radius: 3.5px;
+	background-color: rgba(255, 255, 255, 1);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transition: all 0.1s;
+}
+
+.autoComplete_wrapper > ul > li::selection {
+	color: rgba(#ffffff, 0);
+	background-color: rgba(#ffffff, 0);
+}
+
+.autoComplete_wrapper > ul > li:hover {
+	cursor: pointer;
+	background-color: #ddd
+}
+
+.autoComplete_wrapper > ul > li mark {
+	background-color: transparent;
+	color: #000;
+	font-weight: bold;
+}
+
+.autoComplete_wrapper > ul > li mark::selection {
+	color: rgba(#ffffff, 0);
+	background-color: rgba(#ffffff, 0);
+}
+
+.autoComplete_wrapper > ul > li[aria-selected='true'] {
+	background-color: #ddd
+}

@@ -8,7 +8,9 @@
 	<title>Die Verhinderung der Windenergie</title>
 
 	<script src="maplibre-gl.js"></script>
+	<script src="autoComplete.min.js"></script>
 	<link href="maplibre-gl.css" rel="stylesheet" />
+	<link href="autoComplete.css" rel="stylesheet" />
 	<style>
 		html {
 			height: -webkit-fill-available;
@@ -62,6 +64,7 @@
 			border-radius: 5px;
 			padding: 2px 3px;
 			border: 1px solid #888;
+			position: relative;
 		}
 
 		.slider-container {
@@ -458,13 +461,42 @@
 
 					const input = createDomNode(
 						'input',
-						{ id: 'autoComplete', type: 'text', placeHolder: 'Suche nach Ort', size: 30 },
+						{ id: 'autoComplete', type: 'text', size: 30 },
 						container
 					);
 
-					const input = createDomNode("input", { type: 'text', placeholder: 'Suche nach: Ort/PLZ/Adresse', size: 30 }, container);
+					setTimeout(initAutoComplete, 100);
 
 					return container;
+				}
+				function initAutoComplete() {
+					let places;
+					const autoCompleteJS = new autoComplete({
+						placeHolder: 'Suche nach Ort',
+						data: {
+							src: async () => {
+								if (!places) {
+									try {
+										// Fetch Data from external Source
+										let data = await fetch('places.json');
+										data = await data.json();
+										data = data.map(e => ({ name: e[0], order: e[1], bbox: e[2] }));
+										data.sort((a,b) => b.order - a.order);
+										places = data;
+										console.log(data);
+									} catch (error) {
+										return error;
+									}
+								}
+								return places;
+							},
+							keys: ['name'],
+							cache: true,
+						},
+						resultItem: {
+							highlight: true,
+						}
+					});
 				}
 			}
 
