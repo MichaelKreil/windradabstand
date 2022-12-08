@@ -160,11 +160,11 @@
 			const maxDistance = 2500;
 			const minDistance = 0;
 			const distance = 1000;
-			let container = document.getElementById("map");
+			let container = document.getElementById('map');
 			let map = new maplibregl.Map({
 				container,
 				//style: "https://cdn.michael-kreil.de/map/style/positron/white.json",
-				style: "https://static.datenhub.net/maps/styles/positron/white.json",
+				style: 'https://static.datenhub.net/maps/styles/positron/white.json',
 				bounds: [5.86, 47.27, 15.04, 55.05],
 				fitBoundsOptions: { padding: { top: 5, bottom: 105, left: 5, right: 5 } },
 				maxBounds: [0.8, 43.7, 20.1, 57.1],
@@ -182,107 +182,109 @@
 			let attributionControl = new maplibregl.AttributionControl({
 				compact: true,
 				customAttribution: [
-					"Kartenhintergrund",
+					'Kartenhintergrund',
 					[
-						"OpenStreetMap Mitwirkende;https://www.openstreetmap.org/copyright",
+						'OpenStreetMap Mitwirkende;https://www.openstreetmap.org/copyright'
 					],
-					"Naturschutzgebiete etc.",
+					'Naturschutzgebiete etc.',
 					[
-						"Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG",
+						'Bundesamt für Naturschutz;https://geodienste.bfn.de/schutzgebiete?lang=de&layers=LSG',
 					],
-					"Infrastruktur und Gebäudeumrisse",
+					'Infrastruktur und Gebäudeumrisse',
 					[
-						"Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/",
-						"Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html",
-						"Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs",
-						"Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/",
-						"Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289",
-						"Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true",
-						"Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start",
-						"Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b",
-						"Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html",
-						"Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9",
-						"Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/",
-						"Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191",
-						"Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html",
-						"Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html",
-						"Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html",
-						"Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen",
+						'Landesamt für Geoinformation und Landentwicklung Baden-Württemberg;https://www.lgl-bw.de/Produkte/Liegenschaftskataster/Hausumringe/',
+						'Landesamt für Digitalisierung, Breitband und Vermessung Bayern;https://www.ldbv.bayern.de/produkte/kataster/hausumringe.html',
+						'Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin;https://daten.berlin.de/datensaetze/alkis-berlin-geb%C3%A4ude-wfs',
+						'Landesvermessung und Geobasisinformation Brandenburg;https://geobasis-bb.de/lgb/de/geodaten/liegenschaftskataster/hausumringe/',
+						'Landesamt Geoinformation Bremen;https://www.geo.bremen.de/produkte/katasterprodukte/hausumringe-und-hauskoordinaten-12289',
+						'Landesbetrieb Geoinformation und Vermessung Hamburg;https://suche.transparenz.hamburg.de/dataset/inspire-hh-gebaeude-alkis?forceWeb=true',
+						'Hessische Verwaltung für Bodenmanagement und Geoinformation;https://gds.hessen.de/INTERSHOP/web/WFS/HLBG-Geodaten-Site/de_DE/-/EUR/ViewDownloadcenter-Start',
+						'Landesamt für Geoinformation, Vermessung und Katasterwesen Mecklenburg-Vorpommern;https://www.geoportal-mv.de/portal/Suche/Metadatenuebersicht/Details/Hausumringe%20(HU)%20-%20Land%20Mecklenburg-Vorpommern/e665bc47-44f4-4194-b5ee-1784a628ea3b',
+						'Landesamt für Geoinformation und Landesvermessung Niedersachsen;https://www.lgln.niedersachsen.de/startseite/geodaten_karten/liegenschaftsinformationen_aus_alkis/hauskoordinaten_hausumringe/hauskoordinaten-und-hausumringe-90177.html',
+						'Geobasis NRW;https://open.nrw/dataset/3f08a580-48ec-43c1-936d-d62f89c21cc9',
+						'Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz;https://lvermgeo.rlp.de/de/produkte/liegenschaftskataster/hauskoordinaten-hausumringe/',
+						'Landesamt für Vermessung, Geoinformation und Landentwicklung Saarland;https://www.shop.lvgl.saarland.de/index.php?option=com_virtuemart&view=category&virtuemart_category_id=1087&virtuemart_manufacturer_id=0&Itemid=191',
+						'Staatsbetrieb Geobasisinformation und Vermessung Sachsen;https://www.geodaten.sachsen.de/downloadbereich-hausumringe-4174.html',
+						'Landesamt für Vermessung und Geoinformation Sachsen-Anhalt;https://www.lvermgeo.sachsen-anhalt.de/de/kostenfreie_geobasisdaten_lvermgeo.html',
+						'Landesamt für Vermessung und Geoinformation Schleswig-Holstein;https://www.schleswig-holstein.de/DE/landesregierung/ministerien-behoerden/LVERMGEOSH/Service/serviceGeobasisdaten/geodatenService_Geobasisdaten_sonstigeDaten.html',
+						'Thüringer Landesamt für Bodenmanagement und Geoinformation;https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen',
 					],
-					"Daten zu bestehenden Windrädern",
+					'Daten zu bestehenden Windrädern',
 					[
-						"Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload",
-					]
+						'Bundesnetzagentur;https://www.marktstammdatenregister.de/MaStR/Datendownload'
+					],
 				]
 					.map(e => {
 						if (typeof e === 'string') return `<b>${e}:</b>`;
-						return e.map(l => {
-							l = l.split(";");
-							return l[1]
-								? `<a href="${l[1]}" target="_blank">© ${l[0]}</a>`
-								: `${l[0]}`;
-						}).join(', ') + '<br>'
+						return (
+							e
+								.map(l => {
+									l = l.split(';');
+									return l[1]
+										? `<a href="${l[1]}" target="_blank">© ${l[0]}</a>`
+										: `${l[0]}`;
+								})
+								.join(', ') + '<br>'
+						);
 					})
-					.join(" "),
+					.join(' '),
 			});
 			map.addControl(attributionControl);
 			attributionControl._updateCompactMinimize();
 
-			map.addControl(new SearchControl(), "top-right");
+			map.addControl(new SearchControl(), 'top-right');
 
 			map.addControl(new maplibregl.FullscreenControl());
 
-			map.addControl(
-				new maplibregl.NavigationControl({ showCompass: false }),
-				"top-left"
-			);
+			map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
 
 			const sdfLimit = (distance - minDistance) / (maxDistance - minDistance);
 			const sdfWidth = 1 / (maxDistance - minDistance);
 
-			map.on("load", async () => {
+			map.on('load', async () => {
 				map.getStyle().layers.forEach(l => {
 					if (l['source-layer'] === 'place') map.setLayerZoomRange(l.id, 5, l.maxzoom);
-				})
-				map.addSource("tilesSource", {
-					type: "raster",
-					tiles: [
-						"https://cdn.michael-kreil.de/data/windradabstand/{z}/{y}/{x}.webp",
-					],
+				});
+				map.addSource('tilesSource', {
+					type: 'raster',
+					tiles: ['https://cdn.michael-kreil.de/data/windradabstand/{z}/{y}/{x}.webp'],
 					bounds: [5.8, 47.2, 15.1, 55.1],
 					minzoom: 0,
 					maxzoom: 13,
 					tileSize: 256,
 				});
 				map.addLayer({
-					id: "tilesLayer",
-					type: "raster",
-					source: "tilesSource",
+					id: 'tilesLayer',
+					type: 'raster',
+					source: 'tilesSource',
 					paint: {
-						"raster-sdf-limit": sdfLimit,
-						"raster-sdf-width": sdfWidth,
-						"raster-opacity": 1.0,
+						'raster-sdf-limit': sdfLimit,
+						'raster-sdf-width': sdfWidth,
+						'raster-opacity': 1.0,
 					},
 				});
 
-				map.addControl(new SliderControl({
-					minValue: 400,
-					maxValue: 2000,
-					handle: (v) => {
-						//console.log(v);
-						v = (v - minDistance) / (maxDistance - minDistance);
-						if (v < 0) v = 0;
-						if (v > 1) v = 1;
-						map.setPaintProperty("tilesLayer", "raster-sdf-limit", v);
-						map.triggerRepaint();
-					},
-				}), "bottom-left");
+				map.addControl(
+					new SliderControl({
+						minValue: 400,
+						maxValue: 2000,
+						handle: v => {
+							//console.log(v);
+							v = (v - minDistance) / (maxDistance - minDistance);
+							if (v < 0) v = 0;
+							if (v > 1) v = 1;
+							map.setPaintProperty('tilesLayer', 'raster-sdf-limit', v);
+							map.triggerRepaint();
+						},
+					}),
+					'bottom-left'
+				);
 			});
 
 			function loadViaAjax(url) {
 				return new Promise((res, rej) => {
 					let req = new XMLHttpRequest();
-					req.open("GET", url, true);
+					req.open('GET', url, true);
 					req.onload = () => {
 						if (req.status < 200 || req.status >= 400) {
 							console.log(req);
@@ -296,15 +298,25 @@
 
 			function SliderControl(opt) {
 				const labels = [
-					{ value: 400, y: 4, short: "HH, NI, ST, SH", long: "Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein" },
-					{ value: 450, y: 3, short: "HB", long: "Bremen" },
-					{ value: 500, y: 2, short: "RLP", long: "Rheinland P." },
-					{ value: 600, y: 1, short: "TH", long: "Thüringen" },
-					{ value: 650, y: 0, short: "SL", long: "Saarland" },
-					{ value: 700, y: 3, short: "BW", long: "Baden-Württemberg" },
-					{ value: 800, y: 2, short: "MV", long: "Mecklenburg-Vorpommern" },
-					{ value: 1000, y: 1, short: "BB, HE, NRW, SN", long: "Brandenburg, Hessen, NRW, Sachsen" },
-					{ value: 2000, y: 0, short: "Bayern", long: "Bayern", right: true },
+					{
+						value: 400,
+						y: 4,
+						short: 'HH, NI, ST, SH',
+						long: 'Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein',
+					},
+					{ value: 450, y: 3, short: 'HB', long: 'Bremen' },
+					{ value: 500, y: 2, short: 'RLP', long: 'Rheinland P.' },
+					{ value: 600, y: 1, short: 'TH', long: 'Thüringen' },
+					{ value: 650, y: 0, short: 'SL', long: 'Saarland' },
+					{ value: 700, y: 3, short: 'BW', long: 'Baden-Württemberg' },
+					{ value: 800, y: 2, short: 'MV', long: 'Mecklenburg-Vorpommern' },
+					{
+						value: 1000,
+						y: 1,
+						short: 'BB, HE, NRW, SN',
+						long: 'Brandenburg, Hessen, NRW, Sachsen',
+					},
+					{ value: 2000, y: 0, short: 'Bayern', long: 'Bayern', right: true },
 				];
 				let value = 1000;
 				let map;
@@ -314,68 +326,61 @@
 
 					const paddingHori = 25;
 
-					const container = createDomNode("div", { className: "slider-container" });
+					const container = createDomNode('div', { className: 'slider-container' });
 
-					const track = createDomNode("div", { className: "slider-track" }, container);
-					const thumb = createDomNode("div", { className: "slider-thumb" }, container);
-					const sign = createDomNode("div", { className: "slider-sign" }, thumb);
-					const mark = createDomNode("div", { className: "slider-mark" }, thumb);
+					const track = createDomNode('div', { className: 'slider-track' }, container);
+					const thumb = createDomNode('div', { className: 'slider-thumb' }, container);
+					const sign = createDomNode('div', { className: 'slider-sign' }, thumb);
+					const mark = createDomNode('div', { className: 'slider-mark' }, thumb);
 
-					track.style.left = paddingHori + "px";
-					track.style.right = paddingHori + "px";
+					track.style.left = paddingHori + 'px';
+					track.style.right = paddingHori + 'px';
 
-					labels.forEach((label) => {
-
-						label.node = createDomNode(
-							"div",
-							{ className: "slider-label" },
-							container
-						);
+					labels.forEach(label => {
+						label.node = createDomNode('div', { className: 'slider-label' }, container);
 						label.textNode = createDomNode(
-							"div",
-							{ className: "slider-label-text" },
+							'div',
+							{ className: 'slider-label-text' },
 							label.node
 						);
 						label.textNode.innerText = label.long;
 
-						label.pos =
-							(label.value - opt.minValue) / (opt.maxValue - opt.minValue);
+						label.pos = (label.value - opt.minValue) / (opt.maxValue - opt.minValue);
 
 						if (label.right) {
-							label.node.style.borderLeft = "none";
-							label.textNode.style.right = "0px";
+							label.node.style.borderLeft = 'none';
+							label.textNode.style.right = '0px';
 						} else {
-							label.node.style.borderRight = "none";
+							label.node.style.borderRight = 'none';
 						}
 						label.offset = label.y * 13;
-						label.node.style.height = 16 + label.offset + "px";
-						label.textNode.style.marginTop = 5 + label.offset + "px";
+						label.node.style.height = 16 + label.offset + 'px';
+						label.textNode.style.marginTop = 5 + label.offset + 'px';
 						label.textNode.addEventListener('pointerdown', e => {
 							e.preventDefault();
 							e.stopPropagation();
 							//console.log('click');
 							value = label.value;
 							updatePosition();
-						})
+						});
 					});
 
-					let trackWidth,
-						pointerX;
+					let trackWidth, pointerX;
 
 					updateSize();
 					opt.handle(value);
 					setTimeout(updateSize, 0);
 					setTimeout(updateSize, 100);
-					window.addEventListener("resize", updateSize);
+					window.addEventListener('resize', updateSize);
 
 					function updateSize() {
 						trackWidth = container.offsetWidth - 2 * paddingHori;
-						labels.forEach((label) => {
+						labels.forEach(label => {
 							let x = Math.round(trackWidth * label.pos);
 							if (label.right) {
-								label.node.style.right = paddingHori + trackWidth - x + "px";
+								label.node.style.right = paddingHori + trackWidth - x + 'px';
 							} else {
-								label.node.style.left = paddingHori + x + "px";
+								label.node.style.left = paddingHori + x + 'px';
 							}
 						});
 						updatePosition();
@@ -383,14 +388,14 @@
 
 					function updatePosition() {
 						let x = Math.round(
-							(trackWidth * (value - opt.minValue)) /
-							(opt.maxValue - opt.minValue)
+							(trackWidth * (value - opt.minValue)) / (opt.maxValue - opt.minValue)
 						);
-						thumb.style.left = x + paddingHori + "px";
-						track.style.background = 'linear-gradient(to right, #d50d2e, #d50d2e ' + x + 'px, #000 ' + x + 'px)';
-						sign.innerText = value + "m";
+						thumb.style.left = x + paddingHori + 'px';
+						track.style.background =
+							'linear-gradient(to right, #d50d2e, #d50d2e ' + x + 'px, #000 ' + x + 'px)';
+						sign.innerText = value + 'm';
 
-						labels.forEach((label) => {
+						labels.forEach(label => {
 							if (value < label.value) {
 								label.node.classList.remove('highlight1');
 								label.node.classList.remove('highlight2');
@@ -447,7 +452,15 @@
 
 					const paddingHori = 0;
 
-					const container = createDomNode("div", { className: "search-container maplibregl-ctrl maplibregl-ctrl-group" });
+					const container = createDomNode('div', {
+						className: 'search-container maplibregl-ctrl maplibregl-ctrl-group',
+					});
+
+					const input = createDomNode(
+						'input',
+						{ id: 'autoComplete', type: 'text', placeHolder: 'Suche nach Ort', size: 30 },
+						container
+					);
 
 					const input = createDomNode("input", { type: 'text', placeholder: 'Suche nach: Ort/PLZ/Adresse', size: 30 }, container);
 
