@@ -225,7 +225,7 @@
 					paint: {
 						'raster-sdf-limit': sdfLimit,
 						'raster-sdf-width': sdfWidth,
-						'raster-opacity': 1.0,
+						'raster-opacity': ['interpolate', ['linear'], ['zoom'], 6, 1.0, 8, 0.5],
 					},
 				});
 
