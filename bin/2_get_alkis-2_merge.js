@@ -389,7 +389,7 @@ function tryMergingFeatures(features) {
 
 			} catch (e) {
 				logFeatures({ f1, f2, feature });
-				throw e;
+				continue;
 			}
 
 			features[i] = feature;
