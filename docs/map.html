@@ -265,25 +265,15 @@
 
 			function SliderControl(opt) {
 				const labels = [
-					{
-						value: 400,
-						y: 4,
-						short: 'HH, NI, ST, SH',
-						long: 'Hamburg, Niedersachsen, Schleswig-Holstein',
-					},
-					{ value: 450, y: 3, short: 'HB', long: 'Bremen' },
-					{ value: 500, y: 2, short: 'RLP', long: 'Rheinland P.' },
-					{ value: 600, y: 1, short: 'TH', long: 'Thüringen' },
-					{ value: 650, y: 0, short: 'SL', long: 'Saarland' },
-					{ value: 700, y: 3, short: 'BW', long: 'Baden-Württemberg' },
-					{ value: 800, y: 2, short: 'MV', long: 'Mecklenburg-Vorpommern' },
-					{
-						value: 1000,
-						y: 1,
-						short: 'BB, HE, NRW, SN',
-						long: 'Brandenburg, Hessen, NRW, Sachsen, Sachsen-A.',
-					},
-					{ value: 2000, y: 0, short: 'Bayern', long: 'Bayern', right: true },
+					{ value: 400, y: 4, text: 'Hamburg, Niedersachsen, Sachsen-Anhalt, Schleswig-Holstein' },
+					{ value: 450, y: 3, text: 'Bremen' },
+					{ value: 500, y: 2, text: 'Rheinland P.' },
+					{ value: 600, y: 1, text: 'Thüringen' },
+					{ value: 650, y: 0, text: 'Saarland' },
+					{ value: 700, y: 3, text: 'Baden-Württemberg' },
+					{ value: 800, y: 2, text: 'Mecklenburg-Vorpommern' },
+					{ value: 1000, y: 1, text: 'Brandenburg, Hessen, NRW, Sachsen' },
+					{ value: 2000, y: 0, text: 'Bayern', right: true },
 				];
 				let value = 1000;
 				let map;
@@ -294,6 +284,8 @@
 					const paddingHori = 25;
 
 					const container = createDomNode('div', { className: 'slider-container' });
+					const hint = createDomNode('div', { className: 'slider-hint' }, container);
+					hint.innerHTML = 'Wählen Sie hier einen Mindestsabstand zu Wohngebäuden:'
 
 					const track = createDomNode('div', { className: 'slider-track' }, container);
 					const thumb = createDomNode('div', { className: 'slider-thumb' }, container);
@@ -310,7 +302,7 @@
 							{ className: 'slider-label-text' },
 							label.node
 						);
-						label.textNode.innerText = label.long;
+						label.textNode.innerText = label.text;
 
 						label.pos = (label.value - opt.minValue) / (opt.maxValue - opt.minValue);
 
