@@ -7,4 +7,4 @@ set -ex
 node 4_process-1_siedlungsflaeche.js
 node 4_process-2_gebaeude.js
 
-parallel "node {}; echo '--------------------------------------------------'" ::: 4_process-3*.js
+parallel -j 1 "node {}; echo '--------'" ::: 4_process-3*.js
