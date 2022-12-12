@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "bin/8_server-loop.sh"
+    "server": "serve docs"
   },
   "author": "Michael Kreil",
   "license": "ISC",
