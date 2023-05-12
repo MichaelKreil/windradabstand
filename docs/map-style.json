@@ -329,7 +329,7 @@
 			],
 			"attribution": "<a href=\"https://www.openstreetmap.org/copyright/de\">© OpenStreetMap</a>",
 			"tiles": [
-				"https://cdn.michael-kreil.de/tiles/osm/{z}/{y}/{x}"
+				"https://cdn.michael-kreil.de/tiles/osm/{z}/{x}/{y}"
 			]
 		}
 	},
