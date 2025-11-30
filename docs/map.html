@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 	<title>Die Verhinderung der Windenergie</title>
 
+	<script src="versatiles-style.js"></script>
 	<script src="maplibre-gl.js"></script>
 	<script src="autoComplete.min.js"></script>
 	<link href="maplibre-gl.css" rel="stylesheet" />
@@ -38,9 +39,11 @@
 			right: 0;
 			bottom: 0;
 		}
+
 		.maplibregl-cooperative-gesture-screen {
 			padding-bottom: 131px;
 		}
+
 		.maplibregl-ctrl-attrib-inner {
 			line-height: 1.2em;
 			padding: 5px 5px 5px 0px;
@@ -174,11 +177,16 @@
 			const minDistance = 0;
 			const distance = 1000;
 			let container = document.getElementById('map');
+
+			let style = VersaTilesStyle.colorful({
+				baseUrl: 'https://tiles.versatiles.org',
+				language: 'de',
+				recolor: { saturate: -1, brightness: 0.7, contrast:1.5,gamma: 3 }
+			});
+			delete style.sprite;
 			let map = new maplibregl.Map({
 				container,
-				//style: 'https://cdn.michael-kreil.de/map/style/positron/white.json',
-				//style: 'https://static.datenhub.net/maps/styles/positron/white.json',
-				style: 'https://cdn.michael-kreil.de/app/windradabstand/map-style.json',
+				style,
 				bounds: [5.86, 47.27, 15.04, 55.05],
 				fitBoundsOptions: { padding: { top: 5, bottom: 120, left: 5, right: 5 } },
 				maxBounds: [0.8, 43.7, 20.1, 57.1],
